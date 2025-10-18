@@ -1,0 +1,15 @@
+sqlalchemy
+psycopg2
+pytz
+mysqlclient
+pymysql
+cryptography
+nba_api
+boto3
+pandas
+sqlalchemy_utils
+fsspec
+s3fs
+flask
+sqlmodel
+alembic
