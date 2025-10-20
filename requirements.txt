@@ -12,4 +12,6 @@ fsspec
 s3fs
 flask
 sqlmodel
-alembic
+Django>=4.2,<5.0
+django-ninja>=1.0
+django-cors-headers>=4.0

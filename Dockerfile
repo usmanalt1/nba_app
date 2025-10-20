@@ -62,4 +62,4 @@ RUN chmod +x  ./scripts/entrypoint.sh
 
 EXPOSE 5000
 
-ENTRYPOINT ["tail", "-f", "/dev/null"]
+CMD ["python", "backend/src/manage.py", "runserver", "0.0.0.0:8000"]

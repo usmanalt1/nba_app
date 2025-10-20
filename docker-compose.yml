@@ -22,7 +22,7 @@ services:
       mysql-host:
         condition: service_healthy
     ports:
-      - "5000:5000"
+      - "8000:8000"
     volumes:
       - type: bind
         source: .

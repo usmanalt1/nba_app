@@ -1,9 +1,11 @@
 from typing import Optional
 from sqlmodel import SQLModel, Field
 
+
 class SeasonRecord(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     season_id: int
+
 
 class TeamInfo(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -14,6 +16,7 @@ class TeamInfo(SQLModel, table=True):
     state: str
     year_founded: int
 
+
 class PlayerInfo(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     season_id: int
@@ -21,6 +24,7 @@ class PlayerInfo(SQLModel, table=True):
     first_name: str
     last_name: str
     is_active: bool
+
 
 class TeamRoster(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -30,6 +34,7 @@ class TeamRoster(SQLModel, table=True):
     player: str
     age: Optional[int]
     position: Optional[str]
+
 
 class PlayerStats(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -63,6 +68,7 @@ class PlayerStats(SQLModel, table=True):
     ast_tov: float
     stl_tov: float
     date: str
+
 
 class TeamStats(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
