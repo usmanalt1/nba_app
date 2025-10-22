@@ -82,6 +82,7 @@ class CollectRawNBAData(TransformHelper, Constants):
             self.convert_date_format
         )
         df_all_team_logs["season_id"] = int(self.season_id)
+        df_all_team_logs
 
         logging.info("...Raw Team Game Logs DF Generated")
         return df_all_team_logs
@@ -117,4 +118,5 @@ class CollectRawNBAData(TransformHelper, Constants):
         df_all_team_logs["date"] = self.date.strftime("%Y-%m-%d")
         logging.info("...Raw Team Stats DF Generated")
         df_all_team_logs = df_all_team_logs.dropna()
+        df_all_team_logs.drop(columns=["group_set", "group_value"], inplace=True)
         return df_all_team_logs
