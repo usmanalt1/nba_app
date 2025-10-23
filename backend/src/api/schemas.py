@@ -125,6 +125,37 @@ class TeamStats(Schema):
     plus_minus_rank: int
     date: str
 
+class TeamMatchups(Schema):
+    id: Optional[int] = None
+    season_id: str
+    team_id: int
+    team_abbreviation: str
+    team_name: str
+    game_id: str
+    game_date: str  # ISO format date string
+    matchup: str
+    wl: str
+    min: int
+    pts: int
+    fgm: int
+    fga: int
+    fg_pct: float
+    fg3m: int
+    fg3a: int
+    fg3_pct: float
+    ftm: int
+    fta: int
+    ft_pct: float
+    oreb: int
+    dreb: int
+    reb: int
+    ast: int
+    stl: int
+    blk: int
+    tov: int
+    pf: int
+    plus_minus: float
+
 class PlayerStatsSchema(Schema):
     player_id: int
     season_id: int
