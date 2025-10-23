@@ -19,8 +19,8 @@ class NBADataResponseSchema(Schema):
     success: bool
     error: Optional[str] = None
 
-@router.get("/collect_all", response=NBADataResponseSchema)
-async def collect_and_upsert(request):
+@router.get("/collect/all", response=NBADataResponseSchema)
+async def collect_all(request):
     try:
         def sync_collect_and_upsert():
             raw_tables = BuildDataService().build_nba_data()
@@ -39,7 +39,7 @@ async def collect_and_upsert(request):
     return NBADataResponseSchema(success=True)
 
 @router.get("/collect/{table_name}", response=NBADataResponseSchema)
-async def collect_table_data(request, table_name: str):
+async def collect_data_by_table(request, table_name: str):
     try:
         def sync_collect():
             raw_tables = BuildDataService().build_nba_data(table_name=table_name)
@@ -55,3 +55,46 @@ async def collect_table_data(request, table_name: str):
         return NBADataResponseSchema(success=False, error=str(e))
     
     return NBADataResponseSchema(success=True)
+
+@router.get("/collect/season/{season_year}", response=NBADataResponseSchema)
+async def collect_data_by_season(request, season_year: str):
+        try:
+            #season_year format "2022-23"
+            #TODO validate season_year format
+            split_year = season_year.split("-")
+            season_id = f"{split_year[0][-2:]}0{split_year[1][-2:]}"
+            def sync_collect_and_upsert_for_date():
+                raw_tables = BuildDataService().build_nba_data(season_id=season_id, season_year=season_year)
+                logger.info(f"Raw NBA data for table collected successfully.")
+                
+                db_operations = DBOperations()
+                db_operations.upsert_nba_data(raw_tables)
+
+            await sync_to_async(sync_collect_and_upsert_for_date)()
+        except Exception as e:
+            logger.error(f"Error during data collection and upsert: {e}")
+            return NBADataResponseSchema(success=False, error=str(e))
+        
+        return NBADataResponseSchema(success=True)
+
+@router.get("/collect/season/{team_name}/{season_year}", response=NBADataResponseSchema)
+async def collect_data_by_table_season(request, table_name: str, season_year: str):
+    try:
+        def sync_collect():
+            split_year = season_year.split("-")
+            season_id = f"{split_year[0][-2:]}0{split_year[1][-2:]}"
+            raw_tables = BuildDataService().build_nba_data(table_name=table_name, season_id=season_id, season_year=season_year)
+            logger.info(f"Raw NBA data for table {table_name} collected successfully.")
+            
+            db_operations = DBOperations()
+            db_operations.upsert_nba_data(raw_tables, get_table_name=table_name)
+            logger.info(f"NBA data for table {table_name} upserted to the database successfully.")
+        await sync_to_async(sync_collect)()
+        
+    except Exception as e:
+        logger.error(f"Error during data collection and upsert for table {table_name}: {e}")
+        return NBADataResponseSchema(success=False, error=str(e))
+    
+    return NBADataResponseSchema(success=True)
+
+

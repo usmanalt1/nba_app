@@ -12,7 +12,6 @@ class DBOperations:
             "teams_roster": TeamRoster,
             "team_stats": TeamStats,
             "player_stats": PlayerStats,
-            "team_matchups": TeamMatchups,
         }
     
     def upsert_nba_data(self, raw_tables: dict, get_table_name: str = None) -> None:
@@ -43,12 +42,14 @@ class DBOperations:
                             model.objects.update_or_create(
                                 date=record["date"],
                                 team_id=record["team_id"],
+                                season_year=record["season_year"],
                                 defaults=record
                             )
                         elif table_name == "player_stats": 
                             model.objects.update_or_create(
                                 date=record["date"],
                                 player_id=record["player_id"],
+                                season_id=record["season_id"],
                                 defaults=record
                             )
                         elif table_name == "players_info":
