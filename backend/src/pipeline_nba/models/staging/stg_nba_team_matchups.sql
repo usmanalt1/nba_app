@@ -1,0 +1,21 @@
+select 
+	t.season_id, 
+	t.team_id, 
+	t.game_id,
+	t.game_date,
+	t.team_abbreviation as team_abbreviation,
+	t.matchup as team_matchup,
+	t.wl as team_win_loss,
+	t.min as team_minutes_played,
+	t.pts as team_points,
+	t.fg_pct as team_field_goal_percentage,
+	t.fg3_pct as team_three_point_percentage,
+	t.ft_pct as team_free_throw_percentage,
+	t.oreb as team_offensive_rebounds,
+	t.dreb as team_defensive_rebounds,
+	t.ast as team_assists,
+	t.plus_minus as team_plus_minus,
+	t.blk as team_blocks,
+	t.tov as team_turnovers,
+	t.pf as team_personal_fouls
+from {{ source("nba_test", "app_teammatchups") }} t

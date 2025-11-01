@@ -1,0 +1,18 @@
+version: 2
+
+models:
+  - name: stg_nba_player_stats
+    config:
+      materialized: view
+    alias: staging_nba_player_stats
+    description: "This view contains player statistics sourced from the NBA API."
+  - name: stg_nba_team_stats
+    config:
+      materialized: view
+    alias: staging_nba_team_stats
+    description: "This view contains stats for teams"
+  - name: stg_nba_team_matchups
+    config:
+      materialized: view
+    alias: staging_nba_team_matchups
+    description: "This view contains stats for team matchups"

@@ -1,0 +1,12 @@
+version: 2
+
+sources:
+  - name: nba_test
+    description: "Source data for NBA statistics"
+    tables:
+      - name: app_playerstats
+        description: "Raw data of NBA players"
+      - name: app_teamstats
+        description: "Raw data of NBA teams"
+      - name: app_teammatchups
+        description: "Raw data of NBA team matchups"

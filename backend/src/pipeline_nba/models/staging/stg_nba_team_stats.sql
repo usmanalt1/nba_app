@@ -1,0 +1,22 @@
+select 
+	t.season_id,
+	t.team_id,
+	t.season_year,
+	t.gp as team_games_played,
+	t.w as team_wins,
+	t.l as team_losses,
+	t.w_pct as team_win_percentage,
+	t.fg_pct as team_field_goal_percentage,
+	t.fg3_pct as team_3pt_percentage,
+	t.ft_pct as team_free_throw_percentage,
+	t.dreb/t.gp as team_defensive_rebounds_per_game,
+	t.oreb/t.gp as team_offensive_rebounds_per_game,
+	t.reb/t.gp as team_rebounds_per_game,
+	t.tov/t.gp as team_turnovers_per_game,
+	t.ast/t.gp as team_assists_per_game,
+	t.stl/t.gp as team_steals_per_game,
+	t.blk/t.gp as team_blocks_per_game,
+	t.pf/t.gp as team_personal_fouls_per_game,
+	t.pts/t.gp as team_points_per_game,
+	t.plus_minus as team_plus_min
+from {{ source("nba_test", "app_teamstats") }} t
