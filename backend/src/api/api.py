@@ -5,7 +5,7 @@ from ninja import NinjaAPI
 import logging
 from services.build_data_service import BuildDataService
 from services.db.db_operations import DBOperations
-from typing import Optional
+from typing import Optional, Dict, Any, List
 from asgiref.sync import sync_to_async
 
 logger = logging.getLogger(__name__)
@@ -18,6 +18,7 @@ api.add_router("/nba/", router)
 class NBADataResponseSchema(Schema):
     success: bool
     error: Optional[str] = None
+    records: Optional[List[Dict[str, Any]]] = None
 
 @router.get("/collect/all", response=NBADataResponseSchema)
 async def collect_all(request):
@@ -77,7 +78,7 @@ async def collect_data_by_season(request, season_year: str):
         
         return NBADataResponseSchema(success=True)
 
-@router.get("/collect/season/{team_name}/{season_year}", response=NBADataResponseSchema)
+@router.get("/collect/season/{table_name}/{season_year}", response=NBADataResponseSchema)
 async def collect_data_by_table_season(request, table_name: str, season_year: str):
     try:
         def sync_collect():
@@ -87,7 +88,7 @@ async def collect_data_by_table_season(request, table_name: str, season_year: st
             logger.info(f"Raw NBA data for table {table_name} collected successfully.")
             
             db_operations = DBOperations()
-            db_operations.upsert_nba_data(raw_tables, get_table_name=table_name)
+            db_operations.upsert_nba_data(raw_tables=raw_tables, get_table_name=table_name)
             logger.info(f"NBA data for table {table_name} upserted to the database successfully.")
         await sync_to_async(sync_collect)()
         
@@ -96,5 +97,20 @@ async def collect_data_by_table_season(request, table_name: str, season_year: st
         return NBADataResponseSchema(success=False, error=str(e))
     
     return NBADataResponseSchema(success=True)
+
+@router.get("/stats/{table_name}")
+async def get_table_data(request, table_name: str):
+    try:
+        def sync_get_data():
+            db_operations = DBOperations()
+            records = db_operations.get_table_data(table_name)
+            return records
+
+        records = await sync_to_async(sync_get_data)()
+    except Exception as e:
+        logger.error(f"Error retrieving data for table {table_name}: {e}")
+        return NBADataResponseSchema(success=False, error=str(e))
+    
+    return NBADataResponseSchema(success=True, records=records)
 
 

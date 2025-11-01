@@ -18,6 +18,8 @@ services:
 
   nba_app_backend:
     build: .
+    env_file:
+      - .env
     depends_on:
       mysql-host:
         condition: service_healthy

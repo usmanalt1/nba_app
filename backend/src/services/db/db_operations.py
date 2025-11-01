@@ -1,6 +1,9 @@
 from logging import getLogger
 from app.models import SeasonRecord, TeamInfo, PlayerInfo, TeamRoster, TeamStats, PlayerStats, TeamMatchups
-import pandas as pd
+import polars as pl
+from sqlalchemy import create_engine
+import os
+
 
 logger = getLogger(__name__)
 class DBOperations:
@@ -13,10 +16,15 @@ class DBOperations:
             "team_stats": TeamStats,
             "player_stats": PlayerStats,
         }
+        self.user = os.getenv("DB_USER")
+        self.password = os.getenv("DB_PASSWORD")
+        self.db_name = os.getenv("DB_NAME")
+        self.engine = create_engine(f"mysql+pymysql://{self.user}:{self.password}@mysql-host:3307/{self.db_name}")
     
     def upsert_nba_data(self, raw_tables: dict, get_table_name: str = None) -> None:
         logger.info("Starting upsert of NBA data into the database")
         if get_table_name:
+            self.table_model_map["team_matchups"] = TeamMatchups
             self.table_model_map = {
                 get_table_name: self.table_model_map.get(get_table_name)}
         try:
@@ -75,4 +83,17 @@ class DBOperations:
         except Exception as e:
             logger.error(f"Error during upsert operation: {e}")
             raise
+
+    def get_table_data(self, table_name: str) -> dict:
+        try:
+            query = f"SELECT * FROM {table_name}"
+            df = pl.read_database(
+                query=query,
+                connection=self.engine
+            )
+            return df.to_dicts()
+        except Exception as e:
+            logger.error(f"Error retrieving data from table {table_name}: {e}")
+            raise
+    
     
