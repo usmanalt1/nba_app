@@ -1,5 +1,5 @@
 select 
-	t.season_id, 
+	cast(t.season_id as signed) as season_id,
 	t.team_id, 
 	t.game_id,
 	t.game_date,
