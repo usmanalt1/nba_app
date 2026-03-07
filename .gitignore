@@ -24,6 +24,8 @@ var/
 *.egg-info/
 .installed.cfg
 *.egg
+.venv/
+nba_data/
 
 # Installer logs
 pip-log.txt

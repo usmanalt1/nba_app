@@ -6,6 +6,8 @@ import pandas as pd
 from services.data_collection.transformer_helper import TransformHelper
 import logging
 from nba_api.stats.endpoints import leagueleaders, teamdashboardbygeneralsplits, leaguegamefinder
+from nba_api.stats.endpoints import leaguegamelog
+from http.client import RemoteDisconnected
 from services.data_collection.constants import Constants
 import time as t
 
@@ -16,6 +18,19 @@ class CollectRawNBAData(TransformHelper, Constants):
         self.date = kwargs["date_to_run"]
         self.season_id = self.create_season_id_year().get("season_id")
         self.season_year = self.create_season_id_year().get("season_year")
+        self.headers = {
+            'Host': 'stats.nba.com',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:72.0) Gecko/20100101 Firefox/72.0',
+            'Accept': 'application/json, text/plain, */*',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'x-nba-stats-origin': 'stats',
+            'x-nba-stats-token': 'true',
+            'Connection': 'keep-alive',
+            'Referer': 'https://stats.nba.com/',
+            'Pragma': 'no-cache',
+            'Cache-Control': 'no-cache',
+        }
 
     def gather_and_import_nba_data(self, table_name = None, season_id: str = None, season_year: str = None):
         if season_id is None:
@@ -41,16 +56,16 @@ class CollectRawNBAData(TransformHelper, Constants):
             df_teams = self._get_team_info()
             df_players = self._get_players_info()
             df_teams_roster = self._get_team_roster(df_team_info=df_teams, season_year=season_year, season_id=season_id)
-            df_team_stats = self._get_team_stats(df_team_roster=df_teams, season_year=season_year, season_id=season_id)
-            df_player_stats = self._get_player_stats(season_year=season_year, season_id=season_id)
+            df_team_logs = self._get_logs(season_year=season_year, pt_abbreviation="T")
+            df_player_logs = self._get_logs(season_year=season_year, pt_abbreviation="P")
 
             nba_data_dict = {
                 self.SEASON_RECORD: df_season,
                 self.TEAMS_INFO: df_teams,
                 self.TEAMS_ROSTER: df_teams_roster,
                 self.PLAYERS_INFO: df_players,
-                self.TEAM_STATS: df_team_stats,
-                self.PLAYER_STATS: df_player_stats,
+                self.TEAM_STATS: df_team_logs,
+                self.PLAYER_STATS: df_player_logs,
             }
         return nba_data_dict
 
@@ -77,9 +92,13 @@ class CollectRawNBAData(TransformHelper, Constants):
         return df_team_info
 
     def _get_team_roster(self, df_team_info: pd.DataFrame, season_year: str, season_id) -> pd.DataFrame:
+        """Get team roster for each team in the season. 
+        This is required to get the player ids for each team which is required to get the player stats and team stats for the season.
+        """
+        logging.info("Collecting team rosters for each team in the season")
         team_ids = df_team_info["id"].values.tolist()
         all_teams = self.transfrom_data(
-            commonteamroster.CommonTeamRoster, team_ids, season=season_year
+            commonteamroster.CommonTeamRoster, team_ids, season=season_year, headers=self.headers
         )
         all_teams = self.clean_dataframe(all_teams)
         all_teams["team_id"] = all_teams["teamid"]
@@ -126,6 +145,48 @@ class CollectRawNBAData(TransformHelper, Constants):
         logging.info("...Raw Player Averages DF Generated")
         return df
 
+
+    def _get_logs(self, season_year: str, pt_abbreviation: str) -> pd.DataFrame:
+        logging.info(f"Collecting logs for season: {season_year} and type: {pt_abbreviation}")
+        # Retry loop to handle intermittent connection drops from the remote API
+        max_retries = 5
+        backoff_base = 2
+        df_league_logs = None
+        for attempt in range(1, max_retries + 1):
+            try:
+                league_logs = leaguegamelog.LeagueGameLog(
+                    season=season_year,
+                    player_or_team_abbreviation=pt_abbreviation,
+                    headers=self.headers,
+                    timeout=60,
+                )
+                df_league_logs = league_logs.get_data_frames()[0]
+                break
+            except RemoteDisconnected as e:
+                logging.warning(
+                    f"RemoteDisconnected on attempt {attempt}/{max_retries}: {e}. Retrying..."
+                )
+            except Exception as e:
+                # Catch network-level and other transient errors and retry
+                logging.warning(
+                    f"Error fetching league game logs on attempt {attempt}/{max_retries}: {e}. Retrying..."
+                )
+
+            # if not returned, sleep with exponential backoff
+            if attempt < max_retries:
+                t.sleep(backoff_base ** attempt)
+            else:
+                logging.error(
+                    f"Failed to fetch league game logs after {max_retries} attempts"
+                )
+                raise
+        df_league_logs = self.clean_dataframe(df_league_logs)
+        df_league_logs["game_date"] = df_league_logs["game_date"].apply(
+            self.convert_date_format
+        )
+        logging.info("...Raw League Game Logs DF Generated")
+        return df_league_logs
+    
     def _get_team_stats(self, df_team_roster, season_year: str, season_id: str) -> pd.DataFrame:
         team_ids = df_team_roster["id"].values.tolist()
         df_all_team_logs = self.transfrom_data(
