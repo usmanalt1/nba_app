@@ -7,6 +7,10 @@ from services.data_collection.build_data_service import BuildDataService
 from services.db.db_service import DBService
 from typing import Optional, Dict, Any, List
 from asgiref.sync import sync_to_async
+import asyncio
+from services.object_storage.service import ObjectStorageService
+from config.settings import settings
+
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +35,7 @@ async def collect_all(request):
             db_operations.upsert_nba_data(raw_tables)
             logger.info("NBA data upserted to the database successfully.")
 
-        await sync_to_async(sync_collect_and_upsert)()
+        await asyncio.to_thread(sync_collect_and_upsert)()
             
     except Exception as e:
         logger.error(f"Error during data collection and upsert: {e}")
@@ -64,14 +68,53 @@ async def collect_data_by_season(request, season_year: str):
             #TODO validate season_year format
             split_year = season_year.split("-")
             season_id = f"{split_year[0][-2:]}0{split_year[1][-2:]}"
-            def sync_collect_and_upsert_for_date():
+            object_storage_service = ObjectStorageService()
+            def sync_collect_and_upsert_for_date(object_storage_service=object_storage_service):
                 raw_tables = BuildDataService().build_nba_data(season_id=season_id, season_year=season_year)
                 logger.info(f"Raw NBA data for table collected successfully.")
-                
-                db_operations = DBService()
-                db_operations.upsert_nba_data(raw_tables)
 
-            await sync_to_async(sync_collect_and_upsert_for_date)()
+                for table_name, df in raw_tables.items():
+                    object_storage_service.save_to_object_storage(df=df, file_name=table_name, season=season_year)
+                    logger.info(f"NBA data for table {table_name} saved to object storage successfully.")
+
+            await asyncio.to_thread(sync_collect_and_upsert_for_date)(object_storage_service=object_storage_service)
+        except Exception as e:
+            logger.error(f"Error during data collection and upsert: {e}")
+            return NBADataResponseSchema(success=False, error=str(e))
+        
+        return NBADataResponseSchema(success=True)
+
+@router.get("/collect/season/{season_year}/{seasons}", response=NBADataResponseSchema)
+async def collect_data_by_number_of_seasons(request, season_year: str, seasons: int):
+        try:
+            #season_year format "2022-23"
+            #TODO validate season_year format
+            split_year = season_year.split("-")
+            season_id = f"{split_year[0][-2:]}0{split_year[1][-2:]}"
+            object_storage_service = ObjectStorageService().get_storage()
+            def sync_collect_and_upsert_for_date(object_storage_service=object_storage_service, season_year=season_year, season_id=season_id, seasons=seasons):
+                for i in range(seasons):
+                    raw_tables = BuildDataService().build_nba_data(season_id=season_id, season_year=season_year)
+                    logger.info(f"Raw NBA data for table collected successfully.")
+                    
+                    for table_name, df in raw_tables.items():
+                        object_storage_service.save(df=df, file_name=table_name, season=season_year)
+                        logger.info(f"NBA data for table {table_name} saved to object storage successfully.")
+                    
+                    #decrement season_year and season_id for next iteration
+                    split_year = season_year.split("-")
+                    # season_year = 2022-23
+                    season_year = f"{int(split_year[0]) - 1}-{str(int(split_year[1]) - 1)[-2:]}"
+                    # season_id = 22023
+                    season_id = f"{str(int(season_id[:2]) - 1)}0{str(int(season_id[2:]) - 1)}"
+
+            await asyncio.to_thread(
+                sync_collect_and_upsert_for_date,
+                object_storage_service,
+                season_year,
+                season_id,
+                seasons,
+            )
         except Exception as e:
             logger.error(f"Error during data collection and upsert: {e}")
             return NBADataResponseSchema(success=False, error=str(e))
