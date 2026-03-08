@@ -21,3 +21,6 @@ scikit-learn
 fastparquet
 pydantic-settings
 gcsfs
+google-cloud-bigquery 
+google-cloud-storage
+pyArrow

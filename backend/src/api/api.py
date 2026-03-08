@@ -10,6 +10,7 @@ from asgiref.sync import sync_to_async
 import asyncio
 from services.object_storage.service import ObjectStorageService
 from config.settings import settings
+from services.warehouse_storage.bigquery.service import BigQueryService
 
 
 logger = logging.getLogger(__name__)
@@ -120,6 +121,22 @@ async def collect_data_by_number_of_seasons(request, season_year: str, seasons: 
             return NBADataResponseSchema(success=False, error=str(e))
         
         return NBADataResponseSchema(success=True)
+
+@router.get("/load_to_bigquery/{seasons}", response=NBADataResponseSchema)
+async def load_data_from_gcs_to_bigquery(request, seasons: str):
+    # seasons is a comma separated string of number of seasons to load, e.g. "1,2,3"
+    seasons = [s.strip() for s in seasons.split(",")]
+    try:
+        bigquery_service = BigQueryService()
+        def sync_load_data():
+            bigquery_service.load_latest_data_from_gcs_to_bigquery(seasons=seasons)
+        
+        await asyncio.to_thread(sync_load_data)
+    except Exception as e:
+        logger.error(f"Error loading data from GCS to BigQuery: {e}")
+        return NBADataResponseSchema(success=False, error=str(e))
+    
+    return NBADataResponseSchema(success=True)
 
 @router.get("/collect/season/{table_name}/{season_year}", response=NBADataResponseSchema)
 async def collect_data_by_table_season(request, table_name: str, season_year: str):
