@@ -20,4 +20,9 @@ PyMySQL==1.1.2
 scikit-learn
 fastparquet
 pydantic-settings
+dagster
+dagster-webserver
 gcsfs
+google-cloud-bigquery 
+google-cloud-storage
+pyArrow

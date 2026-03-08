@@ -2,9 +2,12 @@ import os
 import pandas as pd
 import gcsfs
 from config.settings import settings
+from abc import ABC, abstractmethod
+from google.cloud import storage
+import pyarrow.dataset as ds
+
 from logging import getLogger
 logger = getLogger(__name__)
-from abc import ABC, abstractmethod
 
 class ObjectStorageService:
     def __init__(self):
@@ -22,6 +25,10 @@ class ObjectStorageBase(ABC):
     def save(self, df: pd.DataFrame, file_name: str, season: str) -> None:
         pass
 
+    @abstractmethod
+    def read(self, latest_run_id: str, seasons: list, table: str) -> pd.DataFrame:
+        pass
+
 class GCSStorage(ObjectStorageBase):
     def __init__(self, generate_run_id=None):
         self.settings = settings
@@ -31,6 +38,10 @@ class GCSStorage(ObjectStorageBase):
         self.fs = gcsfs.GCSFileSystem(
             project=self.settings.GCS_PROJECT_NAME,
             token=self.settings.GCS_SERVICE_ACCOUNT_JSON,
+        )
+        self.storage_client = storage.Client.from_service_account_json(
+            self.settings.GCS_SERVICE_ACCOUNT_JSON,
+            project=self.settings.GCS_PROJECT_NAME
         )
 
     def save(self, df: pd.DataFrame, file_name: str, season: str) -> None:
@@ -42,15 +53,19 @@ class GCSStorage(ObjectStorageBase):
         except Exception:
             logger.exception(f"Failed to write parquet to GCS: {path}")
             raise
-
-    def read_from_object_storage(self, file_path: str, file_name: str) -> pd.DataFrame:
-        path = f"gs://{self.bucket}/{file_path}/{file_name}.{self.file_format}"
-        try:
-            with self.fs.open(path, "rb") as f:
-                return pd.read_parquet(f)
-        except Exception:
-            logger.exception(f"Failed to read parquet from GCS: {path}")
-            raise
+    
+    def read(self, latest_run_id: str, seasons: list, table: str) -> pd.DataFrame:
+        dfs = []
+        for season in seasons:
+            path = f"{self.bucket}/{latest_run_id}/season={season}/{table}.{self.file_format}"
+            try:
+                with self.fs.open(path, "rb") as f:
+                    df = pd.read_parquet(f)
+                    df["season"] = season
+                    dfs.append(df)
+            except FileNotFoundError:
+                logger.warning(f"No data for season={season}, table={table}")
+        return pd.concat(dfs, ignore_index=True) if dfs else pd.DataFrame()
 
 class LocalStorage(ObjectStorageBase):
     def __init__(self, generate_run_id=None):
@@ -80,10 +95,7 @@ class LocalStorage(ObjectStorageBase):
                 logger.exception(f"Failed to write parquet file: {full_path}")
                 raise
 
-    def read_from_object_storage(self, file_path: str, file_name: str) -> pd.DataFrame:
-        full_path = f"{file_path}/{file_name}.{self.file_format}"
-        try:
-            return pd.read_parquet(full_path, engine="fastparquet")
-        except Exception:
-            logger.warning("fastparquet read failed, trying pyarrow engine")
-            return pd.read_parquet(full_path, engine="pyarrow")
+        logger.info(f"Saved to local storage: {full_path}")
+    
+    def read(self, latest_run_id: str, seasons: list) -> pd.DataFrame:
+        pass

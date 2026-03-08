@@ -10,4 +10,3 @@ class BuildDataService:
         raw_tables = CollectRawNBAData(date_to_run=self.date).gather_and_import_nba_data(table_name=table_name, season_id=season_id, season_year=season_year)
 
         return raw_tables
-    
