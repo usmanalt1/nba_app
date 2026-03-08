@@ -29,3 +29,31 @@ services:
         target: /nba_app
     
     container_name: nba_app_backend
+
+  dagster-webserver:
+    build: .
+    command: dagster-webserver -h 0.0.0.0 -p 3000 -f /nba_app/dagster/definitions.py -d /nba_app/dagster
+    env_file:
+      - .env
+    environment:
+      DAGSTER_HOME: /nba_app/dagster_home
+    ports:
+      - "3000:3000"
+    volumes:
+      - type: bind
+        source: .
+        target: /nba_app
+    container_name: dagster_webserver
+
+  dagster-daemon:
+    build: .
+    command: dagster-daemon run -f /nba_app/dagster/definitions.py -d /nba_app/dagster
+    env_file:
+      - .env
+    environment:
+      DAGSTER_HOME: /nba_app/dagster_home
+    volumes:
+      - type: bind
+        source: .
+        target: /nba_app
+    container_name: dagster_daemon

@@ -18,6 +18,7 @@ class BigQueryService:
         self.settings = settings
     
     def load_latest_data_from_gcs_to_bigquery(self, seasons: list, dataset_id: str = settings.BIGQUERY_DATASET_ID) -> None:
+        logger.info(f"Starting to load data from GCS to BigQuery for seasons: {seasons}")
         self._create_dataset(dataset_id=dataset_id)
         latest_file_names, latest_run_id = self._get_latest_gcs_files()
         for file_name in latest_file_names:

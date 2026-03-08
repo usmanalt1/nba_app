@@ -90,3 +90,4 @@ Thumbs.db
 
 # Ignore migrations if you want to exclude them (uncomment if needed)
 # backend/src/app/migrations/
+dagster_home/
