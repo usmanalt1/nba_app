@@ -1,12 +1,24 @@
 version: 2
 
 sources:
-  - name: nba_test
+  - name: nba_dataset
     description: "Source data for NBA statistics"
     tables:
-      - name: app_playerstats
+      - name: player_stats
         description: "Raw data of NBA players"
-      - name: app_teamstats
+      - name: players_info
+        description: "Raw data of NBA player information"
+      - name: team_stats
         description: "Raw data of NBA teams"
-      - name: app_teammatchups
-        description: "Raw data of NBA team matchups"
+      - name: season_record
+        description: "Raw data of NBA season records"
+      - name: teams_info
+        description: "Raw data of NBA team information"
+      - name: teams_roster
+        description: "Raw data of NBA team rosters"
+      - name: team_info
+        description: "Backward-compatible alias for teams_info"
+        identifier: teams_info
+      - name: player_info
+        description: "Backward-compatible alias for players_info"
+        identifier: players_info
