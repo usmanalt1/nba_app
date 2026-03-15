@@ -1,18 +1,34 @@
 version: 2
 
 models:
-  - name: stg_nba_player_stats
+  - name: stg_nba_player_logs
     config:
       materialized: view
-    alias: staging_nba_player_stats
+    alias: staging_nba_player_logs
     description: "This view contains player statistics sourced from the NBA API."
-  - name: stg_nba_team_stats
+  - name: stg_nba_team_logs
     config:
       materialized: view
-    alias: staging_nba_team_stats
+    alias: staging_nba_team_logs
     description: "This view contains stats for teams"
-  - name: stg_nba_team_matchups
+  - name: stg_nba_season_record
     config:
       materialized: view
-    alias: staging_nba_team_matchups
-    description: "This view contains stats for team matchups"
+    alias: staging_nba_season_record
+    description: "This view contains season records for NBA seasons"
+  - name: stg_nba_players
+    config:
+      materialized: view
+    alias: staging_nba_players
+    description: "This view contains player information for NBA players"
+  - name: stg_nba_teams
+    config:
+      materialized: view
+    alias: staging_nba_teams
+    description: "This view contains team information for NBA teams"  
+  - name: stg_nba_rosters
+    config:
+      materialized: view
+    alias: staging_nba_rosters
+    description: "This view contains roster information for NBA teams."
+    

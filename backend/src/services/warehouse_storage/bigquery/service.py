@@ -21,6 +21,7 @@ class BigQueryService:
         logger.info(f"Starting to load data from GCS to BigQuery for seasons: {seasons}")
         self._create_dataset(dataset_id=dataset_id)
         latest_file_names, latest_run_id = self._get_latest_gcs_files()
+        df["run_timestamp"] = pd.Timestamp.now()
         for file_name in latest_file_names:
             df = ObjectStorageService().get_storage().read(latest_run_id=latest_run_id, seasons=seasons, table=file_name)
             table_id = file_name
@@ -30,7 +31,7 @@ class BigQueryService:
                 dataset_id=dataset_id,
                 table_id=table_id,
                 project=self.settings.GCS_PROJECT_NAME,
-                write_disposition="WRITE_TRUNCATE",
+                write_disposition="WRITE_APPEND",
             )
 
     def _get_latest_gcs_files(self, bucket_name: str = settings.PARENT_BUCKET) -> Tuple[List[str], str]:
