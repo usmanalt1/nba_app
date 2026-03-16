@@ -19,20 +19,29 @@ class CollectRawNBAData(TransformHelper, Constants):
         self.season_id = self.create_season_id_year().get("season_id")
         self.season_year = self.create_season_id_year().get("season_year")
         self.headers = {
-            'Host': 'stats.nba.com',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:72.0) Gecko/20100101 Firefox/72.0',
-            'Accept': 'application/json, text/plain, */*',
-            'Accept-Language': 'en-US,en;q=0.5',
-            'Accept-Encoding': 'gzip, deflate, br',
-            'x-nba-stats-origin': 'stats',
-            'x-nba-stats-token': 'true',
-            'Connection': 'keep-alive',
-            'Referer': 'https://stats.nba.com/',
-            'Pragma': 'no-cache',
-            'Cache-Control': 'no-cache',
+            "Accept": "application/json, text/plain, /",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "Host": "stats.nba.com",
+            "Origin": "https://www.nba.com",
+            "Pragma": "no-cache",
+            "Referer": "https://www.nba.com/",
+            "Sec-Ch-Ua": '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
+            "Sec-Ch-Ua-Mobile": "?0",
+            "Sec-Ch-Ua-Platform": '"Windows"',
+            "Sec-Fetch-Dest": "empty",
+            "Sec-Fetch-Mode": "cors",
+            "Sec-Fetch-Site": "same-site",
+            "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/131.0.0.0 Safari/537.36"
+            ),
         }
 
-    def gather_and_import_nba_data(self, table_name = None, season_id: str = None, season_year: str = None):
+    def gather_and_import_nba_data(self, table_name = None, season_id: str = None, season_year: str = None, team_roster = None) -> dict:
         if season_id is None:
             season_id = self.season_id
         if season_year is None:
@@ -55,18 +64,18 @@ class CollectRawNBAData(TransformHelper, Constants):
             df_season = self._get_season_record(season_id=season_id)
             df_teams = self._get_team_info()
             df_players = self._get_players_info()
-            df_teams_roster = self._get_team_roster(df_team_info=df_teams, season_year=season_year, season_id=season_id)
             df_team_logs = self._get_logs(season_year=season_year, pt_abbreviation="T")
             df_player_logs = self._get_logs(season_year=season_year, pt_abbreviation="P")
 
             nba_data_dict = {
                 self.SEASON_RECORD: df_season,
                 self.TEAMS_INFO: df_teams,
-                self.TEAMS_ROSTER: df_teams_roster,
                 self.PLAYERS_INFO: df_players,
                 self.TEAM_STATS: df_team_logs,
                 self.PLAYER_STATS: df_player_logs,
             }
+            if team_roster:
+                nba_data_dict[self.TEAMS_ROSTER] = self._get_team_roster(df_team_info=df_teams, season_year=season_year, season_id=season_id)
         return nba_data_dict
 
     def _get_season_record(self, season_id: str) -> pd.DataFrame:

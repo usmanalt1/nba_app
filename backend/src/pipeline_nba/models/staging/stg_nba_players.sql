@@ -1,5 +1,5 @@
 SELECT
-    player_id,
+    id AS player_id,
     full_name AS player_name,
     first_name,
     last_name,

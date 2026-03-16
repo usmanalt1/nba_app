@@ -56,12 +56,14 @@ class GCSStorage(ObjectStorageBase):
     
     def read(self, latest_run_id: str, seasons: list, table: str) -> pd.DataFrame:
         dfs = []
+        run_timestamp = pd.Timestamp.now()
         for season in seasons:
             path = f"{self.bucket}/{latest_run_id}/season={season}/{table}.{self.file_format}"
             try:
                 with self.fs.open(path, "rb") as f:
                     df = pd.read_parquet(f)
                     df["season"] = season
+                    df["run_timestamp"] = run_timestamp
                     dfs.append(df)
             except FileNotFoundError:
                 logger.warning(f"No data for season={season}, table={table}")
