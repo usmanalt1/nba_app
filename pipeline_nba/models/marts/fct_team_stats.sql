@@ -1,11 +1,7 @@
-SELECT
-    CAST(season_id AS STRING) AS season_id,
+select 
+    season_id,
     team_id,
-    team_abbreviation,
-    team_name,
     game_id,
-    game_date,
-    matchup,
     wl,
     min,
     fgm,
@@ -28,5 +24,4 @@ SELECT
     pts,
     plus_minus,
     season,
-    run_timestamp
-FROM {{ get_latest_by_run_timestamp('team_stats', 'team_id, game_id') }}
+FROM {{ ref('stg_nba_team_logs') }}

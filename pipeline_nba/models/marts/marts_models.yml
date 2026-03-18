@@ -1,0 +1,42 @@
+version: 2
+
+models:
+  - name: dim_players
+    config:
+      materialized: table
+    alias: dim_players
+    description: "This table contains dimension data for NBA players, including player information and statistics."
+  - name: dim_teams
+    config:
+      materialized: table
+    alias: dim_teams
+    description: "This table contains dimension data for NBA teams, including team information and statistics."
+  - name: dim_games
+    config:
+      materialized: table
+    alias: dim_games
+    description: "This table contains dimension data for NBA games, including game information and statistics."
+  - name: dim_seasons
+    config:
+      materialized: table
+    alias: dim_seasons
+    description: "This table contains dimension data for NBA seasons, including season information and statistics."
+  - name: dim_rosters
+    config:
+      materialized: table
+    alias: dim_rosters
+    description: "This table contains dimension data for NBA rosters, including roster information and statistics."
+  - name: fct_player_stats
+    config:
+      materialized: incremental
+      unique_key: ['player_id', 'game_id']
+      incremental_strategy: merge
+    alias: fct_player_stats
+    description: "This table contains fact data for NBA player statistics, including performance metrics for each player in each game."
+  - name: fct_team_stats
+    config:
+      materialized: incremental
+      unique_key: ['team_id', 'game_id']
+      incremental_strategy: merge
+      alias: fct_team_stats
+    description: "This table contains fact data for NBA team statistics, including performance metrics for each team in each game."

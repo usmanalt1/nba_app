@@ -32,5 +32,12 @@ clean-targets:         # directories to be removed by `dbt clean`
 models:
   nba_project:
     # Config indicated by + and applies to all files under models/example/
-    example:
+    staging:
+      +schema: staging        # → your_project.dbt_dev_staging
       +materialized: view
+    intermediate:
+      +schema: intermediate   # → your_project.dbt_dev_intermediate
+      +materialized: view
+    marts:
+      +schema: marts          # → your_project.dbt_dev_marts
+      +materialized: table

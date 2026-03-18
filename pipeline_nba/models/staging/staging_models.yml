@@ -1,12 +1,12 @@
 version: 2
 
 models:
-  - name: stg_nba_player_logs
+  - name: staging_nba_player_logs
     config:
       materialized: view
     alias: staging_nba_player_logs
     description: "This view contains player statistics sourced from the NBA API."
-  - name: stg_nba_team_logs
+  - name: staging_nba_team_logs
     config:
       materialized: view
     alias: staging_nba_team_logs

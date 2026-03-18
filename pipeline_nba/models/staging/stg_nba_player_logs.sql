@@ -31,4 +31,4 @@ SELECT
     plus_minus,
     season,
     run_timestamp
-FROM {{ source('nba_dataset', 'player_stats') }}
+FROM {{ get_latest_by_run_timestamp('player_stats', 'player_id, game_id') }}

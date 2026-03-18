@@ -1,0 +1,13 @@
+version: 2
+
+models:
+  - name: int_player_team_history
+    config:
+      materialized: view
+    alias: int_player_team_history
+    description: "This view contains the history of player-team associations, showing which players were on which teams for each season."
+  - name: int_home_away_games
+    config:
+      materialized: view
+    alias: int_home_away_games
+    description: "This view contains information about home and away games, including team statistics for each location."
