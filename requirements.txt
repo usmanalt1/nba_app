@@ -1,5 +1,5 @@
 sqlalchemy
-psycopg2
+psycopg2-binary
 pytz
 mysqlclient
 pymysql
@@ -26,3 +26,4 @@ gcsfs
 google-cloud-bigquery 
 google-cloud-storage
 pyArrow
+duckdb

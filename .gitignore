@@ -83,6 +83,7 @@ profiles.yml
 # Environment variables
 .env
 .env.*
+*.duckdb
 
 # System files
 Thumbs.db

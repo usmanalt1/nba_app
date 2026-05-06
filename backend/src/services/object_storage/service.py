@@ -10,15 +10,15 @@ from logging import getLogger
 logger = getLogger(__name__)
 
 class ObjectStorageService:
-    def __init__(self):
-        self.generate_run_id = pd.Timestamp.now().strftime("%Y%m%d%H%M%S")
-        self.factory = {
-            "local": LocalStorage(generate_run_id=self.generate_run_id),
-            "gcs": GCSStorage(generate_run_id=self.generate_run_id),
-        }
+    
+    def __init__(self, generate_run_id=None):
+        self.generate_run_id = generate_run_id or pd.Timestamp.now().strftime("%Y%m%d%H%M%S")
 
     def get_storage(self) -> "ObjectStorageBase":
-        return self.factory[settings.STORAGE]
+        if settings.STORAGE == "gcs":
+            return GCSStorage(generate_run_id=self.generate_run_id)
+        else:
+            return LocalStorage(generate_run_id=self.generate_run_id)
 
 class ObjectStorageBase(ABC):
     @abstractmethod
@@ -75,10 +75,10 @@ class LocalStorage(ObjectStorageBase):
         self.file_format = self.settings.FILE_FORMAT
         self.parent_dir = self.settings.PARENT_BUCKET
         self.generate_run_id = generate_run_id
+        self.path = f"{self.parent_dir}/{self.generate_run_id}"
 
     def save(self, df: pd.DataFrame, file_name: str, season: str) -> None:
-        # ensure target directory exists
-        file_path = f"{self.parent_dir}/{self.generate_run_id}/season={season}"
+        file_path = f"{self.path}/season={season}"
         try:
             os.makedirs(file_path, exist_ok=True)
         except Exception:
@@ -99,5 +99,19 @@ class LocalStorage(ObjectStorageBase):
 
         logger.info(f"Saved to local storage: {full_path}")
     
-    def read(self, latest_run_id: str, seasons: list) -> pd.DataFrame:
-        pass
+    def read(self, latest_run_id: str, seasons: list, table: str) -> pd.DataFrame:
+        dfs = []
+        run_timestamp = pd.Timestamp.now()
+        for season in seasons:
+            file_path = f"{self.parent_dir}/{latest_run_id}/season={season}/{table}.{self.file_format}"
+            if os.path.exists(file_path):
+                try:
+                    df = pd.read_parquet(file_path)
+                    df["season"] = season
+                    df["run_timestamp"] = run_timestamp
+                    dfs.append(df)
+                except Exception:
+                    logger.exception(f"Failed to read parquet file: {file_path}")
+            else:
+                logger.warning(f"No data for season={season}, table={table} at path: {file_path}")
+        return pd.concat(dfs, ignore_index=True) if dfs else pd.DataFrame()
