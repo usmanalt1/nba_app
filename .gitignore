@@ -84,6 +84,7 @@ profiles.yml
 .env
 .env.*
 *.duckdb
+myenv/*
 
 # System files
 Thumbs.db

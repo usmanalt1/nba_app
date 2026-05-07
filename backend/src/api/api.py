@@ -1,4 +1,5 @@
 # api.py
+import pandas as pd
 from ninja import Router
 from ninja import Schema
 from ninja import NinjaAPI
@@ -71,11 +72,13 @@ async def collect_data_by_season(request, season_year: str):
             split_year = season_year.split("-")
             season_id = f"{split_year[0][-2:]}0{split_year[1][-2:]}"
             object_storage_service = ObjectStorageService().get_storage()
+            run_timestamp = pd.Timestamp.now()
             def sync_collect_and_upsert_for_date(object_storage_service=object_storage_service):
                 raw_tables = BuildDataService().build_nba_data(season_id=season_id, season_year=season_year)
                 logger.info(f"Raw NBA data for table collected successfully.")
 
                 for table_name, df in raw_tables.items():
+                    df["run_timestamp"] = run_timestamp
                     object_storage_service.save(df=df, file_name=table_name, season=season_year)
                     logger.info(f"NBA data for table {table_name} saved to object storage successfully.")
 

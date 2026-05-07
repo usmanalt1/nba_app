@@ -3,6 +3,7 @@ version: 2
 sources:
   - name: nba_dataset
     description: "Source data for NBA statistics"
+    schema: test
     tables:
       - name: player_stats
         description: "Raw data of NBA players"
