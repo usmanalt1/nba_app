@@ -26,3 +26,5 @@ gcsfs
 google-cloud-bigquery 
 google-cloud-storage
 pyArrow
+kafka-python
+duckdb
