@@ -89,12 +89,16 @@ async def collect_data_by_season(request, season_year: str):
         
         return NBADataResponseSchema(success=True)
 
-@router.get("/collect/season/{season_year}/{seasons}", response=NBADataResponseSchema)
-async def collect_data_by_number_of_seasons(request, season_year: str, seasons: int, team_roster: bool = False):
+@router.get("/collect/season/{season_year}/{seasons}/team_roster={team_roster}", response=NBADataResponseSchema)
+async def collect_data_by_number_of_seasons(request, season_year: str, seasons: int, team_roster: bool):
         try:
             #team_roster parameter
             #season_year format "2022-23"
             #TODO validate season_year format
+            if team_roster:
+                logger.info("validate team_roster")
+                if not isinstance(team_roster, bool):
+                    raise ValueError("team_roster parameter must be a boolean value (true or false)")
             split_year = season_year.split("-")
             season_id = f"{split_year[0][-2:]}0{split_year[1][-2:]}"
             object_storage_service = ObjectStorageService().get_storage()
