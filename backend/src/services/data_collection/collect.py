@@ -5,7 +5,7 @@ from nba_api.stats.endpoints import teamgamelog
 import pandas as pd
 from services.data_collection.transformer_helper import TransformHelper
 import logging
-from nba_api.stats.endpoints import leagueleaders, teamdashboardbygeneralsplits, leaguegamefinder
+from nba_api.stats.endpoints import leagueleaders, teamdashboardbygeneralsplits, leaguegamefinder, playbyplayv3
 from nba_api.stats.endpoints import leaguegamelog
 from http.client import RemoteDisconnected
 from services.data_collection.constants import Constants
@@ -66,6 +66,7 @@ class CollectRawNBAData(TransformHelper, Constants):
             df_players = self._get_players_info()
             df_team_logs = self._get_logs(season_year=season_year, pt_abbreviation="T")
             df_player_logs = self._get_logs(season_year=season_year, pt_abbreviation="P")
+            df_team_matchups = self._get_team_matchups(team_roster=df_teams, season_year=season_year)
 
             nba_data_dict = {
                 self.SEASON_RECORD: df_season,
@@ -73,6 +74,7 @@ class CollectRawNBAData(TransformHelper, Constants):
                 self.PLAYERS_INFO: df_players,
                 self.TEAM_STATS: df_team_logs,
                 self.PLAYER_STATS: df_player_logs,
+                self.TEAM_MATCHUPS: df_team_matchups
             }
             if team_roster:
                 nba_data_dict[self.TEAMS_ROSTER] = self._get_team_roster(df_team_info=df_teams, season_year=season_year, season_id=season_id)
@@ -212,16 +214,14 @@ class CollectRawNBAData(TransformHelper, Constants):
         logging.info("...Raw Team Season Averages DF Generated")
         return df_all_team_logs
 
-    def _get_team_matchups(self) -> pd.DataFrame:
-        team_roster = self._get_team_info()
+    def _get_team_matchups(self, team_roster: pd.DataFrame, season_year: str) -> pd.DataFrame:
         team_roster_ids = pd.unique(team_roster["id"]).tolist()
         logging.info("Count of Team IDs: {}".format(len(team_roster_ids)))
         all_games = pd.DataFrame()
         logging.info(f"Team IDs for Matchups: {team_roster_ids}")
-        logging.info("Count of Team IDs: {}".format(len(team_roster_ids)))
 
         for team_id in team_roster_ids:
-            gamefinder = leaguegamefinder.LeagueGameFinder(team_id_nullable=team_id)
+            gamefinder = leaguegamefinder.LeagueGameFinder(team_id_nullable=team_id, season_nullable=season_year)
             games = gamefinder.get_data_frames()[0]
             games = self.clean_dataframe(games)
             all_games = pd.concat([all_games, games], ignore_index=True)
@@ -229,3 +229,6 @@ class CollectRawNBAData(TransformHelper, Constants):
         logging.info("...Raw Team Matchups DF Generated")
         all_games = all_games.dropna()
         return all_games
+
+    def _play_by_play(self) -> pd.DataFrame:
+        playbyplayv3.PlayByPlayV3(game_id="0022200001").get_data_frames()[0]

@@ -11,3 +11,8 @@ models:
       materialized: view
     alias: int_home_away_games
     description: "This view contains information about home and away games, including team statistics for each location."
+  - name: int_players_rosters
+    config:
+      materialized: view
+    alias: int_players_rosters
+    description: "This view contains information about player rosters, including player details and their associated teams for each season."
