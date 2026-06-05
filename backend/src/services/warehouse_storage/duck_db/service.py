@@ -10,7 +10,7 @@ from logging import getLogger
 logger = getLogger(__name__)
 
 class DuckDBService:
-    def __init__(self, file_path_parent_name: str = "nba_data", db_path: str = "nba_dataset.duckdb"):
+    def __init__(self, file_path_parent_name: str = "nba-ua-dev-bucket", db_path: str = "nba_dataset.duckdb"):
         self.db_path = db_path
         self.file_path_parent_name = file_path_parent_name
         self._create_duckdb_database(db_path=self.db_path)
