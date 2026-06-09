@@ -15,7 +15,9 @@ services:
       retries: 10
 
   nba_app_backend:
-    build: .
+    build:
+      context: .
+      dockerfile: docker/backend.Dockerfile
     env_file:
       - .env
     depends_on:
@@ -30,8 +32,23 @@ services:
     
     container_name: nba_app_backend
 
+  nba_app_frontend:
+    build:
+      context: ./frontend
+      dockerfile: ../docker/frontend.Dockerfile
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - nba_app_backend
+    container_name: nba_app_frontend
+  
   dagster-webserver:
-    build: .
+    build:
+      context: .
+      dockerfile: docker/backend.Dockerfile
     command: dagster-webserver -h 0.0.0.0 -p 3000 -f /nba_app/dagster/definitions.py -d /nba_app/dagster
     env_file:
       - .env
@@ -46,7 +63,9 @@ services:
     container_name: dagster_webserver
 
   dagster-daemon:
-    build: .
+    build:
+      context: .
+      dockerfile: docker/backend.Dockerfile
     command: dagster-daemon run -f /nba_app/dagster/definitions.py -d /nba_app/dagster
     env_file:
       - .env
