@@ -1,7 +1,9 @@
 import { BrowserRouter as Router} from 'react-router-dom';
 import {useState} from 'react';
+import { MantineProvider } from '@mantine/core';
+import '@mantine/core/styles.css'; // don't forget this, classic gotcha
+import { Navbar } from './components/Navbar/MatineNavbar';
 
-import './App.css'
 
 function App() {
   
@@ -17,13 +19,13 @@ function App() {
 };
 
   return (
-    <Router>
-      <div>
-        <h1>NBA</h1>
-        <button onClick={handleClick}>Run Api</button>
-        {data}
-      </div>
-    </Router>
+    <MantineProvider>
+      <Router>
+        <div style={{ display: 'flex', height: '100vh' }}>
+          <Navbar />
+        </div>
+      </Router>
+    </MantineProvider>
   )
 }
 
