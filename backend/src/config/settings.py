@@ -20,5 +20,9 @@ class Settings(BaseSettings):
     snowflake_database: Optional[str] = None
     snowflake_schema: Optional[str] = None
     snowflake_rsa_private_key_path: Optional[str] = None
+    DB_USER: str = "admin"
+    DB_PASSWORD: str = "admin"
+    DB_NAME: str = "backend_db"
+    DB_HOST: str = "postgres-host-1"
 
 settings = Settings()

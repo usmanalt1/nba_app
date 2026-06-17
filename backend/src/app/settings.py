@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -76,12 +77,12 @@ WSGI_APPLICATION = "app.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.mysql",
-        "NAME": "nba_test",
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": "backend_db",
         "USER": "admin",
         "PASSWORD": "admin",
-        "HOST": "mysql-host",
-        "PORT": "3307",
+        "HOST": "nba_app-postgres-host-1",
+        "PORT": "5432",
     }
 }
 

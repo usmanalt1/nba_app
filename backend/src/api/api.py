@@ -127,6 +127,19 @@ async def collect_data_by_number_of_seasons(request, season_year: str, seasons: 
         
         return NBADataResponseSchema(success=True)
 
+@router.get("/load_to_postgres", response=NBADataResponseSchema)
+async def load_data_to_postgres(request):
+    # seasons is a comma separated string of number of seasons to load, e.g. "1,2,3"
+    try:
+        def sync_load_data():
+            db_operations = DBService()
+            db_operations.save()
+        
+        await asyncio.to_thread(sync_load_data)
+    except Exception as e:
+        logger.error(f"Error loading data from object storage to Postgres: {e}")
+        return NBADataResponseSchema(success=False, error=str(e))
+    
 @router.get("/load_to_bigquery/{seasons}", response=NBADataResponseSchema)
 async def load_data_from_gcs_to_bigquery(request, seasons: str):
     # seasons is a comma separated string of number of seasons to load, e.g. "1,2,3"
@@ -177,6 +190,8 @@ async def collect_data_by_table_season(request, table_name: str, season_year: st
         return NBADataResponseSchema(success=False, error=str(e))
     
     return NBADataResponseSchema(success=True)
+
+
 
 @router.get("/stats/{table_name}")
 async def get_table_data(request, table_name: str):

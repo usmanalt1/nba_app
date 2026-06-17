@@ -1,12 +1,15 @@
 from logging import getLogger
+from pathlib import Path
 from app.models import SeasonRecord, TeamInfo, PlayerInfo, TeamRoster, TeamStats, PlayerStats, TeamMatchups
-import polars as pl
 from sqlalchemy import create_engine
 import os
 from services.db.models_upsert import TableModelFactory
+from services.interface import StorageBase
+import pandas as pd
+from config.settings import settings
 
 logger = getLogger(__name__)
-class DBService:
+class DBService(StorageBase):
     def __init__(self):
         self.table_model_map = {
             "season_record": SeasonRecord,
@@ -15,21 +18,53 @@ class DBService:
             "teams_roster": TeamRoster,
             "team_stats": TeamStats,
             "player_stats": PlayerStats,
+            "team_matchups": TeamMatchups
         }
         self.user = os.getenv("DB_USER")
         self.password = os.getenv("DB_PASSWORD")
         self.db_name = os.getenv("DB_NAME")
-        self.engine = create_engine(f"mysql+pymysql://{self.user}:{self.password}@mysql-host:3307/{self.db_name}")
+        self.postgres_host = os.getenv("DB_HOST")
+        self.engine = create_engine(f"postgresql://{self.user}:{self.password}@{self.postgres_host}:5432/{self.db_name}")
+        self.file_path_parent_name = os.getenv("FILE_PATH_PARENT_NAME")
+
+    def _get_latest_files_using_path(self) -> dict:
+        # If path is nba_data/run_id/season=season_id/table_name.parquet, we want to get the latest run_id and read all files for that run_id
+        parent_path = Path(self.file_path_parent_name)
+        if not parent_path.exists():
+            logger.warning(f"Parent path {self.file_path_parent_name} does not exist. No data loaded into DuckDB.")
+            return {}
+        run_ids = [d.name for d in parent_path.iterdir() if d.is_dir()]
+        if not run_ids:
+            logger.warning(f"No run_id directories found in {self.file_path_parent_name}. No data loaded into DuckDB.")
+            return {}
+        latest_run_id = max(run_ids)
+        logger.info(f"Latest run_id found: {latest_run_id}")
+        latest_run_path = parent_path / latest_run_id
+        table_dict = {}
+        for season_dir in latest_run_path.iterdir():
+            if season_dir.is_dir() and season_dir.name.startswith("season="):
+                for file in season_dir.iterdir():
+                    if file.is_file() and file.suffix == f".{settings.FILE_FORMAT}":
+                        table_name = file.stem
+                        try:
+                            prev_df = table_dict.get(table_name, pd.DataFrame())
+                            df = pd.read_parquet(file)
+                            if prev_df.empty:
+                                table_dict[table_name] = df
+                            else:
+                                all_df = pd.concat([prev_df, df], ignore_index=True)
+                                table_dict[table_name] = all_df
+                            logger.info(f"Loaded file {file} into DataFrame for table {table_name}")
+                        except Exception:
+                            logger.exception(f"Failed to read parquet file: {file}")
+        return table_dict
     
-    def upsert_nba_data(self, raw_tables: dict, get_table_name: str = None) -> None:
+    def save(self) -> None:
         logger.info("Starting upsert of NBA data into the database")
-        if get_table_name:
-            self.table_model_map["team_matchups"] = TeamMatchups
-            self.table_model_map = {
-                get_table_name: self.table_model_map.get(get_table_name)}
+        dfs = self._get_latest_files_using_path()
         try:
             for table_name, model in self.table_model_map.items():
-                df = raw_tables.get(table_name)
+                df: dict = dfs.get(table_name)
                 logger.info(f"Upserting data for table: {table_name}, Number of records: {len(df) if df is not None else 0}")
                 if not df.empty:
                     logger.info(f"Upserting data for table: {table_name}")
@@ -40,17 +75,8 @@ class DBService:
         except Exception as e:
             logger.error(f"Error during upsert operation: {e}")
             raise
-
-    def get_table_data(self, table_name: str) -> dict:
-        try:
-            query = f"SELECT * FROM {table_name}"
-            df = pl.read_database(
-                query=query,
-                connection=self.engine
-            )
-            return df.to_dicts()
-        except Exception as e:
-            logger.error(f"Error retrieving data from table {table_name}: {e}")
-            raise
+    
+    def read():
+        pass
     
     

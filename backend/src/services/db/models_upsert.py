@@ -22,15 +22,15 @@ class TeamInfo(TableModel):
 class TeamStats(TableModel):
     def upsert(self, model, record):
         model.objects.update_or_create(
-            date=record["date"],
+            game_id=record["game_id"],
             team_id=record["team_id"],
-            season_year=record["season_year"],
+            season_id=record["season_id"],
             defaults=record
         )
 class PlayerStats(TableModel):
     def upsert(self, model, record):
         model.objects.update_or_create(
-            date=record["date"],
+            game_id=record["game_id"],
             player_id=record["player_id"],
             season_id=record["season_id"],
             defaults=record
@@ -65,7 +65,7 @@ class TableModelFactory:
     def get_table_model(table: str) -> TableModel:
         table_model = {
             "season_record": SeasonRecord(),
-            "team_info": TeamInfo(),
+            "teams_info": TeamInfo(),
             "team_stats": TeamStats(),
             "player_stats": PlayerStats(),
             "players_info": PlayersInfo(),

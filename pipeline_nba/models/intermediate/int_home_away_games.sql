@@ -8,7 +8,8 @@ WITH home AS (
         team_abbreviation AS home_team_abbreviation,
         team_name         AS home_team_name,
         wl                AS home_wl,
-        pts               AS home_pts
+        pts               AS home_pts,
+        run_timestamp
     FROM {{ ref('stg_nba_team_logs') }}
     WHERE matchup LIKE '%vs.%'
 ),
@@ -19,7 +20,8 @@ away AS (
         team_abbreviation AS away_team_abbreviation,
         team_name         AS away_team_name,
         wl                AS away_wl,
-        pts               AS away_pts
+        pts               AS away_pts,
+        run_timestamp
     FROM {{ ref('stg_nba_team_logs') }}
     WHERE matchup LIKE '%@%'
 )
@@ -39,5 +41,6 @@ SELECT
     a.away_team_name,
     a.away_pts,
     a.away_wl
+    a.run_timestamp
 FROM home h
-INNER JOIN away a ON h.game_id = a.game_id
+INNER JOIN away a ON h.game_id = a.game_id and h.run_timestamp = a.run_timestamp
