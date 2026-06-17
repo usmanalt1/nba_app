@@ -14,6 +14,21 @@ services:
       timeout: 20s
       retries: 10
 
+  postgres-host:
+    image: postgres
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: backend_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./docker/postgres/init.sh:/docker-entrypoint-initdb.d/init.sh
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "admin"]
+      timeout: 20s
+      retries: 10
+
   nba_app_backend:
     build:
       context: .

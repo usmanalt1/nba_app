@@ -28,4 +28,5 @@ google-cloud-storage
 pyArrow
 duckdb
 dbt-duckdb
+dbt-postgres
 snowflake-snowpark-python

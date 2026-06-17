@@ -2,7 +2,7 @@ import os
 import pandas as pd
 import gcsfs
 from config.settings import settings
-from abc import ABC, abstractmethod
+from services.interface import StorageBase
 from google.cloud import storage
 import pyarrow.dataset as ds
 
@@ -14,22 +14,13 @@ class ObjectStorageService:
     def __init__(self, generate_run_id=None):
         self.generate_run_id = generate_run_id or pd.Timestamp.now().strftime("%Y%m%d%H%M%S")
 
-    def get_storage(self) -> "ObjectStorageBase":
+    def get_storage(self) -> "StorageBase":
         if settings.STORAGE == "gcs":
             return GCSStorage(generate_run_id=self.generate_run_id)
         else:
             return LocalStorage(generate_run_id=self.generate_run_id)
 
-class ObjectStorageBase(ABC):
-    @abstractmethod
-    def save(self, df: pd.DataFrame, file_name: str, season: str) -> None:
-        pass
-
-    @abstractmethod
-    def read(self, latest_run_id: str, seasons: list, table: str) -> pd.DataFrame:
-        pass
-
-class GCSStorage(ObjectStorageBase):
+class GCSStorage(StorageBase):
     def __init__(self, generate_run_id=None):
         self.settings = settings
         self.file_format = self.settings.FILE_FORMAT
@@ -69,7 +60,7 @@ class GCSStorage(ObjectStorageBase):
                 logger.warning(f"No data for season={season}, table={table}")
         return pd.concat(dfs, ignore_index=True) if dfs else pd.DataFrame()
 
-class LocalStorage(ObjectStorageBase):
+class LocalStorage(StorageBase):
     def __init__(self, generate_run_id=None):
         self.settings = settings
         self.file_format = self.settings.FILE_FORMAT

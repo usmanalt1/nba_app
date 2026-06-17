@@ -24,4 +24,5 @@ select
     pts,
     plus_minus,
     season,
+    run_timestamp
 FROM {{ ref('stg_nba_team_logs') }}

@@ -8,5 +8,6 @@ SELECT
     t.city,
     t.state,
     t.year_founded,
-    t.season
+    t.season,
+    t.run_timestamp
 FROM {{ ref('stg_nba_teams') }} t

@@ -29,14 +29,14 @@ models:
   - name: fct_player_stats
     config:
       materialized: incremental
-      unique_key: ['player_id', 'game_id']
+      unique_key: ["season_id", "player_id", "team_id", "game_id"]
       incremental_strategy: merge
     alias: fct_player_stats
     description: "This table contains fact data for NBA player statistics, including performance metrics for each player in each game."
   - name: fct_team_stats
     config:
       materialized: incremental
-      unique_key: ['team_id', 'game_id']
+      unique_key: ["season_id", "team_id", "game_id"]
       incremental_strategy: merge
       alias: fct_team_stats
     description: "This table contains fact data for NBA team statistics, including performance metrics for each team in each game."
