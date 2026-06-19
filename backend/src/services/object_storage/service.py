@@ -4,7 +4,9 @@ import gcsfs
 from config.settings import settings
 from services.interface import StorageBase
 from google.cloud import storage
-import pyarrow.dataset as ds
+import pandas as pd
+from azure.core.exceptions import AzureError
+
 
 from logging import getLogger
 logger = getLogger(__name__)
@@ -17,6 +19,9 @@ class ObjectStorageService:
     def get_storage(self) -> "StorageBase":
         if settings.STORAGE == "gcs":
             return GCSStorage(generate_run_id=self.generate_run_id)
+        elif settings.STORAGE == "az":
+            logger.info("Saving to Azure Blob...")
+            return AzureBlobStorage(file_format=settings.FILE_FORMAT, run_id=self.generate_run_id)
         else:
             return LocalStorage(generate_run_id=self.generate_run_id)
 
@@ -59,6 +64,29 @@ class GCSStorage(StorageBase):
             except FileNotFoundError:
                 logger.warning(f"No data for season={season}, table={table}")
         return pd.concat(dfs, ignore_index=True) if dfs else pd.DataFrame()
+    
+
+class AzureBlobStorage(StorageBase):
+    def __init__(self, file_format: str, run_id: str):
+        self.settings = settings
+        self.container_name = self.settings.CONTAINER_NAME
+        self.file_format = file_format
+        self.latest_run_id = run_id
+
+    def save(self, df: pd.DataFrame, file_name: str, season: str) -> None:
+        blob_name = f"{self.latest_run_id}/season={season}/{file_name}.{self.file_format}"
+        logger.info(f"Saving file to {blob_name} in {self.container_name}...")
+        path = f"az://{self.container_name}/{blob_name}"
+        storage_options = {"connection_string": self.settings.CONN_STR}
+        try:
+            df.to_parquet(path, index=False, storage_options=storage_options)
+            logger.info(f"Saved file in blob: {path}")
+        except Exception:
+            logger.exception(f"Failed to write parquet to Azure Blob: {path}")
+            raise
+
+    def read(self, latest_run_id: str, seasons: list, table: str) -> pd.DataFrame:
+        pass
 
 class LocalStorage(StorageBase):
     def __init__(self, generate_run_id=None):

@@ -30,3 +30,7 @@ duckdb
 dbt-duckdb
 dbt-postgres
 snowflake-snowpark-python
+azure-storage-blob
+adlfs
+fsspec 
+azure-identity
