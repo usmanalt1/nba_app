@@ -40,7 +40,7 @@ SELECT
     a.away_team_abbreviation,
     a.away_team_name,
     a.away_pts,
-    a.away_wl
+    a.away_wl,
     a.run_timestamp
 FROM home h
 INNER JOIN away a ON h.game_id = a.game_id and h.run_timestamp = a.run_timestamp

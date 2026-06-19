@@ -1,5 +1,5 @@
 SELECT
-    CAST(season_id AS STRING) AS season_id,
+    CAST(season_id AS VARCHAR) AS season_id,
     player_id,
     player_name,
     team_id,

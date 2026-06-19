@@ -1,13 +1,11 @@
 -- scd1 dim rosters - rewritten everytime
 SELECT 
     player_id,
-    season_id,
     player_name,
-    age,
-    position,
-    first_name,
-    last_name,
-    is_active,
-    season,
-    run_timestamp
+    team_id,
+    team_abbreviation,
+    season_id,
+    first_game_with_team,
+    last_game_with_team,
+    was_traded
 FROM {{ ref('int_player_team_history') }}

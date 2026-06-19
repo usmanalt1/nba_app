@@ -12,6 +12,6 @@ select
     r.run_timestamp
 FROM {{ ref('stg_nba_players') }} p
 left join {{ ref('stg_nba_rosters') }} r
-    on CAST(p.player_id AS STRING) = r.player_id
+    on CAST(p.player_id AS VARCHAR) = r.player_id
     and p.season_id = r.season_id
     and p.run_timestamp = r.run_timestamp

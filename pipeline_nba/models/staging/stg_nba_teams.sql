@@ -6,7 +6,7 @@ SELECT
     city,
     state,
     year_founded,
-    CAST(season_id AS STRING) AS season_id,
+    CAST(season_id AS VARCHAR) AS season_id,
     season,
     run_timestamp
 FROM {{ get_latest_by_run_timestamp('teams_info', 'id, season_id') }}

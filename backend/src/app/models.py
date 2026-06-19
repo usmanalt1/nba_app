@@ -6,6 +6,9 @@ class SeasonRecord(models.Model):
     season = models.CharField(max_length=20, null=True, blank=True)
     run_timestamp = models.DateTimeField(null=True, blank=True)
 
+    class Meta:
+        db_table = 'season_record'
+
 
 class TeamInfo(models.Model):
     season_id = models.IntegerField()
@@ -18,6 +21,9 @@ class TeamInfo(models.Model):
     season = models.CharField(max_length=20, null=True, blank=True)
     run_timestamp = models.DateTimeField(null=True, blank=True)
 
+    class Meta:
+        db_table = 'teams_info'
+
 
 class PlayerInfo(models.Model):
     season_id = models.IntegerField()
@@ -27,6 +33,9 @@ class PlayerInfo(models.Model):
     is_active = models.BooleanField()
     season = models.CharField(max_length=20, null=True, blank=True)
     run_timestamp = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'players_info'
 
 
 class TeamRoster(models.Model):
@@ -38,6 +47,9 @@ class TeamRoster(models.Model):
     position = models.CharField(max_length=20, null=True, blank=True)
     season = models.CharField(max_length=20, null=True, blank=True)
     run_timestamp = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'teams_roster'
 
 
 class PlayerStats(models.Model):
@@ -76,6 +88,9 @@ class PlayerStats(models.Model):
     season = models.CharField(max_length=20, null=True, blank=True)
     run_timestamp = models.DateTimeField(null=True, blank=True)
 
+    class Meta:
+        db_table = 'player_stats'
+
 
 class TeamStats(models.Model):
     season_id = models.IntegerField()
@@ -110,6 +125,9 @@ class TeamStats(models.Model):
     season = models.CharField(max_length=20, null=True, blank=True)
     run_timestamp = models.DateTimeField(null=True, blank=True)
 
+    class Meta:
+        db_table = 'team_stats'
+
 
 class TeamMatchups(models.Model):
     season_id = models.IntegerField()
@@ -142,3 +160,6 @@ class TeamMatchups(models.Model):
     plus_minus = models.FloatField()
     season = models.CharField(max_length=20, null=True, blank=True)
     run_timestamp = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'team_matchups'
