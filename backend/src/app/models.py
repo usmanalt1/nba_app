@@ -163,3 +163,153 @@ class TeamMatchups(models.Model):
 
     class Meta:
         db_table = 'team_matchups'
+
+
+# ── Mart models (dbt-managed, read-only) ─────────────────────────────────────
+
+class DimPlayers(models.Model):
+    player_id = models.IntegerField(primary_key=True)
+    season_id = models.IntegerField()
+    player_name = models.CharField(max_length=100)
+    age = models.IntegerField(null=True, blank=True)
+    position = models.CharField(max_length=20, null=True, blank=True)
+    first_name = models.CharField(max_length=50, null=True, blank=True)
+    last_name = models.CharField(max_length=50, null=True, blank=True)
+    is_active = models.BooleanField(null=True, blank=True)
+    season = models.CharField(max_length=20, null=True, blank=True)
+    run_timestamp = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        managed = False
+        db_table = '"nba_marts"."dim_players"'
+
+
+class DimGames(models.Model):
+    game_id = models.CharField(max_length=20, primary_key=True)
+    game_date = models.DateField(null=True, blank=True)
+    season_id = models.IntegerField()
+    season = models.CharField(max_length=20, null=True, blank=True)
+    home_team_id = models.IntegerField()
+    home_team_abbreviation = models.CharField(max_length=10)
+    home_team_name = models.CharField(max_length=50)
+    home_pts = models.FloatField(null=True, blank=True)
+    home_wl = models.CharField(max_length=2, null=True, blank=True)
+    away_team_id = models.IntegerField()
+    away_team_abbreviation = models.CharField(max_length=10)
+    away_team_name = models.CharField(max_length=50)
+    away_pts = models.FloatField(null=True, blank=True)
+    away_wl = models.CharField(max_length=2, null=True, blank=True)
+    run_timestamp = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        managed = False
+        db_table = '"nba_marts"."dim_games"'
+
+
+class DimTeams(models.Model):
+    team_id = models.IntegerField(primary_key=True)
+    season_id = models.IntegerField()
+    team_name = models.CharField(max_length=50)
+    team_abbreviation = models.CharField(max_length=10)
+    nickname = models.CharField(max_length=50, null=True, blank=True)
+    city = models.CharField(max_length=50, null=True, blank=True)
+    state = models.CharField(max_length=50, null=True, blank=True)
+    year_founded = models.IntegerField(null=True, blank=True)
+    season = models.CharField(max_length=20, null=True, blank=True)
+    run_timestamp = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        managed = False
+        db_table = '"nba_marts"."dim_teams"'
+
+
+class DimRosters(models.Model):
+    player_id = models.IntegerField(primary_key=True)
+    player_name = models.CharField(max_length=100)
+    team_id = models.IntegerField()
+    team_abbreviation = models.CharField(max_length=10)
+    season_id = models.IntegerField()
+    first_game_with_team = models.DateField(null=True, blank=True)
+    last_game_with_team = models.DateField(null=True, blank=True)
+    was_traded = models.BooleanField(null=True, blank=True)
+
+    class Meta:
+        managed = False
+        db_table = '"nba_marts"."dim_rosters"'
+
+
+class DimSeasons(models.Model):
+    season_id = models.IntegerField(primary_key=True)
+    season_name = models.CharField(max_length=20, null=True, blank=True)
+    run_timestamp = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        managed = False
+        db_table = '"nba_marts"."dim_seasons"'
+
+
+class FctPlayerStats(models.Model):
+    season_id = models.IntegerField()
+    player_id = models.IntegerField()
+    team_id = models.IntegerField()
+    game_id = models.CharField(max_length=20, primary_key=True)
+    wl = models.CharField(max_length=2, null=True, blank=True)
+    min = models.FloatField(null=True, blank=True)
+    fgm = models.FloatField(null=True, blank=True)
+    fga = models.FloatField(null=True, blank=True)
+    fg_pct = models.FloatField(null=True, blank=True)
+    fg3m = models.FloatField(null=True, blank=True)
+    fg3a = models.FloatField(null=True, blank=True)
+    fg3_pct = models.FloatField(null=True, blank=True)
+    ftm = models.FloatField(null=True, blank=True)
+    fta = models.FloatField(null=True, blank=True)
+    ft_pct = models.FloatField(null=True, blank=True)
+    oreb = models.FloatField(null=True, blank=True)
+    dreb = models.FloatField(null=True, blank=True)
+    reb = models.FloatField(null=True, blank=True)
+    ast = models.FloatField(null=True, blank=True)
+    stl = models.FloatField(null=True, blank=True)
+    blk = models.FloatField(null=True, blank=True)
+    tov = models.FloatField(null=True, blank=True)
+    pf = models.FloatField(null=True, blank=True)
+    pts = models.FloatField(null=True, blank=True)
+    plus_minus = models.FloatField(null=True, blank=True)
+    season = models.CharField(max_length=20, null=True, blank=True)
+    run_timestamp = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        managed = False
+        db_table = '"nba_marts"."fct_player_stats"'
+
+
+class FctTeamStats(models.Model):
+    season_id = models.IntegerField()
+    team_id = models.IntegerField()
+    game_id = models.CharField(max_length=20, primary_key=True)
+    wl = models.CharField(max_length=2, null=True, blank=True)
+    min = models.FloatField(null=True, blank=True)
+    fgm = models.FloatField(null=True, blank=True)
+    fga = models.FloatField(null=True, blank=True)
+    fg_pct = models.FloatField(null=True, blank=True)
+    fg3m = models.FloatField(null=True, blank=True)
+    fg3a = models.FloatField(null=True, blank=True)
+    fg3_pct = models.FloatField(null=True, blank=True)
+    ftm = models.FloatField(null=True, blank=True)
+    fta = models.FloatField(null=True, blank=True)
+    ft_pct = models.FloatField(null=True, blank=True)
+    oreb = models.FloatField(null=True, blank=True)
+    dreb = models.FloatField(null=True, blank=True)
+    reb = models.FloatField(null=True, blank=True)
+    ast = models.FloatField(null=True, blank=True)
+    stl = models.FloatField(null=True, blank=True)
+    blk = models.FloatField(null=True, blank=True)
+    tov = models.FloatField(null=True, blank=True)
+    pf = models.FloatField(null=True, blank=True)
+    pts = models.FloatField(null=True, blank=True)
+    plus_minus = models.FloatField(null=True, blank=True)
+    season = models.CharField(max_length=20, null=True, blank=True)
+    run_timestamp = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        managed = False
+        db_table = '"nba_marts"."fct_team_stats"'

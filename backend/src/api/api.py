@@ -10,9 +10,9 @@ from typing import Optional, Dict, Any, List
 from asgiref.sync import sync_to_async
 import asyncio
 from services.object_storage.service import ObjectStorageService
-from config.settings import settings
 from services.warehouse_storage.duck_db.service import DuckDBService
 from services.warehouse_storage.bigquery.service import BigQueryService
+from api.db_api import router as db_router
 
 
 logger = logging.getLogger(__name__)
@@ -21,6 +21,7 @@ router = Router()
 
 api = NinjaAPI()
 api.add_router("/nba/", router)
+api.add_router("/nba/db/", db_router)
 
 class NBADataResponseSchema(Schema):
     success: bool

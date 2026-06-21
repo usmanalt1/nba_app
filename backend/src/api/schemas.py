@@ -1,4 +1,5 @@
 from typing import Optional
+from datetime import date, datetime
 from ninja import Schema
 
 class SeasonRecord(Schema):
@@ -187,3 +188,125 @@ class PlayerStatsSchema(Schema):
     ast_tov: float
     stl_tov: float
     date: str
+
+
+# ── Mart schemas ──────────────────────────────────────────────────────────────
+
+class DimPlayers(Schema):
+    player_id: int
+    season_id: int
+    player_name: str
+    age: Optional[int] = None
+    position: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    is_active: Optional[bool] = None
+    season: Optional[str] = None
+    run_timestamp: Optional[datetime] = None
+
+
+class DimGames(Schema):
+    game_id: str
+    game_date: Optional[date] = None
+    season_id: int
+    season: Optional[str] = None
+    home_team_id: int
+    home_team_abbreviation: str
+    home_team_name: str
+    home_pts: Optional[float] = None
+    home_wl: Optional[str] = None
+    away_team_id: int
+    away_team_abbreviation: str
+    away_team_name: str
+    away_pts: Optional[float] = None
+    away_wl: Optional[str] = None
+    run_timestamp: Optional[datetime] = None
+
+
+class DimTeams(Schema):
+    team_id: int
+    season_id: int
+    team_name: str
+    team_abbreviation: str
+    nickname: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    year_founded: Optional[int] = None
+    season: Optional[str] = None
+    run_timestamp: Optional[datetime] = None
+
+
+class DimRosters(Schema):
+    player_id: int
+    player_name: str
+    team_id: int
+    team_abbreviation: str
+    season_id: int
+    first_game_with_team: Optional[date] = None
+    last_game_with_team: Optional[date] = None
+    was_traded: Optional[bool] = None
+
+
+class DimSeasons(Schema):
+    season_id: int
+    season_name: Optional[str] = None
+    run_timestamp: Optional[datetime] = None
+
+
+class FctPlayerStats(Schema):
+    season_id: int
+    player_id: int
+    team_id: int
+    game_id: str
+    wl: Optional[str] = None
+    min: Optional[float] = None
+    fgm: Optional[float] = None
+    fga: Optional[float] = None
+    fg_pct: Optional[float] = None
+    fg3m: Optional[float] = None
+    fg3a: Optional[float] = None
+    fg3_pct: Optional[float] = None
+    ftm: Optional[float] = None
+    fta: Optional[float] = None
+    ft_pct: Optional[float] = None
+    oreb: Optional[float] = None
+    dreb: Optional[float] = None
+    reb: Optional[float] = None
+    ast: Optional[float] = None
+    stl: Optional[float] = None
+    blk: Optional[float] = None
+    tov: Optional[float] = None
+    pf: Optional[float] = None
+    pts: Optional[float] = None
+    plus_minus: Optional[float] = None
+    season: Optional[str] = None
+    run_timestamp: Optional[datetime] = None
+
+
+class FctTeamStats(Schema):
+    season_id: int
+    team_id: int
+    game_id: str
+    wl: Optional[str] = None
+    min: Optional[float] = None
+    fgm: Optional[float] = None
+    fga: Optional[float] = None
+    fg_pct: Optional[float] = None
+    fg3m: Optional[float] = None
+    fg3a: Optional[float] = None
+    fg3_pct: Optional[float] = None
+    ftm: Optional[float] = None
+    fta: Optional[float] = None
+    ft_pct: Optional[float] = None
+    oreb: Optional[float] = None
+    dreb: Optional[float] = None
+    reb: Optional[float] = None
+    ast: Optional[float] = None
+    stl: Optional[float] = None
+    blk: Optional[float] = None
+    tov: Optional[float] = None
+    pf: Optional[float] = None
+    pts: Optional[float] = None
+    plus_minus: Optional[float] = None
+    season: Optional[str] = None
+    run_timestamp: Optional[datetime] = None
