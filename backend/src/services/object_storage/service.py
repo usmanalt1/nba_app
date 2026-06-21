@@ -74,7 +74,7 @@ class AzureBlobStorage(StorageBase):
         self.latest_run_id = run_id
 
     def save(self, df: pd.DataFrame, file_name: str, season: str) -> None:
-        blob_name = f"{self.latest_run_id}/season={season}/{file_name}.{self.file_format}"
+        blob_name = f"nba_raw/{self.latest_run_id}/season={season}/{file_name}.{self.file_format}"
         logger.info(f"Saving file to {blob_name} in {self.container_name}...")
         path = f"az://{self.container_name}/{blob_name}"
         storage_options = {"connection_string": self.settings.CONN_STR}
