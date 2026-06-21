@@ -2,6 +2,8 @@ from logging import getLogger
 
 logger = getLogger(__name__)
 
+from app.models import PlayerInfo
+
 class TableModel:
     def upsert(self, model, record):
         raise NotImplementedError
@@ -36,12 +38,13 @@ class PlayerStats(TableModel):
             defaults=record
         )
 class PlayersInfo(TableModel):
-    def upsert(self, model, record):
+    def upsert(self, model: type[PlayerInfo], record):
         model.objects.update_or_create(
             season_id=record["season_id"],
             full_name=record["full_name"],
             defaults=record
         )
+
 class TeamsRoster(TableModel):
     def upsert(self, model, record):
         model.objects.update_or_create(
