@@ -1,11 +1,12 @@
 import { Select } from "@mantine/core";
-
+import { Table } from '@mantine/core';
 import { useEffect, useState } from "react";
 
 export function Home() {
 
     const [players, setPlayers] = useState([]);
     const [selected, setSelected] = useState(null);
+    const [rows, setRows] = useState([])
 
     useEffect(() => {
     fetch("/api/nba/db/list_all_players")
@@ -13,11 +14,35 @@ export function Home() {
         .then(setPlayers);
     }, []);
 
+    useEffect(() => {
+        if (selected === null) return setRows([]);
+        setRows([]);
+        const controller = new AbortController();
+        fetch(`/api/nba/db/get_player/${selected}`, { signal: controller.signal })
+            .then(r => r.json())
+            .then(setRows)
+            .catch(() => {});
+        return () => controller.abort();
+    }, [selected]);
+
+    const tableRow = selected !== null
+        ? rows.map((row) => (
+            <Table.Tr key={row.player_id}>
+                <Table.Td>{row.season_id}</Table.Td>
+                <Table.Td>{row.average_points}</Table.Td>
+                <Table.Td>{row.average_rebounds}</Table.Td>
+                <Table.Td>{row.average_plus_minus}</Table.Td>
+                <Table.Td>{row.average_assists}</Table.Td>
+            </Table.Tr>
+        ))
+        : null;
+
     const options = players.map((p) => ({
-    value: String(p.id),
-    label: p.full_name,
+    value: String(p.player_id),
+    label: p.player_name,
     }));
-    console.log(players)
+
+
   return (
     <div style={{ padding: '20px' }}>
       <h1>Welcome to the NBA Data App</h1>
@@ -33,6 +58,18 @@ export function Home() {
             onChange={setSelected}
             searchable
         />
+        <Table>
+        <Table.Thead>
+            <Table.Tr>
+            <Table.Th>Season</Table.Th>
+            <Table.Th>Points</Table.Th>
+            <Table.Th>Rebounds</Table.Th>
+            <Table.Th>Plus Minus</Table.Th>
+            <Table.Th>Assists</Table.Th>
+            </Table.Tr>
+        </Table.Thead>
+        <Table.Tbody>{tableRow}</Table.Tbody>
+        </Table>
         </div>
     </div>
   );
