@@ -61,6 +61,8 @@ class CollectRawNBAData(TransformHelper, Constants):
             }
         else:
             logging.info("Gathering data for all tables")
+            logging.info(f"Season_ID: {season_id}")
+            logging.info(f"Season_Year: {season_year}")
             df_season = self._get_season_record(season_id=season_id)
             df_teams = self._get_team_info()
             df_players = self._get_players_info()

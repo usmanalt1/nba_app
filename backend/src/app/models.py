@@ -169,7 +169,7 @@ class TeamMatchups(models.Model):
 
 class DimPlayers(models.Model):
     player_id = models.IntegerField(primary_key=True)
-    season_id = models.IntegerField()
+    season_id = models.CharField(max_length=20)
     player_name = models.CharField(max_length=100)
     age = models.IntegerField(null=True, blank=True)
     position = models.CharField(max_length=20, null=True, blank=True)
@@ -226,9 +226,10 @@ class DimTeams(models.Model):
 class DimRosters(models.Model):
     player_id = models.IntegerField(primary_key=True)
     player_name = models.CharField(max_length=100)
-    team_id = models.IntegerField()
+    team_id = models.CharField(max_length=20)
     team_abbreviation = models.CharField(max_length=10)
-    season_id = models.IntegerField()
+    season_id = models.CharField(max_length=20)
+    season = models.CharField(max_length=20)
     first_game_with_team = models.DateField(null=True, blank=True)
     last_game_with_team = models.DateField(null=True, blank=True)
     was_traded = models.BooleanField(null=True, blank=True)
