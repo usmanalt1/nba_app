@@ -74,54 +74,50 @@ export function Home() {
 
 
   return (
-    <div style={{ padding: '20px' }}>
-      <h1>Welcome to the NBA Data App</h1>
-      <p>
-        This application allows you to collect, view, and analyze NBA data. Use the navigation links to explore the features of the app.
-      </p>
-    <div style={{ display: 'flex', gap: "16px", width: "100%", padding: "1px" }}>
-    <Select
-        style={{ flex: 1 }}
-        label="Season"
-        placeholder="Pick a Season"
-        data={seasonOptions}
-        value={selectedSeason}
-        onChange={setSelectedSeason}
-        searchable
-    />
-    <Select
-        style={{ flex: 1 }}
-        label="Team"
-        placeholder="Pick a Team"
-        data={teamOptions}
-        value={selectedTeam}
-        onChange={setSelectedTeam}
-        searchable
-    />
-    <Select
-        style={{ flex: 1 }}
-        label="Player"
-        placeholder="Pick a player"
-        data={playerOptions}
-        value={selectedPlayer}
-        onChange={setSelectedPlayer}
-        searchable
-    />
-    </div>
     <div>
-        <Table>
-            <Table.Thead>
-                <Table.Tr>
-                <Table.Th>Season</Table.Th>
-                <Table.Th>Points</Table.Th>
-                <Table.Th>Rebounds</Table.Th>
-                <Table.Th>Plus Minus</Table.Th>
-                <Table.Th>Assists</Table.Th>
-                </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>{tableRow}</Table.Tbody>
-            </Table>
+        <div style={{ display: 'flex', gap: "16px", width: "100%", padding: "1px", marginBottom: '30px' }}>
+        <Select
+            style={{ flex: 1 }}
+            label="Season"
+            placeholder="Pick a Season"
+            data={seasonOptions}
+            value={selectedSeason}
+            onChange={setSelectedSeason}
+            searchable
+        />
+        <Select
+            style={{ flex: 1 }}
+            label="Team"
+            placeholder="Pick a Team"
+            data={teamOptions}
+            value={selectedTeam}
+            onChange={setSelectedTeam}
+            searchable
+        />
+        <Select
+            style={{ flex: 1 }}
+            label="Player"
+            placeholder="Pick a player"
+            data={playerOptions}
+            value={selectedPlayer}
+            onChange={setSelectedPlayer}
+            searchable
+        />
         </div>
+        <div>
+            <Table>
+                <Table.Thead>
+                    <Table.Tr>
+                    <Table.Th>Season</Table.Th>
+                    <Table.Th>Points</Table.Th>
+                    <Table.Th>Rebounds</Table.Th>
+                    <Table.Th>Plus Minus</Table.Th>
+                    <Table.Th>Assists</Table.Th>
+                    </Table.Tr>
+                </Table.Thead>
+                <Table.Tbody>{tableRow}</Table.Tbody>
+                </Table>
+            </div>
     </div>
   );
 }
