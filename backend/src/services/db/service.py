@@ -3,8 +3,9 @@ from typing import TypeVar
 from django.db.models import Model
 from app.models import FctPlayerStats, DimPlayers, DimRosters, DimSeasons
 from django.db.models import Avg, Max
+from django.db.models.functions import Round
 
-
+ROUND = 1
 M = TypeVar("M", bound=Model)
 
 class Service:
@@ -31,11 +32,11 @@ class Service:
                             .filter(player_id=player_id)
                             .values("season_id")
                             .annotate(
-                                average_points = Avg("pts"),
-                                average_rebounds = Avg("reb"),
-                                average_plus_minus = Avg("plus_minus"),
-                                average_assists = Avg("ast"),
-                                player_id = Max("player_id")
+                                average_points = Round(Avg("pts"), ROUND),
+                                average_rebounds = Round(Avg("reb"), ROUND),
+                                average_plus_minus = Round(Avg("plus_minus"), ROUND),
+                                average_assists = Round(Avg("ast"), ROUND),
+                                player_id = Round(Max("player_id"), ROUND)
                             )
             )
 
