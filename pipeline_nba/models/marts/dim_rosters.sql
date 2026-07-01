@@ -5,6 +5,7 @@ SELECT
     team_id,
     team_abbreviation,
     season_id,
+    season,
     first_game_with_team,
     last_game_with_team,
     was_traded

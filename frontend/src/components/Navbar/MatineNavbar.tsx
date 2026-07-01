@@ -14,6 +14,7 @@ const pages = [
   { label: 'Collect Data', icon: IconPresentationAnalytics, link: '/collect' },
   { label: 'View Data', icon: IconReportAnalytics, link: '/view' },
   { label: 'Models', icon: IconAdjustments, link: '/models' },
+  { label: 'NBAI', icon: IconAdjustments, link: '/nbai' },
 ];
 
 export function Navbar() {

@@ -6,11 +6,12 @@ WITH player_team_dates AS (
         team_id,
         team_abbreviation,
         season_id,
+        season,
         MIN(run_timestamp) AS run_timestamp,
         MIN(game_date) AS first_game_with_team,
         MAX(game_date) AS last_game_with_team
     FROM {{ ref('stg_nba_player_logs') }}
-    GROUP BY player_id, player_name, team_id, team_abbreviation, season_id
+    GROUP BY player_id, player_name, team_id, team_abbreviation, season_id, season
 )
 
 SELECT
@@ -19,6 +20,7 @@ SELECT
     team_id,
     team_abbreviation,
     season_id,
+    season,
     first_game_with_team,
     last_game_with_team,
     COUNT(*) OVER (PARTITION BY player_id, season_id) > 1 AS was_traded,
