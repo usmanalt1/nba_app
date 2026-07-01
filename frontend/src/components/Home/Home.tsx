@@ -1,16 +1,17 @@
 import { Select } from "@mantine/core";
 import { useEffect, useState } from "react";
 import NBADataTable from "../DataTable/NBADataTable";
+import type { RawPlayerStats, PlayerStats} from '../../types/player';
 
 export function Home() {
 
     const [players, setPlayers] = useState([]);
     const [teams, setTeams] = useState([]);
     const [seasons, setSeasons] = useState([]);
-    const [selectedPlayer, setSelectedPlayer] = useState(null);
-    const [selectedTeam, setSelectedTeam] = useState(null);
-    const [selectedSeason, setSelectedSeason] = useState(null);
-    const [rows, setRows] = useState([])
+    const [selectedPlayer, setSelectedPlayer] = useState<string | null>(null);
+    const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
+    const [selectedSeason, setSelectedSeason] = useState<string | null>(null);
+    const [rows, setRows] = useState<PlayerStats[]>([]);
 
     useEffect(() => {
     if (selectedSeason === null || selectedTeam === null) return setSelectedPlayer(null);
@@ -38,7 +39,7 @@ export function Home() {
         const controller = new AbortController();
         fetch(`/api/nba/db/get_player/${selectedPlayer}`, { signal: controller.signal })
             .then(r => r.json())
-            .then(data => setRows(data.map((row) => ({
+            .then(data => setRows(data.map((row: RawPlayerStats) => ({
                 season: row.season_id,
                 points: row.average_points,
                 rebounds: row.average_rebounds,
@@ -49,18 +50,19 @@ export function Home() {
         return () => controller.abort();
     }, [selectedPlayer]);
 
-    const playerOptions = players.map((p) => ({
+    // Generate interface for these and change type
+    const playerOptions = players.map((p: any) => ({
     value: String(p.player_id),
     label: p.player_name,
     }));
 
 
-    const teamOptions = teams.map((p) => ({
+    const teamOptions = teams.map((p: any) => ({
     value: String(p.team_id),
     label: p.team_name,
     }));
 
-    const seasonOptions = seasons.map((p) => ({
+    const seasonOptions = seasons.map((p: any) => ({
     value: String(p.season_name),
     label: String(p.season_name),
     }));
