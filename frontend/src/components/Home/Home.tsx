@@ -1,6 +1,6 @@
 import { Select } from "@mantine/core";
-import { Table } from '@mantine/core';
 import { useEffect, useState } from "react";
+import NBADataTable from "../DataTable/NBADataTable";
 
 export function Home() {
 
@@ -38,22 +38,16 @@ export function Home() {
         const controller = new AbortController();
         fetch(`/api/nba/db/get_player/${selectedPlayer}`, { signal: controller.signal })
             .then(r => r.json())
-            .then(setRows)
+            .then(data => setRows(data.map((row) => ({
+                season: row.season_id,
+                points: row.average_points,
+                rebounds: row.average_rebounds,
+                plusMinus: row.average_plus_minus,
+                assists: row.average_assists,
+            }))))
             .catch(() => {});
         return () => controller.abort();
     }, [selectedPlayer]);
-
-    const tableRow = selectedPlayer !== null
-        ? rows.map((row) => (
-            <Table.Tr key={row.player_id}>
-                <Table.Td>{row.season_id}</Table.Td>
-                <Table.Td>{row.average_points}</Table.Td>
-                <Table.Td>{row.average_rebounds}</Table.Td>
-                <Table.Td>{row.average_plus_minus}</Table.Td>
-                <Table.Td>{row.average_assists}</Table.Td>
-            </Table.Tr>
-        ))
-        : null;
 
     const playerOptions = players.map((p) => ({
     value: String(p.player_id),
@@ -104,20 +98,11 @@ export function Home() {
             searchable
         />
         </div>
-        <div>
-            <Table>
-                <Table.Thead>
-                    <Table.Tr>
-                    <Table.Th>Season</Table.Th>
-                    <Table.Th>Points</Table.Th>
-                    <Table.Th>Rebounds</Table.Th>
-                    <Table.Th>Plus Minus</Table.Th>
-                    <Table.Th>Assists</Table.Th>
-                    </Table.Tr>
-                </Table.Thead>
-                <Table.Tbody>{tableRow}</Table.Tbody>
-                </Table>
+        {rows.length > 0 && (
+            <div style={{ marginTop: '30px' }}>
+                <NBADataTable nbaData={rows} />
             </div>
+        )}
     </div>
   );
 }
