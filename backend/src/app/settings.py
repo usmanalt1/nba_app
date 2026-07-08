@@ -81,7 +81,7 @@ DATABASES = {
         "NAME": "backend_db",
         "USER": "admin",
         "PASSWORD": "admin",
-        "HOST": "nba_app-postgres-host-1",
+        "HOST": "postgres-host",
         "PORT": "5432",
     }
 }

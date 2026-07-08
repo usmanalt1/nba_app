@@ -38,6 +38,8 @@ services:
     depends_on:
       mysql-host:
         condition: service_healthy
+      postgres-host:
+        condition: service_healthy
     ports:
       - "8000:8000"
     volumes:

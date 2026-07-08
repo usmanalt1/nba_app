@@ -58,8 +58,8 @@ COPY --chown=$USER_NAME:$USER_NAME . .
 USER $USER_NAME
 
 # Make entrypoint executable
-RUN chmod +x  ./scripts/entrypoint.sh
+RUN chmod +x ./scripts/entrypoint.sh
 
-EXPOSE 5000
+EXPOSE 8000
 
-CMD ["python", "backend/src/manage.py", "runserver", "0.0.0.0:8000"]
+CMD ["bash", "./scripts/entrypoint.sh"]

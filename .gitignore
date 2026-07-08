@@ -89,6 +89,10 @@ myenv/*
 # System files
 Thumbs.db
 *.json
+!package.json
+!package-lock.json
+!tsconfig*.json
+!vite.config.*
 *.parquet
 
 # Ignore migrations if you want to exclude them (uncomment if needed)

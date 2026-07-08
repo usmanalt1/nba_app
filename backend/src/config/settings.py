@@ -23,9 +23,9 @@ class Settings(BaseSettings):
     DB_USER: str = "admin"
     DB_PASSWORD: str = "admin"
     DB_NAME: str = "backend_db"
-    DB_HOST: str = "postgres-host-1"
-    CONN_STR: str
-    AZURE_KEY: str
-    CONTAINER_NAME: str
-
+    DB_HOST: str = "postgres-host"
+    CONN_STR: Optional[str] = None
+    AZURE_KEY: Optional[str] = None
+    CONTAINER_NAME: Optional[str] = None 
+    
 settings = Settings()

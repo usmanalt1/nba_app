@@ -1,3 +1,5 @@
+#!/bin/bash
+set -e
 
-# CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
-.
+python backend/src/manage.py migrate
+python backend/src/manage.py runserver 0.0.0.0:8000
