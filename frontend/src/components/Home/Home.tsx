@@ -2,6 +2,7 @@ import { Select } from "@mantine/core";
 import { useEffect, useState } from "react";
 import NBADataTable from "../DataTable/NBADataTable";
 import type { RawPlayerStats, PlayerStats} from '../../types/player';
+// import Scroller from "../Scroller/Scroller";
 
 export function Home() {
 
@@ -72,6 +73,7 @@ export function Home() {
   return (
     <div>
         <div style={{ display: 'flex', gap: "16px", width: "100%", padding: "1px", marginBottom: '30px' }}>
+        {/* <Scroller /> */}
         <Select
             style={{ flex: 1 }}
             label="Season"
