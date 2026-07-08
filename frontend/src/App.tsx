@@ -20,7 +20,7 @@ function App() {
 };
 
   return (
-    <MantineProvider>
+    <MantineProvider defaultColorScheme="dark">
       <Router>
         <div style={{ display: 'flex', height: '100vh' }}>
           <Navbar />
