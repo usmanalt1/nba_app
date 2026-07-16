@@ -1,5 +1,5 @@
 
-from typing import TypeVar
+from typing import TypeVar, Optional
 from django.db.models import Model
 from app.models import FctPlayerStats, DimPlayers, DimRosters, DimSeasons
 from django.db.models import Avg, Max
@@ -25,22 +25,34 @@ class Service:
     def get_all_teams(self) -> list:
         return list(self.model.objects.only("team_id", "team_name"))
     
-    def get_player_stats(self, player_id: str) -> list:
-        if self.model is FctPlayerStats:
-            player_stats = (self.model.objects
-                            .all()
-                            .filter(player_id=player_id)
-                            .values("season_id")
-                            .annotate(
-                                average_points = Round(Avg("pts"), ROUND),
-                                average_rebounds = Round(Avg("reb"), ROUND),
-                                average_plus_minus = Round(Avg("plus_minus"), ROUND),
-                                average_assists = Round(Avg("ast"), ROUND),
-                                player_id = Round(Max("player_id"), ROUND)
-                            )
-            )
 
-            return list(player_stats)
+    def get_all_player_stats(self, season_id: Optional[int] = None) -> list:
+        queryset = FctPlayerStats.objects.select_related("player").values("player_id", "season_id", "pts", "reb", "plus_minus", "ast", "player__player_name")
+        if season_id is not None:
+            queryset = queryset.filter(season_id=str(season_id))
+        return list(queryset)
+    
+    def get_player_stats(self, player_id: Optional[str] = None, season_id: Optional[int] = None) -> list:
+        qs = FctPlayerStats.objects.select_related("player")
+        if player_id:
+            qs = qs.filter(player_id=player_id)
+        if season_id:
+            qs = qs.filter(season=str(season_id))
+
+        if player_id:
+            group_fields = ["season_id"]
+        else:
+            group_fields = ["player_id", "season_id", "season", "player__player_name"]
+
+        player_stats = qs.values(*group_fields).annotate(
+            average_points=Round(Avg("pts"), ROUND),
+            average_rebounds=Round(Avg("reb"), ROUND),
+            average_plus_minus=Round(Avg("plus_minus"), ROUND),
+            average_assists=Round(Avg("ast"), ROUND),
+        )
+        if player_id:
+            player_stats = player_stats.annotate(player_id=Round(Max("player_id"), ROUND))
         
-        return []
+        player_stats = player_stats.annotate(player_name=Max("player__player_name"))
+        return list(player_stats)
         

@@ -2,6 +2,8 @@ import { Select } from "@mantine/core";
 import { useEffect, useState } from "react";
 import NBADataTable from "../DataTable/NBADataTable";
 import type { RawPlayerStats, PlayerStats} from '../../types/player';
+import { Trends } from "../ScrollableTrends/Trends";
+
 
 export function Home() {
 
@@ -70,7 +72,10 @@ export function Home() {
 
 
   return (
-    <div>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
+        <div style={{ marginBottom: '30px', width: '100%', display: 'flex', justifyContent: 'left' }}>
+            <Trends />
+        </div>
         <div style={{ display: 'flex', gap: "16px", width: "100%", padding: "1px", marginBottom: '30px' }}>
         <Select
             style={{ flex: 1 }}
@@ -101,7 +106,7 @@ export function Home() {
         />
         </div>
         {rows.length > 0 && (
-            <div style={{ marginTop: '30px' }}>
+            <div style={{ marginTop: '10px', width: '100%' }}>
                 <NBADataTable nbaData={rows} />
             </div>
         )}

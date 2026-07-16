@@ -5,7 +5,6 @@ import '@mantine/core/styles.css'; // don't forget this, classic gotcha
 import { Navbar } from './components/Navbar/MatineNavbar';
 import { Home } from './components/Home/Home';
 
-
 function App() {
   
   const [data, setData] = useState("Something");
