@@ -250,8 +250,13 @@ class DimSeasons(models.Model):
 
 
 class FctPlayerStats(models.Model):
-    season_id = models.IntegerField()
-    player_id = models.IntegerField()
+    season_id = models.CharField(max_length=20)
+    player = models.ForeignKey(
+        DimPlayers,
+        on_delete=models.DO_NOTHING,
+        db_column='player_id',
+        db_constraint=False,
+    )
     team_id = models.IntegerField()
     game_id = models.CharField(max_length=20, primary_key=True)
     wl = models.CharField(max_length=2, null=True, blank=True)
