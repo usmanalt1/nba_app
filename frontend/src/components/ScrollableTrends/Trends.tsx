@@ -1,38 +1,42 @@
-import { Box, Button, Group } from '@mantine/core';
-import { useScroller } from '@mantine/hooks';
+import { Box, Group } from '@mantine/core';
 import { useEffect, useState } from 'react';
-import { PointsLogo } from './PointsLogo';
+import {Helper} from './helper';
 
 export function Trends() {
-  const scroller = useScroller();
-  const [players, setPlayers] = useState([]);
+  const [playersPoints, setPlayersPoints] = useState([]);
+  const [playersRebounds, setPlayersRebounds] = useState([]);
+  const [playersAssists, setPlayersAssists] = useState([]);
+  const [playersPlusMinus, setPlayersPlusMinus] = useState([]);
 
 
   useEffect(() => {
     fetch(`/api/nba/db/get_top_3_best_players_latest_season/points`)
         .then(r => r.json())
-        .then(setPlayers);
-    }, []);
+        .then(setPlayersPoints);
+    fetch(`/api/nba/db/get_top_3_best_players_latest_season/rebounds`)
+        .then(r => r.json())
+        .then(setPlayersRebounds);
+    fetch(`/api/nba/db/get_top_3_best_players_latest_season/assists`)
+        .then(r => r.json())
+        .then(setPlayersAssists);
+    fetch(`/api/nba/db/get_top_3_best_players_latest_season/plus_minus`)
+        .then(r => r.json())
+        .then(setPlayersPlusMinus);
+  }, []);
 
-  const topPlayersContent = players.length > 0 ? (
-    <div>
-      <PointsLogo style={{ width: 30, height: 30 }} />
-      {players.map((player: any, i: number) => (
-        <div key={i} style={{ fontWeight: i === 0 ? 700 : 400 }}>
-          {player.player_name} - {player.average_points} PPG
-        </div>
-      ))}
-    </div>
-  ) : 'Loading...';
-
+  
+  const HelperPoints = Helper(playersPoints, 'average_points');
+  const HelperRebounds = Helper(playersRebounds, 'average_rebounds');
+  const HelperAssists = Helper(playersAssists, 'average_assists');
+  const HelperPlusMinus = Helper(playersPlusMinus, 'average_plus_minus');
   return (
     <Box>
         <Group wrap="nowrap" gap="md">
-          {Array.from({ length: 5 }).map((_, index) => (
+          {Array.from({ length: 4 }).map((_, index) => (
             <Box
               key={index}
               style={{
-                minWidth: 280,
+                minWidth: 350,
                 height: 120,
                 backgroundColor: 'var(--mantine-color-gray-1)',
                 border: '1.5px solid var(--mantine-color-blue-4)',
@@ -45,7 +49,7 @@ export function Trends() {
               }}
             >
                 <div style={{ textAlign: 'center', fontSize: '14px', padding: '10px' }}>
-                    {index === 0 ? topPlayersContent : `Box ${index + 1}`}
+                    {index === 0 ? HelperPoints : index == 1 ? HelperRebounds : index == 2 ? HelperAssists : index == 3 ? HelperPlusMinus : 'Loading...'}
                 </div>
             </Box>
           ))}
