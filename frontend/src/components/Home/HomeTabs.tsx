@@ -5,6 +5,8 @@ import type { PlayerStats } from '../../types/player';
 
 
 export default function HomeTabs() {
+
+  // lifted to hometab and hometab stays so that the state is preserved when switching tabs
   const [activeTab, setActiveTab] = useState('player-stats');
   const [selectedPlayer, setSelectedPlayer] = useState<string | null>(null);
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null);

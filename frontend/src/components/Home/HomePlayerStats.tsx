@@ -24,7 +24,6 @@ useEffect(() => {
         props.setSelectedPlayer(null);
         return;
     }
-    props.setSelectedPlayer(null);
     fetch(`/api/nba/db/list_all_players/${props.selectedSeason}/${props.selectedTeam}`)
         .then(r => r.json())
         .then(setPlayers);
