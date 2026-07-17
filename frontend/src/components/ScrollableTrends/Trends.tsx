@@ -1,6 +1,6 @@
 import { Box, Group } from '@mantine/core';
 import { useEffect, useState } from 'react';
-import {Helper} from './helper';
+import {Helper} from './Helper';
 
 export function Trends() {
   const [playersPoints, setPlayersPoints] = useState([]);
