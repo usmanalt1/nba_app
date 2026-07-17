@@ -1,10 +1,16 @@
 import { Tabs } from '@mantine/core';
 import { useState } from 'react';
 import HomePlayerStats from "./HomePlayerStats";
+import type { PlayerStats } from '../../types/player';
 
 
 export default function HomeTabs() {
   const [activeTab, setActiveTab] = useState('player-stats');
+  const [selectedPlayer, setSelectedPlayer] = useState<string | null>(null);
+  const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
+  const [selectedSeason, setSelectedSeason] = useState<string | null>(null);
+  const [rows, setRows] = useState<PlayerStats[]>([]);
+
 
   const typeTypes = [
     { value: 'player-stats', label: 'Player Stats' },
@@ -28,7 +34,16 @@ export default function HomeTabs() {
         )}
       </Tabs.List>
     </Tabs>
-      {activeTab === 'player-stats' && <HomePlayerStats />}
+      {activeTab === 'player-stats' && <HomePlayerStats
+        selectedPlayer={selectedPlayer}
+        selectedTeam={selectedTeam}
+        selectedSeason={selectedSeason}
+        rows={rows}
+        setSelectedPlayer={setSelectedPlayer}
+        setSelectedTeam={setSelectedTeam}
+        setSelectedSeason={setSelectedSeason}
+        setRows={setRows}
+      />}
     </>
   );
 }

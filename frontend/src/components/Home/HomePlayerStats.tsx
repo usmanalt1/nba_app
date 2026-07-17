@@ -3,23 +3,32 @@ import { useEffect, useState } from "react";
 import { Select } from "@mantine/core";
 import NBADataTable from "../DataTable/NBADataTable";
 
-
-export default function HomePlayerStats() {
+interface HomePlayerStatsProps {
+    selectedPlayer: string | null;
+    selectedTeam: string | null;
+    selectedSeason: string | null;
+    rows: PlayerStats[];
+    setSelectedPlayer: (value: string | null) => void;
+    setSelectedTeam: (value: string | null) => void;
+    setSelectedSeason: (value: string | null) => void;
+    setRows: (value: PlayerStats[]) => void;
+}
+export default function HomePlayerStats(props: HomePlayerStatsProps) {
     const [players, setPlayers] = useState([]);
     const [teams, setTeams] = useState([]);
     const [seasons, setSeasons] = useState([]);
-    const [selectedPlayer, setSelectedPlayer] = useState<string | null>(null);
-    const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
-    const [selectedSeason, setSelectedSeason] = useState<string | null>(null);
-    const [rows, setRows] = useState<PlayerStats[]>([]);
+    
 
-    useEffect(() => {
-        if (selectedSeason === null || selectedTeam === null) return setSelectedPlayer(null);
-        setSelectedPlayer(null);
-        fetch(`/api/nba/db/list_all_players/${selectedSeason}/${selectedTeam}`)
-            .then(r => r.json())
-            .then(setPlayers);
-    }, [selectedSeason, selectedTeam]);
+useEffect(() => {
+    if (props.selectedSeason === null || props.selectedTeam === null) {
+        props.setSelectedPlayer(null);
+        return;
+    }
+    props.setSelectedPlayer(null);
+    fetch(`/api/nba/db/list_all_players/${props.selectedSeason}/${props.selectedTeam}`)
+        .then(r => r.json())
+        .then(setPlayers);
+}, [props.selectedSeason, props.selectedTeam]);
 
     useEffect(() => {
         fetch("/api/nba/db/list_all_seasons")
@@ -34,12 +43,11 @@ export default function HomePlayerStats() {
     }, []);
 
     useEffect(() => {
-        if (selectedPlayer === null) return setRows([]);
-        setRows([]);
+        if (props.selectedPlayer === null) return props.setRows([]);
         const controller = new AbortController();
-        fetch(`/api/nba/db/get_player/${selectedPlayer}`, { signal: controller.signal })
+        fetch(`/api/nba/db/get_player/${props.selectedPlayer}`, { signal: controller.signal })
             .then(r => r.json())
-            .then(data => setRows(data.map((row: RawPlayerStats) => ({
+            .then(data => props.setRows(data.map((row: RawPlayerStats) => ({
                 season: row.season_id,
                 points: row.average_points,
                 rebounds: row.average_rebounds,
@@ -48,7 +56,7 @@ export default function HomePlayerStats() {
             }))))
             .catch(() => { });
         return () => controller.abort();
-    }, [selectedPlayer]);
+    }, [props.selectedPlayer]);
 
     // Generate interface for these and change type
     const playerOptions = players.map((p: any) => ({
@@ -74,8 +82,8 @@ export default function HomePlayerStats() {
                 label="Season"
                 placeholder="Pick a Season"
                 data={seasonOptions}
-                value={selectedSeason}
-                onChange={setSelectedSeason}
+                value={props.selectedSeason}
+                onChange={props.setSelectedSeason}
                 searchable
             />
             <Select
@@ -83,8 +91,8 @@ export default function HomePlayerStats() {
                 label="Team"
                 placeholder="Pick a Team"
                 data={teamOptions}
-                value={selectedTeam}
-                onChange={setSelectedTeam}
+                value={props.selectedTeam}
+                onChange={props.setSelectedTeam}
                 searchable
             />
             <Select
@@ -92,15 +100,15 @@ export default function HomePlayerStats() {
                 label="Player"
                 placeholder="Pick a player"
                 data={playerOptions}
-                value={selectedPlayer}
-                onChange={setSelectedPlayer}
+                value={props.selectedPlayer}
+                onChange={props.setSelectedPlayer}
                 searchable
             />
         </div>
         {
-            rows.length > 0 && (
+            props.rows.length > 0 && (
                 <div style={{ marginTop: '10px', width: '100%', border: '1px solid var(--mantine-color-blue-4)', borderRadius: 'var(--mantine-radius-md)', padding: '1px' }}>
-                    <NBADataTable nbaData={rows} />
+                    <NBADataTable nbaData={props.rows} />
                 </div>
             )
         }
