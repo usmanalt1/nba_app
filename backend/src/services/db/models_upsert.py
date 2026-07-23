@@ -62,6 +62,22 @@ class TeamMatchups(TableModel):
             defaults=record
         )
 
+class PlayerAwards(TableModel):
+    def upsert(self, model, record):
+        # month/week are included since a player can hold the same award description
+        # more than once in a season (e.g. multiple "NBA Player of the Month"); for
+        # season-level awards these are None on every row, so they still collapse
+        # to one row per (player, season, description) as expected.
+        model.objects.update_or_create(
+            player_id=record["player_id"],
+            season=record["season"],
+            description=record["description"],
+            all_nba_team_number=record.get("all_nba_team_number"),
+            month=record.get("month"),
+            week=record.get("week"),
+            defaults=record
+        )
+
 
 class TableModelFactory:
     @staticmethod
@@ -73,6 +89,7 @@ class TableModelFactory:
             "player_stats": PlayerStats(),
             "players_info": PlayersInfo(),
             "teams_roster": TeamsRoster(),
-            "team_matchups": TeamMatchups()
+            "team_matchups": TeamMatchups(),
+            "player_awards": PlayerAwards()
         }
         return table_model.get(table)

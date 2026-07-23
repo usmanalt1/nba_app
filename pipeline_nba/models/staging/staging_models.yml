@@ -31,4 +31,9 @@ models:
       materialized: view
     alias: staging_nba_rosters
     description: "This view contains roster information for NBA teams."
+  - name: stg_nba_player_awards
+    config:
+      materialized: view
+    alias: staging_nba_player_awards
+    description: "This view contains player awards information"
     

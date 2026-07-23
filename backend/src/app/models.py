@@ -165,6 +165,28 @@ class TeamMatchups(models.Model):
         db_table = 'team_matchups'
 
 
+class PlayerAwards(models.Model):
+    player_id = models.IntegerField()
+    first_name = models.TextField(null=True, blank=True)
+    last_name = models.TextField(null=True, blank=True)
+    team = models.TextField(null=True, blank=True)
+    # the DESCRIPTION field is what actually distinguishes award types (e.g. "All-NBA",
+    # "NBA All-Star", "NBA Most Valuable Player") - the API's own TYPE field is always "Award"
+    description = models.TextField()
+    all_nba_team_number = models.TextField(null=True, blank=True)
+    season = models.TextField(null=True, blank=True)
+    month = models.TextField(null=True, blank=True)
+    week = models.TextField(null=True, blank=True)
+    conference = models.TextField(null=True, blank=True)
+    subtype1 = models.TextField(null=True, blank=True)
+    subtype2 = models.TextField(null=True, blank=True)
+    subtype3 = models.TextField(null=True, blank=True)
+    run_timestamp = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'player_awards'
+
+
 # ── Mart models (dbt-managed, read-only) ─────────────────────────────────────
 
 class DimPlayers(models.Model):

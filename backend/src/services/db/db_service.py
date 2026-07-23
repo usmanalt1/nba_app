@@ -1,6 +1,6 @@
 from logging import getLogger
 from pathlib import Path
-from app.models import SeasonRecord, TeamInfo, PlayerInfo, TeamRoster, TeamStats, PlayerStats, TeamMatchups
+from app.models import SeasonRecord, TeamInfo, PlayerInfo, TeamRoster, TeamStats, PlayerStats, TeamMatchups, PlayerAwards
 from sqlalchemy import create_engine
 import os
 from services.db.models_upsert import TableModelFactory
@@ -18,7 +18,8 @@ class DBService(StorageBase):
             "teams_roster": TeamRoster,
             "team_stats": TeamStats,
             "player_stats": PlayerStats,
-            "team_matchups": TeamMatchups
+            "team_matchups": TeamMatchups,
+            "player_awards": PlayerAwards
         }
         self.user = os.getenv("DB_USER")
         self.password = os.getenv("DB_PASSWORD")
@@ -66,8 +67,14 @@ class DBService(StorageBase):
             for table_name, model in self.table_model_map.items():
                 df: dict = dfs.get(table_name)
                 logger.info(f"Upserting data for table: {table_name}, Number of records: {len(df) if df is not None else 0}")
-                if not df.empty:
+                # not every run produces every table (e.g. player_awards is only present
+                # in runs that hit /collect/player_awards) - df is None when this table
+                # simply wasn't part of the latest run, not an error.
+                if df is not None and not df.empty:
                     logger.info(f"Upserting data for table: {table_name}")
+                    # convert pandas NaN -> None so optional/sparse fields store as real SQL
+                    # NULL instead of the literal string "nan"
+                    df = df.where(pd.notnull(df), None)
                     records = df.to_dict(orient="records")
                     for record in records:
                         table_model = TableModelFactory.get_table_model(table_name)

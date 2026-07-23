@@ -13,6 +13,8 @@ from services.object_storage.service import ObjectStorageService
 from services.warehouse_storage.duck_db.service import DuckDBService
 from services.warehouse_storage.bigquery.service import BigQueryService
 from api.db_api import router as db_router
+from services.db.service import Service
+from app.models import DimPlayers
 
 
 logger = logging.getLogger(__name__)
@@ -47,6 +49,34 @@ async def collect_all(request):
     
     return NBADataResponseSchema(success=True)
 
+@router.get("/collect/player_awards", response=NBADataResponseSchema)
+async def collect_player_awards_data(request):
+
+    try:
+        logging.info("Generating Player Awards...")
+
+        def sync_build_player_awards():
+            try:
+                all_players = Service(DimPlayers).get_all_players()
+                players_df = pd.DataFrame([p.player_id for p in all_players], columns=["player_id"])
+
+                build_service = BuildDataService()
+                result = build_service.build_player_awards(players_table=players_df)
+                logger.info(f"Player awards build result: {result}")
+            except Exception as e:
+                logger.error(f"Error loading player awards: {e}")
+
+        await asyncio.to_thread(sync_build_player_awards)
+    except Exception as e:
+        logger.error(f"Error during player awards collection: {e}")
+        return NBADataResponseSchema(success=False, error=str(e))
+
+    return NBADataResponseSchema(success=True)
+
+# NOTE: this must stay registered AFTER the more specific "/collect/player_awards" route above -
+# {table_name} matches any single path segment, so if this were registered first it would
+# intercept "/collect/player_awards" requests too (first-match-wins routing) and dispatch them
+# through the generic single-argument _get_{table_name}() call path instead.
 @router.get("/collect/{table_name}", response=NBADataResponseSchema)
 async def collect_data_by_table(request, table_name: str):
     try:
@@ -128,6 +158,7 @@ async def collect_data_by_number_of_seasons(request, season_year: str, seasons: 
         
         return NBADataResponseSchema(success=True)
 
+
 @router.get("/load_to_postgres", response=NBADataResponseSchema)
 async def load_data_to_postgres(request):
     # seasons is a comma separated string of number of seasons to load, e.g. "1,2,3"
@@ -140,7 +171,9 @@ async def load_data_to_postgres(request):
     except Exception as e:
         logger.error(f"Error loading data from object storage to Postgres: {e}")
         return NBADataResponseSchema(success=False, error=str(e))
-    
+
+    return NBADataResponseSchema(success=True)
+
 @router.get("/load_to_bigquery/{seasons}", response=NBADataResponseSchema)
 async def load_data_from_gcs_to_bigquery(request, seasons: str):
     # seasons is a comma separated string of number of seasons to load, e.g. "1,2,3"
@@ -157,10 +190,8 @@ async def load_data_from_gcs_to_bigquery(request, seasons: str):
     
     return NBADataResponseSchema(success=True)
 
-@router.get("/load_to_duckdb/{seasons}", response=NBADataResponseSchema)
-async def load_data_from_lfs_to_duckdb(request, seasons: str):
-    # loading data from local file system to duckdb, seasons is a comma separated string of number of seasons to load, e.g. "1,2,3"
-    seasons = [s.strip() for s in seasons.split(",")]
+@router.get("/load_to_duckdb", response=NBADataResponseSchema)
+async def load_data_from_lfs_to_duckdb(request):
     try:
         def sync_load_data():
             duckdb_service = DuckDBService()
@@ -191,7 +222,6 @@ async def collect_data_by_table_season(request, table_name: str, season_year: st
         return NBADataResponseSchema(success=False, error=str(e))
     
     return NBADataResponseSchema(success=True)
-
 
 
 @router.get("/stats/{table_name}")
