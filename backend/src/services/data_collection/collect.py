@@ -5,7 +5,7 @@ from nba_api.stats.endpoints import teamgamelog
 import pandas as pd
 from services.data_collection.transformer_helper import TransformHelper
 import logging
-from nba_api.stats.endpoints import leagueleaders, teamdashboardbygeneralsplits, leaguegamefinder, playbyplayv3
+from nba_api.stats.endpoints import leagueleaders, teamdashboardbygeneralsplits, leaguegamefinder, playbyplayv3, playerawards
 from nba_api.stats.endpoints import leaguegamelog
 from http.client import RemoteDisconnected
 from services.data_collection.constants import Constants
@@ -231,6 +231,35 @@ class CollectRawNBAData(TransformHelper, Constants):
         logging.info("...Raw Team Matchups DF Generated")
         all_games = all_games.dropna()
         return all_games
+    
+    def _get_player_awards(self, df_players: pd.DataFrame) -> pd.DataFrame:
+        logging.info("Starting getting player awards...")
+        # df_players is the roster of players to fetch awards FOR (column "player_id"),
+        # not the raw award response itself (which separately has its own "person_id" column)
+        player_ids = pd.unique(df_players["player_id"]).tolist()
+
+        all_player_awards = pd.DataFrame()
+        length = len(player_ids)
+        for p_id in player_ids:
+            logging.info(f"Total players: {length}")
+            length -= 1
+            logging.info(f"Player left: {length}")
+            player_awards = playerawards.PlayerAwards(player_id=p_id, headers=self.headers)
+            player_awards = player_awards.get_data_frames()[0]
+            player_awards = self.clean_dataframe(player_awards)
+            player_awards.rename(columns={"person_id": "player_id"}, inplace=True)
+            all_player_awards = pd.concat([all_player_awards, player_awards])
+            t.sleep(1)
+
+        logging.info("...Raw Player Awards Generated")
+        # NOTE: many columns here (month, week, conference, all_nba_team_number, subtype2/3)
+        # are legitimately empty depending on award type - a blanket dropna() would wipe out
+        # nearly every row. Only the fields every award row must have are required.
+        if not all_player_awards.empty:
+            all_player_awards = all_player_awards.dropna(subset=["player_id", "season", "description"])
+
+        return all_player_awards
+
 
     def _play_by_play(self) -> pd.DataFrame:
         playbyplayv3.PlayByPlayV3(game_id="0022200001").get_data_frames()[0]

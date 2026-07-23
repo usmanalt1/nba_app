@@ -6,3 +6,4 @@ class Constants:
     TEAM_STATS = "team_stats"
     PLAYER_STATS = "player_stats"
     TEAM_MATCHUPS = "team_matchups"
+    PLAYER_AWARDS = "player_awards"

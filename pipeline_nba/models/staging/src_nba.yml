@@ -3,7 +3,7 @@ version: 2
 sources:
   - name: nba_dataset
     description: "Source data for NBA statistics"
-    schema: public
+    schema: "{{ 'test' if target.name == 'local' else 'public' }}"
     tables:
       - name: player_stats
         description: "Raw data of NBA players"
@@ -23,3 +23,6 @@ sources:
       - name: player_info
         description: "Backward-compatible alias for players_info"
         identifier: players_info
+      - name: player_awards
+        description: "Table contining information about player_awards"
+        identifier: player_awards
