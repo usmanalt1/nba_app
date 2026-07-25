@@ -1,12 +1,15 @@
 from logging import getLogger
 
-logger = getLogger(__name__)
+import pandas as pd
 
-from app.models import PlayerInfo
+logger = getLogger(__name__)
 
 class TableModel:
     def upsert(self, model, record):
         raise NotImplementedError
+
+    def read(self, model) -> list:
+        return list(model.objects.all().values())
 
 class SeasonRecord(TableModel):
     def upsert(self, model, record):
@@ -38,7 +41,7 @@ class PlayerStats(TableModel):
             defaults=record
         )
 class PlayersInfo(TableModel):
-    def upsert(self, model: type[PlayerInfo], record):
+    def upsert(self, model, record):
         model.objects.update_or_create(
             season_id=record["season_id"],
             full_name=record["full_name"],
@@ -78,7 +81,6 @@ class PlayerAwards(TableModel):
             defaults=record
         )
 
-
 class TableModelFactory:
     @staticmethod
     def get_table_model(table: str) -> TableModel:
@@ -90,6 +92,9 @@ class TableModelFactory:
             "players_info": PlayersInfo(),
             "teams_roster": TeamsRoster(),
             "team_matchups": TeamMatchups(),
-            "player_awards": PlayerAwards()
+            "player_awards": PlayerAwards(),
+            "dim_games": TableModel(),
+            "fct_team_stats": TableModel(),
+            "fct_player_stats": TableModel(),
         }
         return table_model.get(table)
