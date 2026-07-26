@@ -1,6 +1,6 @@
 from logging import getLogger
 from pathlib import Path
-from app.models import SeasonRecord, TeamInfo, PlayerInfo, TeamRoster, TeamStats, PlayerStats, TeamMatchups, PlayerAwards
+from app.models import SeasonRecord, TeamInfo, PlayerInfo, TeamRoster, TeamStats, PlayerStats, TeamMatchups, PlayerAwards, DimGames, FctTeamStats, FctPlayerStats
 from sqlalchemy import create_engine
 import os
 from services.db.models_upsert import TableModelFactory
@@ -9,6 +9,7 @@ import pandas as pd
 from config.settings import settings
 
 logger = getLogger(__name__)
+
 class DBService(StorageBase):
     def __init__(self):
         self.table_model_map = {
@@ -19,7 +20,10 @@ class DBService(StorageBase):
             "team_stats": TeamStats,
             "player_stats": PlayerStats,
             "team_matchups": TeamMatchups,
-            "player_awards": PlayerAwards
+            "player_awards": PlayerAwards,
+            "dim_games": DimGames,
+            "fct_team_stats": FctTeamStats,
+            "fct_player_stats": FctPlayerStats
         }
         self.user = os.getenv("DB_USER")
         self.password = os.getenv("DB_PASSWORD")
@@ -83,7 +87,12 @@ class DBService(StorageBase):
             logger.error(f"Error during upsert operation: {e}")
             raise
     
-    def read():
-        pass
-    
-    
+    def read(self, table_name: str, df: bool = True):
+        model = self.table_model_map[table_name]
+        table_model = TableModelFactory.get_table_model(table_name)
+        model_list = table_model.read(model)
+
+        if df:
+            return pd.DataFrame(model_list)
+
+        return model_list

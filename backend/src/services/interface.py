@@ -7,5 +7,5 @@ class StorageBase(ABC):
         pass
 
     @abstractmethod
-    def read(self, latest_run_id: str, seasons: list, table: str) -> pd.DataFrame:
+    def read(self, table_name: str) -> pd.DataFrame:
         pass
