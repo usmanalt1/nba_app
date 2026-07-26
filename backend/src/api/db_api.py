@@ -68,7 +68,6 @@ async def get_top_3_best_players_latest_season(request, stat_type: str):
         latest_season: DimSeasons = Service(DimSeasons).get_all_seasons()[-1]
         season_name = latest_season.season_name
         players_stats = Service(FctPlayerStats).get_player_stats(season_id=season_name)
-        print(players_stats)
         filtered_stats = [stat for stat in players_stats if stat['season'] == season_name]
         sorted_stats = sorted(filtered_stats, key=lambda x: x[f'average_{stat_type}'], reverse=True)
         return sorted_stats[:3]

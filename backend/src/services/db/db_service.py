@@ -80,9 +80,8 @@ class DBService(StorageBase):
                     # NULL instead of the literal string "nan"
                     df = df.where(pd.notnull(df), None)
                     records = df.to_dict(orient="records")
-                    for record in records:
-                        table_model = TableModelFactory.get_table_model(table_name)
-                        table_model.upsert(model, record)
+                    table_model = TableModelFactory.get_table_model(table_name)
+                    table_model.upsert_many(model, records)
         except Exception as e:
             logger.error(f"Error during upsert operation: {e}")
             raise

@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime
 from typing import Dict, List, Optional
 
 from ninja import Router, Schema
@@ -17,6 +18,9 @@ class ModelOutput(Schema):
     actual_home_win: bool
     home_win_probability: float
     predicted_home_win: bool
+    matchup: str
+    home_team_name: str
+    game_date: datetime
 
 
 class ModelRunResponseSchema(Schema):

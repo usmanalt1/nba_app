@@ -71,8 +71,12 @@ class DuckDBService:
                     if file.is_file() and file.suffix == f".{settings.FILE_FORMAT}":
                         table_name = file.stem
                         try:
+                            prev_df = table_dict.get(table_name, pd.DataFrame())
                             df = pd.read_parquet(file)
-                            table_dict[table_name] = df
+                            if prev_df.empty:
+                                table_dict[table_name] = df
+                            else:
+                                table_dict[table_name] = pd.concat([prev_df, df], ignore_index=True)
                             logger.info(f"Loaded file {file} into DataFrame for table {table_name}")
                         except Exception:
                             logger.exception(f"Failed to read parquet file: {file}")

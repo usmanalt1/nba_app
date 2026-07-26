@@ -23,6 +23,9 @@ class TeamInfo(models.Model):
 
     class Meta:
         db_table = 'teams_info'
+        constraints = [
+            models.UniqueConstraint(fields=["season_id", "abbreviation"], name="teams_info_unique_season_abbr"),
+        ]
 
 
 class PlayerInfo(models.Model):
@@ -36,6 +39,9 @@ class PlayerInfo(models.Model):
 
     class Meta:
         db_table = 'players_info'
+        constraints = [
+            models.UniqueConstraint(fields=["season_id", "full_name"], name="players_info_unique_season_name"),
+        ]
 
 
 class TeamRoster(models.Model):
@@ -50,6 +56,9 @@ class TeamRoster(models.Model):
 
     class Meta:
         db_table = 'teams_roster'
+        constraints = [
+            models.UniqueConstraint(fields=["team_id", "player_id", "season_id"], name="teams_roster_unique_team_player_season"),
+        ]
 
 
 class PlayerStats(models.Model):
@@ -90,6 +99,9 @@ class PlayerStats(models.Model):
 
     class Meta:
         db_table = 'player_stats'
+        constraints = [
+            models.UniqueConstraint(fields=["game_id", "player_id", "season_id"], name="player_stats_unique_game_player_season"),
+        ]
 
 
 class TeamStats(models.Model):
@@ -127,6 +139,9 @@ class TeamStats(models.Model):
 
     class Meta:
         db_table = 'team_stats'
+        constraints = [
+            models.UniqueConstraint(fields=["game_id", "team_id", "season_id"], name="team_stats_unique_game_team_season"),
+        ]
 
 
 class TeamMatchups(models.Model):
@@ -163,6 +178,9 @@ class TeamMatchups(models.Model):
 
     class Meta:
         db_table = 'team_matchups'
+        constraints = [
+            models.UniqueConstraint(fields=["season_id", "team_id", "game_date"], name="team_matchups_unique_season_team_date"),
+        ]
 
 
 class PlayerAwards(models.Model):
@@ -185,6 +203,12 @@ class PlayerAwards(models.Model):
 
     class Meta:
         db_table = 'player_awards'
+        constraints = [
+            models.UniqueConstraint(
+                fields=["player_id", "season", "description", "all_nba_team_number", "month", "week"],
+                name="player_awards_unique_player_season_desc_month_week",
+            ),
+        ]
 
 
 # ── Mart models (dbt-managed, read-only) ─────────────────────────────────────

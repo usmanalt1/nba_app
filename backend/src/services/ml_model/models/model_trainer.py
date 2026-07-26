@@ -110,4 +110,11 @@ class ModelTraner(ModelBase):
         predictions["home_win_probability"] = proba
         predictions["predicted_home_win"] = pred.astype(bool)
 
+        predictions = predictions.merge(self.df_games[["game_id", "game_date", "home_team_name", "away_team_name"]], on="game_id")
+        predictions["matchup"] = predictions["home_team_name"] + " vs " + predictions["away_team_name"]
+        predictions["predicted_winner"] = np.where(
+            predictions["predicted_home_win"], predictions["home_team_name"], predictions["away_team_name"]
+        )
+        predicted_win_counts = predictions["predicted_winner"].value_counts()
+
         return TrainResult(model=model, metrics=metrics, predictions=predictions)
