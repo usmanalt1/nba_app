@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Select } from "@mantine/core";
-import { Button } from '@mantine/core';
-
-
+import { Select, Button, SimpleGrid, Text, Tabs } from "@mantine/core";
+import 'mantine-datatable/styles.layer.css';
+import { StatTile } from './StatTile';
+import { StandingsTable } from './StandingsTable';
+import { PredictionsTable } from './PredictionsTable';
+import type { TrainResponse } from './types';
 
 export function Predictions() {
 
@@ -11,7 +13,8 @@ export function Predictions() {
     const [seasons, setSeasons] = useState([]);
     const [selectedSeason, setSelectedSeason] = useState<string | null>(null);
     const [buttonActive, setButtonActive] = useState(false);
-    const [result, setResult] = useState<any>(null);
+    const [result, setResult] = useState<TrainResponse | null>(null);
+    const [activeTab, setActiveTab] = useState('standings');
 
     useEffect(() => {
         fetch("/api/nba/model/get_ml_models")
@@ -48,34 +51,81 @@ export function Predictions() {
         }
     };
 
-    return <div style={{ display: 'flex', alignItems: 'flex-end', gap: "16px", width: "100%", padding: "10px", marginBottom: '30px' }}>
-        <Select
-            style={{ flex: 1 }}
-            label="Season"
-            placeholder="Pick a Season"
-            data={seasonOptions}
-            value={selectedSeason}
-            onChange={setSelectedSeason}
-            searchable
-        />
-        <Select
-            style={{ flex: 1 }}
-            label="ML Model"
-            placeholder="Pick a Model"
-            data={modelOptions}
-            value={selectedModel}
-            onChange={setSelectedModel}
-            searchable
-        />
-        <Button
-            variant="filled"
-            onClick={handleRunModel}
-            loading={buttonActive}
-            disabled={!selectedModel || !selectedSeason}
-        >
-            Run Model
-        </Button>
-    </div>
+    const tabTypes = [
+        { value: 'standings', label: 'Standings' },
+        { value: 'predictions', label: 'Predictions' },
+    ];
+
+    return <>
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: "16px", width: "100%", padding: "10px", marginBottom: '30px' }}>
+            <Select
+                style={{ flex: 1 }}
+                label="Season"
+                placeholder="Pick a Season"
+                data={seasonOptions}
+                value={selectedSeason}
+                onChange={setSelectedSeason}
+                searchable
+            />
+            <Select
+                style={{ flex: 1 }}
+                label="ML Model"
+                placeholder="Pick a Model"
+                data={modelOptions}
+                value={selectedModel}
+                onChange={setSelectedModel}
+                searchable
+            />
+            <Button
+                variant="filled"
+                onClick={handleRunModel}
+                loading={buttonActive}
+                disabled={!selectedModel || !selectedSeason}
+            >
+                Run Model
+            </Button>
+        </div>
+
+        {result && !result.success && (
+            <Text c="red">{result.error}</Text>
+        )}
+
+        {result && result.success && (
+            <>
+                {result.metrics && (
+                    <SimpleGrid cols={4} mb="30px">
+                        <StatTile label="Accuracy" value={`${(result.metrics.accuracy * 100).toFixed(1)}%`} />
+                        <StatTile label="AUC" value={result.metrics.auc.toFixed(3)} />
+                        <StatTile label="Log loss" value={result.metrics.log_loss.toFixed(3)} />
+                        <StatTile label="Brier" value={result.metrics.brier.toFixed(3)} />
+                    </SimpleGrid>
+                )}
+
+                <Tabs variant="pills" style={{ width: "100%", marginBottom: '30px' }} value={activeTab}>
+                    <Tabs.List grow={true} style={{ width: "100%", display: 'flex', justifyContent: 'space-between' }}>
+                        {tabTypes.map(type =>
+                            <Tabs.Tab
+                                key={type.value}
+                                onClick={() => setActiveTab(type.value)}
+                                value={type.value}
+                                style={{ fontWeight: 700, fontSize: '16px' }}
+                            >
+                                {type.label}
+                            </Tabs.Tab>
+                        )}
+                    </Tabs.List>
+                </Tabs>
+
+                {activeTab === 'standings' && result.season_records && result.season_records.length > 0 && (
+                    <StandingsTable records={result.season_records} />
+                )}
+
+                {activeTab === 'predictions' && result.predictions && result.predictions.length > 0 && (
+                    <PredictionsTable records={result.predictions} />
+                )}
+            </>
+        )}
+    </>
 
 
 }
