@@ -4,6 +4,7 @@ import { MantineProvider } from '@mantine/core';
 import '@mantine/core/styles.css'; // don't forget this, classic gotcha
 import { Navbar } from './components/Navbar/MatineNavbar';
 import { Home } from './components/Home/Home';
+import { Predictions } from './components/Predictions/Predictions';
 
 function App() {
   
@@ -26,6 +27,7 @@ function App() {
           <div style={{ flex: 1, padding: '20px' }}>
             <Routes>
               <Route path="/" element={<Home />} />
+              <Route path="/predictions" element={<Predictions />} />
             </Routes>
           </div>
           

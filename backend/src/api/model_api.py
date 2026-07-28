@@ -4,6 +4,7 @@ from typing import Dict, List, Optional
 
 from ninja import Router, Schema
 
+from app.models import MlModels
 from config.logger import get_logger
 from services.ml_model.models.model_trainer import ModelTraner
 
@@ -57,3 +58,26 @@ async def train_model(request, strategy: str, season: str):
         season_records=result.season_record.to_dict(orient="records"),
         predictions=result.predictions.to_dict(orient="records")
     )
+
+class MlModelOutput(Schema):
+    model_name: str
+
+
+class MlModelsResponseSchema(Schema):
+    success: bool
+    error: Optional[str] = None
+    models: Optional[List[MlModelOutput]] = None
+
+
+@router.get("/get_ml_models", response=MlModelsResponseSchema)
+async def get_ml_models(request):
+    try:
+        def sync_get_models():
+            return list(MlModels.objects.values("model_name"))
+
+        models = await asyncio.to_thread(sync_get_models)
+    except Exception as e:
+        logger.error(f"Error fetching ml models: {e}")
+        return MlModelsResponseSchema(success=False, error=str(e))
+
+    return MlModelsResponseSchema(success=True, models=models)

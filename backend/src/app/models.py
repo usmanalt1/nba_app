@@ -365,3 +365,10 @@ class FctTeamStats(models.Model):
     class Meta:
         managed = False
         db_table = '"nba_marts"."fct_team_stats"'
+
+
+class MlModels(models.Model):
+    model_name = models.CharField(max_length=50, unique=True)
+
+    class Meta:
+        db_table = 'ml_models'

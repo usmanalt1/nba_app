@@ -13,7 +13,7 @@ const pages = [
   { label: 'Home', icon: IconSmartHome, link: '/' },
   { label: 'Collect Data', icon: IconPresentationAnalytics, link: '/collect' },
   { label: 'View Data', icon: IconReportAnalytics, link: '/view' },
-  { label: 'Models', icon: IconAdjustments, link: '/models' },
+  { label: 'Predictions', icon: IconAdjustments, link: '/predictions' },
   { label: 'NBAI', icon: IconAdjustments, link: '/nbai' },
 ];
 
