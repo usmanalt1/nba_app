@@ -7,6 +7,7 @@ export type Prediction = {
     home_win_probability: number;
     predicted_home_win: boolean;
     actual_home_win: boolean;
+    home_team_name: string
 };
 export type TrainResponse = {
     success: boolean;
@@ -15,3 +16,15 @@ export type TrainResponse = {
     season_records: SeasonRecord[] | null;
     predictions: Prediction[] | null;
 };
+
+
+export interface PredictionsProps {
+    selectedModel: string | null;
+    selectedSeason: string | null;
+    activeTab: string;
+    result: TrainResponse | null;
+    setSelectedModel: (value: string | null) => void;
+    setSelectedSeason: (value: string | null) => void;
+    setActiveTab: (value: string) => void;
+    setResult: (value: TrainResponse | null) => void;
+}

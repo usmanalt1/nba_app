@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Text } from "@mantine/core";
 import { DataTable, type DataTableSortStatus } from 'mantine-datatable';
 import sortBy from 'lodash/sortBy';
-import type { Prediction } from './types';
+import type { Prediction } from '../../types/predictions';
 
 export function PredictionsTable({ records }: { records: Prediction[] }) {
     const [sortStatus, setSortStatus] = useState<DataTableSortStatus<Prediction>>({
@@ -29,17 +29,18 @@ export function PredictionsTable({ records }: { records: Prediction[] }) {
                         render: (row) => new Date(row.game_date).toLocaleDateString(),
                     },
                     { accessor: 'matchup', width: '35%', sortable: true },
+                    {accessor: 'home_team_name', width: '10%', sortable: true },
                     {
-                        accessor: 'home_win_probability', title: 'Home win probability', width: '25%', sortable: true, textAlign: 'right',
+                        accessor: 'home_win_probability', title: 'Home win probability', width: '10%', sortable: true, textAlign: 'left',
                         render: (row) => `${(row.home_win_probability * 100).toFixed(1)}%`,
                     },
                     {
-                        accessor: 'result', title: 'Result', width: '25%', textAlign: 'right',
+                        accessor: 'result', title: 'Result', width: '10%', textAlign: 'left',
                         render: (row) => {
                             const correct = row.predicted_home_win === row.actual_home_win;
                             return (
                                 <Text c={correct ? 'teal' : 'red'} fw={600}>
-                                    {correct ? 'Correct' : 'Miss'}
+                                    {correct ? 'Correct' : 'Incorrect'}
                                 </Text>
                             );
                         },

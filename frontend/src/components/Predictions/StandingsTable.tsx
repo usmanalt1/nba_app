@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { DataTable, type DataTableSortStatus } from 'mantine-datatable';
 import sortBy from 'lodash/sortBy';
-import type { SeasonRecord } from './types';
+import type { SeasonRecord } from '../../types/predictions';
 
 export function StandingsTable({ records }: { records: SeasonRecord[] }) {
     const [sortStatus, setSortStatus] = useState<DataTableSortStatus<SeasonRecord>>({

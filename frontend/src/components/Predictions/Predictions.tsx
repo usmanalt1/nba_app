@@ -4,17 +4,13 @@ import 'mantine-datatable/styles.layer.css';
 import { StatTile } from './StatTile';
 import { StandingsTable } from './StandingsTable';
 import { PredictionsTable } from './PredictionsTable';
-import type { TrainResponse } from './types';
+import type { PredictionsProps } from '../../types/predictions';
 
-export function Predictions() {
+export function Predictions(props: PredictionsProps) {
 
     const [models, setModels] = useState<{ model_name: string }[]>([]);
-    const [selectedModel, setSelectedModel] = useState<string | null>(null);
     const [seasons, setSeasons] = useState([]);
-    const [selectedSeason, setSelectedSeason] = useState<string | null>(null);
     const [buttonActive, setButtonActive] = useState(false);
-    const [result, setResult] = useState<TrainResponse | null>(null);
-    const [activeTab, setActiveTab] = useState('standings');
 
     useEffect(() => {
         fetch("/api/nba/model/get_ml_models")
@@ -39,13 +35,13 @@ export function Predictions() {
     }));
 
     const handleRunModel = async () => {
-        if (!selectedModel || !selectedSeason) return;
+        if (!props.selectedModel || !props.selectedSeason) return;
 
         setButtonActive(true);
         try {
-            const response = await fetch(`/api/nba/model/train/${selectedModel}/${selectedSeason}`);
+            const response = await fetch(`/api/nba/model/train/${props.selectedModel}/${props.selectedSeason}`);
             const data = await response.json();
-            setResult(data);
+            props.setResult(data);
         } finally {
             setButtonActive(false);
         }
@@ -63,8 +59,8 @@ export function Predictions() {
                 label="Season"
                 placeholder="Pick a Season"
                 data={seasonOptions}
-                value={selectedSeason}
-                onChange={setSelectedSeason}
+                value={props.selectedSeason}
+                onChange={props.setSelectedSeason}
                 searchable
             />
             <Select
@@ -72,41 +68,41 @@ export function Predictions() {
                 label="ML Model"
                 placeholder="Pick a Model"
                 data={modelOptions}
-                value={selectedModel}
-                onChange={setSelectedModel}
+                value={props.selectedModel}
+                onChange={props.setSelectedModel}
                 searchable
             />
             <Button
                 variant="filled"
                 onClick={handleRunModel}
                 loading={buttonActive}
-                disabled={!selectedModel || !selectedSeason}
+                disabled={!props.selectedModel || !props.selectedSeason}
             >
                 Run Model
             </Button>
         </div>
 
-        {result && !result.success && (
-            <Text c="red">{result.error}</Text>
+        {props.result && !props.result.success && (
+            <Text c="red">{props.result.error}</Text>
         )}
 
-        {result && result.success && (
+        {props.result && props.result.success && (
             <>
-                {result.metrics && (
+                {props.result.metrics && (
                     <SimpleGrid cols={4} mb="30px">
-                        <StatTile label="Accuracy" value={`${(result.metrics.accuracy * 100).toFixed(1)}%`} />
-                        <StatTile label="AUC" value={result.metrics.auc.toFixed(3)} />
-                        <StatTile label="Log loss" value={result.metrics.log_loss.toFixed(3)} />
-                        <StatTile label="Brier" value={result.metrics.brier.toFixed(3)} />
+                        <StatTile label="Accuracy" value={`${(props.result.metrics.accuracy * 100).toFixed(1)}%`} />
+                        <StatTile label="AUC" value={props.result.metrics.auc.toFixed(3)} />
+                        <StatTile label="Log loss" value={props.result.metrics.log_loss.toFixed(3)} />
+                        <StatTile label="Brier" value={props.result.metrics.brier.toFixed(3)} />
                     </SimpleGrid>
                 )}
 
-                <Tabs variant="pills" style={{ width: "100%", marginBottom: '30px' }} value={activeTab}>
+                <Tabs variant="pills" style={{ width: "100%", marginBottom: '30px' }} value={props.activeTab}>
                     <Tabs.List grow={true} style={{ width: "100%", display: 'flex', justifyContent: 'space-between' }}>
                         {tabTypes.map(type =>
                             <Tabs.Tab
                                 key={type.value}
-                                onClick={() => setActiveTab(type.value)}
+                                onClick={() => props.setActiveTab(type.value)}
                                 value={type.value}
                                 style={{ fontWeight: 700, fontSize: '16px' }}
                             >
@@ -116,12 +112,12 @@ export function Predictions() {
                     </Tabs.List>
                 </Tabs>
 
-                {activeTab === 'standings' && result.season_records && result.season_records.length > 0 && (
-                    <StandingsTable records={result.season_records} />
+                {props.activeTab === 'standings' && props.result.season_records && props.result.season_records.length > 0 && (
+                    <StandingsTable records={props.result.season_records} />
                 )}
 
-                {activeTab === 'predictions' && result.predictions && result.predictions.length > 0 && (
-                    <PredictionsTable records={result.predictions} />
+                {props.activeTab === 'predictions' && props.result.predictions && props.result.predictions.length > 0 && (
+                    <PredictionsTable records={props.result.predictions} />
                 )}
             </>
         )}
