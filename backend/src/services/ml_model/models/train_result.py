@@ -9,3 +9,4 @@ class TrainResult:
     model: BaseEstimator
     metrics: dict[str, float]
     predictions: pd.DataFrame
+    season_record: pd.DataFrame = pd.DataFrame()

@@ -1,6 +1,7 @@
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import accuracy_score, log_loss, brier_score_loss, roc_auc_score
+import pandas as pd
 
 from services.ml_model.models.models_base import ModelBase
 from services.ml_model.models.model_config import ModelsConfig
@@ -13,6 +14,11 @@ from services.ml_model.features.players_transfomer import PlayersTransformer
 from config.logger import get_logger
 
 logger = get_logger(__name__)
+SEASON_TOTAL_GAMES = 82
+TEST_FILTER = 22025
+SEASON_MAPPING = {
+    TEST_FILTER: "2025-26"
+}
 
 
 def _report(name, y_true, pred, proba) -> dict[str, float]:
@@ -110,11 +116,16 @@ class ModelTraner(ModelBase):
         predictions["home_win_probability"] = proba
         predictions["predicted_home_win"] = pred.astype(bool)
 
-        predictions = predictions.merge(self.df_games[["game_id", "game_date", "home_team_name", "away_team_name"]], on="game_id")
+        predictions = predictions.merge(self.df_games[["game_id", "game_date", "home_team_name", "away_team_name", "season"]], on="game_id")
         predictions["matchup"] = predictions["home_team_name"] + " vs " + predictions["away_team_name"]
         predictions["predicted_winner"] = np.where(
             predictions["predicted_home_win"], predictions["home_team_name"], predictions["away_team_name"]
         )
-        predicted_win_counts = predictions["predicted_winner"].value_counts()
+        predicted_df: pd.DataFrame = predictions["predicted_winner"].value_counts().reset_index()
+        predicted_df = predicted_df.rename(columns={"count": "wins"})
+        predicted_df["loss"] = SEASON_TOTAL_GAMES - predicted_df["wins"]
+        predicted_df["season"] = SEASON_MAPPING.get(TEST_FILTER)
+        predicted_df.rename(columns={"predicted_winner": "team"}, inplace=True)
 
-        return TrainResult(model=model, metrics=metrics, predictions=predictions)
+
+        return TrainResult(model=model, metrics=metrics, predictions=predictions, season_record=predicted_df)

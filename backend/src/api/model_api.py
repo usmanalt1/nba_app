@@ -21,13 +21,22 @@ class ModelOutput(Schema):
     matchup: str
     home_team_name: str
     game_date: datetime
+    season: str
+
+class ModelSeasonOutput(Schema):
+    team: str  
+    wins: int
+    loss: int  
+    season: str
 
 
 class ModelRunResponseSchema(Schema):
     success: bool
     error: Optional[str] = None
     metrics: Optional[Dict[str, float]] = None
+    season_records: Optional[List[ModelSeasonOutput]] = None
     predictions: Optional[List[ModelOutput]] = None
+
 
 
 @router.get("/train/{strategy}", response=ModelRunResponseSchema)
@@ -45,5 +54,6 @@ async def train_model(request, strategy: str):
     return ModelRunResponseSchema(
         success=True,
         metrics=result.metrics,
-        predictions=result.predictions.to_dict(orient="records"),
+        season_records=result.season_record.to_dict(orient="records"),
+        predictions=result.predictions.to_dict(orient="records")
     )
