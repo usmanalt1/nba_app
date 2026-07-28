@@ -39,11 +39,11 @@ class ModelRunResponseSchema(Schema):
 
 
 
-@router.get("/train/{strategy}", response=ModelRunResponseSchema)
-async def train_model(request, strategy: str):
+@router.get("/train/{strategy}/{season}", response=ModelRunResponseSchema)
+async def train_model(request, strategy: str, season: str):
     try:
         def sync_train():
-            trainer = ModelTraner(strategy=strategy)
+            trainer = ModelTraner(strategy=strategy, season=season)
             return trainer.train()
 
         result = await asyncio.to_thread(sync_train)

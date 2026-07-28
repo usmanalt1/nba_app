@@ -15,10 +15,6 @@ from config.logger import get_logger
 
 logger = get_logger(__name__)
 SEASON_TOTAL_GAMES = 82
-TEST_FILTER = 22025
-SEASON_MAPPING = {
-    TEST_FILTER: "2025-26"
-}
 
 
 def _report(name, y_true, pred, proba) -> dict[str, float]:
@@ -36,12 +32,20 @@ def _report(name, y_true, pred, proba) -> dict[str, float]:
 
 
 class ModelTraner(ModelBase):
-    def __init__(self, strategy: str):
+    def __init__(self, strategy: str, season: str):
         if strategy not in STRATEGY_REGISTRY:
             raise ValueError(f"Unknown strategy: {strategy}")
 
         self.db_service = DBService()
         self.df_games, self.df_team_stats, self.df_player_stats = self.load_data()
+        self.season = season
+
+        SEASON_MAPPING = {
+            "2025-26": 22025
+        }
+        self.test_filter = SEASON_MAPPING.get(self.season, None)
+        if not self.test_filter:
+            raise ValueError("No Season Filter...")
 
         games_transformer = GamesTransformer(df_games=self.df_games)
         team_games_df = games_transformer.transform()
@@ -51,7 +55,7 @@ class ModelTraner(ModelBase):
 
         self.config = ModelsConfig(
             target_col="home_win",
-            test_filter=22025,
+            test_filter=self.test_filter,
             transformers=[
                 games_transformer,
                 boxscore_transformer,
@@ -124,7 +128,7 @@ class ModelTraner(ModelBase):
         predicted_df: pd.DataFrame = predictions["predicted_winner"].value_counts().reset_index()
         predicted_df = predicted_df.rename(columns={"count": "wins"})
         predicted_df["loss"] = SEASON_TOTAL_GAMES - predicted_df["wins"]
-        predicted_df["season"] = SEASON_MAPPING.get(TEST_FILTER)
+        predicted_df["season"] = self.season
         predicted_df.rename(columns={"predicted_winner": "team"}, inplace=True)
 
 
