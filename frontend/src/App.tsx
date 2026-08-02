@@ -5,8 +5,10 @@ import '@mantine/core/styles.css'; // don't forget this, classic gotcha
 import { Navbar } from './components/Navbar/MatineNavbar';
 import { Home } from './components/Home/Home';
 import { Predictions } from './components/Predictions/Predictions';
+import { ViewDataPage } from './components/ViewData/ViewDataPage';
 import type { TrainResponse } from './types/predictions';
 import { theme } from './theme';
+
 
 
 function App() {
@@ -23,6 +25,7 @@ function App() {
           <div style={{ flex: 1, padding: '20px', minWidth: 0 }}>
             <Routes>
               <Route path="/" element={<Home />} />
+              <Route path="/view" element={<ViewDataPage />}/>
               <Route
                 path="/predictions"
                 element={
