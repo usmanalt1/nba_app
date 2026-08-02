@@ -38,7 +38,7 @@ class Service:
 
         return list(
             dim_games_model.objects.filter(season=season, game_date=latest_date)
-            .only("game_date", "season", "home_team_name", "away_team_name")
+            .only("game_date", "season", "home_team_name", "away_team_name", "home_pts", "away_pts")
         )
 
     def get_all_player_stats(self, season_id: Optional[int] = None) -> list:
