@@ -6,6 +6,7 @@ import { Navbar } from './components/Navbar/MatineNavbar';
 import { Home } from './components/Home/Home';
 import { Predictions } from './components/Predictions/Predictions';
 import type { TrainResponse } from './types/predictions';
+import { theme } from './theme';
 
 
 function App() {
@@ -15,7 +16,7 @@ function App() {
   const [activeTab, setActiveTab] = useState('standings');
 
   return (
-    <MantineProvider>
+    <MantineProvider theme={theme} defaultColorScheme="dark">
       <Router>
         <div style={{ display: 'flex', height: '100vh' }}>
           <Navbar />

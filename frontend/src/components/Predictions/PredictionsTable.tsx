@@ -69,7 +69,7 @@ export function PredictionsTable({ records }: { records: Prediction[] }) {
                     searchable
                 />
             </div>
-            <div style={{ width: '100%', border: '1px solid var(--mantine-color-blue-4)', borderRadius: 'var(--mantine-radius-md)', padding: '1px', marginBottom: '30px' }}>
+            <div style={{ width: '100%', border: '1px solid var(--line)', borderRadius: 4, padding: '1px', marginBottom: '30px', fontFamily: "'IBM Plex Mono', monospace" }}>
             <DataTable<Prediction>
                 idAccessor="game_id"
                 withTableBorder
@@ -92,7 +92,7 @@ export function PredictionsTable({ records }: { records: Prediction[] }) {
                         render: (row) => {
                             const correct = row.predicted_home_win === row.actual_home_win;
                             return (
-                                <Text c={correct ? 'teal' : 'red'} fw={600}>
+                                <Text c={correct ? 'var(--win)' : 'var(--lose)'} fw={600}>
                                     {correct ? 'Correct' : 'Incorrect'}
                                 </Text>
                             );

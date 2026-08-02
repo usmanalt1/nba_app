@@ -83,7 +83,7 @@ export function Predictions(props: PredictionsProps) {
         </div>
 
         {props.result && !props.result.success && (
-            <Text c="red">{props.result.error}</Text> // change message
+            <Text c="var(--lose)">{props.result.error}</Text> // change message
         )}
 
         {props.result && props.result.success && (
