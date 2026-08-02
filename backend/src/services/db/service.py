@@ -1,7 +1,7 @@
 
 from typing import TypeVar, Optional
 from django.db.models import Model
-from app.models import FctPlayerStats, DimPlayers, DimRosters, DimSeasons
+from app.models import FctPlayerStats, DimPlayers, DimRosters, DimSeasons, DimGames
 from django.db.models import Avg, Max
 from django.db.models.functions import Round
 
@@ -25,6 +25,21 @@ class Service:
     def get_all_teams(self) -> list:
         return list(self.model.objects.only("team_id", "team_name"))
     
+    def get_latest_games(self, season: str) -> list:
+        dim_games_model: DimGames = self.model
+        latest_date = (
+            dim_games_model.objects.filter(season=season)
+            .order_by("-game_date")
+            .values_list("game_date", flat=True)
+            .first()
+        )
+        if latest_date is None:
+            return []
+
+        return list(
+            dim_games_model.objects.filter(season=season, game_date=latest_date)
+            .only("game_date", "season", "home_team_name", "away_team_name")
+        )
 
     def get_all_player_stats(self, season_id: Optional[int] = None) -> list:
         queryset = FctPlayerStats.objects.select_related("player").values("player_id", "season_id", "pts", "reb", "plus_minus", "ast", "player__player_name")
