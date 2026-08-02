@@ -4,9 +4,9 @@ from ninja import Schema
 import logging
 logger = logging.getLogger(__name__)
 from services.db.service import Service
-from app.models import DimPlayers, FctPlayerStats, DimSeasons, DimTeams
+from app.models import DimPlayers, FctPlayerStats, DimSeasons, DimTeams, DimGames
 import asyncio
-from api import schemas
+from datetime import datetime
 
 router = Router()
 
@@ -30,6 +30,15 @@ class PlayerAggStats(Schema):
     average_rebounds: float
     average_plus_minus: float
     average_assists: float
+
+class LatestGames(Schema):
+    game_date: datetime
+    season: str
+    home_team_name: str
+    away_team_name: str
+    home_pts: int
+    away_pts: int
+
 
 class NBADataResponseSchema(Schema):
     success: bool
@@ -73,6 +82,14 @@ async def get_top_3_best_players_latest_season(request, stat_type: str):
         return sorted_stats[:3]
 
     return await asyncio.to_thread(sync_get_top_3_best_players_latest_season)
+
+@router.get("/get_latest_games", response=List[LatestGames])
+async def latest_games(request):
+    def sync_latest_games():
+        latest_season: DimSeasons = Service(DimSeasons).get_all_seasons()[-1]
+        return Service(DimGames).get_latest_games(season=latest_season.season_name)
+
+    return await asyncio.to_thread(sync_latest_games)
 
 
 
