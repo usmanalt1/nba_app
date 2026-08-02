@@ -38,13 +38,13 @@ export function Trends() {
               style={{
                 minWidth: 350,
                 height: 120,
-                backgroundColor: 'var(--mantine-color-gray-1)',
-                border: '1.5px solid var(--mantine-color-blue-4)',
-                borderRadius: 'var(--mantine-radius-md)',
+                backgroundColor: 'var(--panel)',
+                border: '1px solid var(--line)',
+                borderRadius: 4,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: 'var(--mantine-color-dark-7)',
+                color: 'var(--paper)',
                 fontWeight: 500,
               }}
             >

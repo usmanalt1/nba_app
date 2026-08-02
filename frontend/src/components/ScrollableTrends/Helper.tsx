@@ -15,7 +15,14 @@ export function Helper(playerStats: any, statType: string) {
         <div>
             {logo}
             {playerStats.map((player: any, i: number) => (
-                <div key={i} style={{ fontWeight: i === 0 ? 700 : 400 }}>
+                <div
+                    key={i}
+                    style={{
+                        fontFamily: "'IBM Plex Mono', monospace",
+                        fontWeight: i === 0 ? 600 : 400,
+                        color: i === 0 ? 'var(--gold)' : 'var(--paper-dim)',
+                    }}
+                >
                     {player.player_name} - {player[statType]} {statType === 'average_points' ? 'PPG' : statType === 'average_rebounds' ? 'RPG' : statType === 'average_assists' ? 'APG' : '+/-'}
                 </div>
             ))}

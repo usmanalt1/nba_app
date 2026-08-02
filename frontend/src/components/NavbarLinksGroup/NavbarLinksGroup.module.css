@@ -1,14 +1,19 @@
 .control {
+  font-family: 'IBM Plex Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
   font-weight: 500;
   display: block;
   width: 100%;
   padding: var(--mantine-spacing-xs) var(--mantine-spacing-md);
-  color: light-dark(var(--mantine-color-black), var(--mantine-color-dark-0));
-  font-size: var(--mantine-font-size-sm);
+  color: var(--paper-dim);
+  font-size: 12px;
+  border-left: 2px solid transparent;
 
   &:hover {
-    background-color: light-dark(var(--mantine-color-dark-0), var(--mantine-color-dark-7));
-    color: light-dark(var(--mantine-color-black), var(--mantine-color-dark-0));
+    background-color: var(--panel);
+    color: var(--paper);
+    border-left-color: var(--home);
   }
 }
 

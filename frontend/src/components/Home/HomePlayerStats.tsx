@@ -106,7 +106,7 @@ useEffect(() => {
         </div>
         {
             props.rows.length > 0 && (
-                <div style={{ marginTop: '10px', width: '100%', border: '1px solid var(--mantine-color-blue-4)', borderRadius: 'var(--mantine-radius-md)', padding: '1px' }}>
+                <div style={{ marginTop: '10px', width: '100%', border: '1px solid var(--line)', borderRadius: 4, padding: '1px', fontFamily: "'IBM Plex Mono', monospace" }}>
                     <NBADataTable nbaData={props.rows} />
                 </div>
             )
