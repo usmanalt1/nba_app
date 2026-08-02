@@ -47,9 +47,9 @@ export function PredictionsTable({ records }: { records: Prediction[] }) {
 
     return (
         <div style={{ marginTop: '10px', width: '100%' }}>
-            <div style={{ display: 'flex', gap: "16px", marginBottom: '16px' }}>
+            <div style={{ display: 'flex', gap: "16px", marginBottom: '16px', width: '50%' }}>
                 <Select
-                    style={{ flex: 1, maxWidth: '250px' }}
+                    style={{ flex: 10, maxWidth: '250px' }}
                     label="Result"
                     data={[
                         { value: 'all', label: 'All' },
@@ -60,7 +60,7 @@ export function PredictionsTable({ records }: { records: Prediction[] }) {
                     onChange={(v) => setResultFilter(v as 'all' | 'correct' | 'incorrect')}
                 />
                 <Select
-                    style={{ flex: 1, maxWidth: '250px' }}
+                    style={{ flex: 10, maxWidth: '250px' }}
                     label="Team"
                     placeholder="Pick a Team"
                     data={teamOptions}
