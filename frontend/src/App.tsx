@@ -1,5 +1,4 @@
 import { BrowserRouter as Router, Routes, Route} from 'react-router-dom';
-import {useState} from 'react';
 import { MantineProvider } from '@mantine/core';
 import '@mantine/core/styles.css'; // don't forget this, classic gotcha
 import { Navbar } from './components/Navbar/MatineNavbar';
@@ -11,7 +10,6 @@ import { theme } from './theme';
 
 
 function App() {
-  const [activeTab, setActiveTab] = useState('standings');
 
   return (
     <MantineProvider theme={theme} defaultColorScheme="dark">
@@ -22,10 +20,7 @@ function App() {
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/view" element={<ViewDataPage />}/>
-              <Route
-                path="/predictions"
-                element={<Predictions activeTab={activeTab} setActiveTab={setActiveTab} />}
-              />
+              <Route path="/predictions" element={<Predictions />} />
             </Routes>
           </div>
 

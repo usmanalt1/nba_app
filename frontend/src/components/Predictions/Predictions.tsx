@@ -4,11 +4,11 @@ import 'mantine-datatable/styles.layer.css';
 import { StatTile } from './StatTile';
 import { StandingsTable } from './StandingsTable';
 import { PredictionsTable } from './PredictionsTable';
-import type { PredictionsProps, TrainResponse } from '../../types/predictions';
+import type { TrainResponse } from '../../types/predictions';
 import { useSearchParams } from 'react-router-dom';
 
 
-export function Predictions(props: PredictionsProps) {
+export function Predictions() {
 
     const [models, setModels] = useState<{ model_name: string }[]>([]);
     const [seasons, setSeasons] = useState([]);
@@ -18,6 +18,7 @@ export function Predictions(props: PredictionsProps) {
 
     const selectedModel = searchParams.get('model');
     const selectedSeason = searchParams.get('season');
+    const predictionsTab = searchParams.get('predictions_tab');
 
     useEffect(() => {
         fetch("/api/nba/model/get_ml_models")
@@ -51,6 +52,7 @@ export function Predictions(props: PredictionsProps) {
                     setSearchParams(prev => {
                         prev.set('model', data.strategy);
                         prev.set('season', data.season);
+                        prev.set('predictions_tab', 'standings');
                         return prev;
                     });
                 }
@@ -138,12 +140,12 @@ export function Predictions(props: PredictionsProps) {
                     </SimpleGrid>
                 )}
 
-                <Tabs variant="pills" style={{ width: "100%", marginBottom: '30px' }} value={props.activeTab}>
+                <Tabs variant="pills" style={{ width: "100%", marginBottom: '30px' }} value={predictionsTab}>
                     <Tabs.List grow={true} style={{ width: "100%", display: 'flex', justifyContent: 'space-between' }}>
                         {tabTypes.map(type =>
                             <Tabs.Tab
                                 key={type.value}
-                                onClick={() => props.setActiveTab(type.value)}
+                                onClick={() => handleSearchParamsChange('predictions_tab', type.value)}
                                 value={type.value}
                                 style={{ fontWeight: 700, fontSize: '16px' }}
                             >
@@ -153,11 +155,11 @@ export function Predictions(props: PredictionsProps) {
                     </Tabs.List>
                 </Tabs>
 
-                {props.activeTab === 'standings' && result.season_records && result.season_records.length > 0 && (
+                {predictionsTab === 'standings' && result.season_records && result.season_records.length > 0 && (
                     <StandingsTable records={result.season_records} />
                 )}
 
-                {props.activeTab === 'predictions' && result.predictions && result.predictions.length > 0 && (
+                {predictionsTab !== 'standings' && result.predictions && result.predictions.length > 0 && (
                     <PredictionsTable records={result.predictions} />
                 )}
             </>
