@@ -4,15 +4,19 @@ import { DataTable, type DataTableSortStatus } from 'mantine-datatable';
 import sortBy from 'lodash/sortBy';
 import type { Prediction } from '../../types/predictions';
 import { Select } from "@mantine/core";
+import { useSearchParams } from 'react-router-dom';
+import { handleSearchParams } from '../Helper/HandleSearchParams';
 
-export function PredictionsTable({ records }: { records: Prediction[] }) {
+
+export function PredictionsTable({ records }: { records: Prediction[]}) {
     const [sortStatus, setSortStatus] = useState<DataTableSortStatus<Prediction>>({
         columnAccessor: 'game_date',
         direction: 'desc',
     });
-    const [resultFilter, setResultFilter] = useState<'all' | 'correct' | 'incorrect'>('all');
+    const [searchParams, setSearchParams] = useSearchParams();
     const [teamFilter, setTeamFilter] = useState([])
-    const [selectedTeam, setSelectedTeam] = useState<string | null>("Atlanta Hawks");
+    const resultFilter = searchParams.get('result_filter') as 'all' | 'correct' | 'incorrect' || 'all';
+    const selectedTeamParam = searchParams.get('team');
 
     useEffect(() => {
         fetch("/api/nba/db/list_all_teams")
@@ -27,7 +31,7 @@ export function PredictionsTable({ records }: { records: Prediction[] }) {
 
     const filtered = useMemo(() => {
         return records.filter((row) => {
-            if (selectedTeam !== null && !row.matchup.includes(selectedTeam)) {
+            if (selectedTeamParam !== null && !row.matchup.includes(selectedTeamParam)) {
                 return false;
             }
             if (resultFilter === 'all') {
@@ -36,13 +40,17 @@ export function PredictionsTable({ records }: { records: Prediction[] }) {
             const correct = row.predicted_home_win === row.actual_home_win;
             return resultFilter === 'correct' ? correct : !correct;
         });
-    }, [records, resultFilter, selectedTeam]);
+    }, [records, resultFilter, selectedTeamParam]);
 
 
     const sorted = useMemo(() => {
         const data = sortBy(filtered, sortStatus.columnAccessor);
         return sortStatus.direction === 'desc' ? data.reverse() : data;
     }, [filtered, sortStatus]);
+
+    const handleSearchParamsChange = (key: string, value: string | null) => {
+        handleSearchParams(setSearchParams, key, value);
+    }
 
 
     return (
@@ -57,15 +65,15 @@ export function PredictionsTable({ records }: { records: Prediction[] }) {
                         { value: 'incorrect', label: 'Incorrect only' },
                     ]}
                     value={resultFilter}
-                    onChange={(v) => setResultFilter(v as 'all' | 'correct' | 'incorrect')}
+                    onChange={(v) => handleSearchParamsChange('result_filter', v)}
                 />
                 <Select
                     style={{ flex: 10, maxWidth: '250px' }}
                     label="Team"
                     placeholder="Pick a Team"
                     data={teamOptions}
-                    value={selectedTeam}
-                    onChange={setSelectedTeam}
+                    value={selectedTeamParam}
+                    onChange={(v) => handleSearchParamsChange('team', v)}
                     searchable
                 />
             </div>

@@ -16,15 +16,3 @@ export type TrainResponse = {
     season_records: SeasonRecord[] | null;
     predictions: Prediction[] | null;
 };
-
-
-export interface PredictionsProps {
-    selectedModel: string | null;
-    selectedSeason: string | null;
-    activeTab: string;
-    result: TrainResponse | null;
-    setSelectedModel: (value: string | null) => void;
-    setSelectedSeason: (value: string | null) => void;
-    setActiveTab: (value: string) => void;
-    setResult: (value: TrainResponse | null) => void;
-}
