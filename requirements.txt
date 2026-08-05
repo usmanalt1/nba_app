@@ -34,3 +34,4 @@ azure-storage-blob
 adlfs
 fsspec 
 azure-identity
+redis

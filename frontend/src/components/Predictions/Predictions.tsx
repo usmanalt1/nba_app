@@ -4,13 +4,20 @@ import 'mantine-datatable/styles.layer.css';
 import { StatTile } from './StatTile';
 import { StandingsTable } from './StandingsTable';
 import { PredictionsTable } from './PredictionsTable';
-import type { PredictionsProps } from '../../types/predictions';
+import type { PredictionsProps, TrainResponse } from '../../types/predictions';
+import { useSearchParams } from 'react-router-dom';
+
 
 export function Predictions(props: PredictionsProps) {
 
     const [models, setModels] = useState<{ model_name: string }[]>([]);
     const [seasons, setSeasons] = useState([]);
     const [buttonActive, setButtonActive] = useState(false);
+    const [searchParams, setSearchParams] = useSearchParams();
+    const [result, setResult] = useState<TrainResponse | null>(null);
+
+    const selectedModel = searchParams.get('model');
+    const selectedSeason = searchParams.get('season');
 
     useEffect(() => {
         fetch("/api/nba/model/get_ml_models")
@@ -24,6 +31,32 @@ export function Predictions(props: PredictionsProps) {
             .then(setSeasons);
     }, []);
 
+    useEffect(() => {
+        if (!selectedModel || !selectedSeason) return;
+
+        fetch(`/api/nba/model/get_ml_trained_models/${selectedModel}/${selectedSeason}`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) setResult(data);
+            });
+    }, [selectedModel, selectedSeason]);
+
+    useEffect(() => {
+        if (selectedModel || selectedSeason) return;
+
+        fetch("/api/nba/model/get_last_run")
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    setSearchParams(prev => {
+                        prev.set('model', data.strategy);
+                        prev.set('season', data.season);
+                        return prev;
+                    });
+                }
+            });
+    }, []);
+
     const modelOptions = models.map((p) => ({
         value: String(p.model_name),
         label: String(p.model_name),
@@ -35,17 +68,25 @@ export function Predictions(props: PredictionsProps) {
     }));
 
     const handleRunModel = async () => {
-        if (!props.selectedModel || !props.selectedSeason) return;
+        if (!selectedModel || !selectedSeason) return;
 
         setButtonActive(true);
         try {
-            const response = await fetch(`/api/nba/model/train/${props.selectedModel}/${props.selectedSeason}`);
+            const response = await fetch(`/api/nba/model/train/${selectedModel}/${selectedSeason}`);
             const data = await response.json();
-            props.setResult(data);
+            setResult(data);
         } finally {
             setButtonActive(false);
         }
     };
+
+    const handleSearchParamsChange = (key: string, value: string | null) => {
+        setSearchParams(prev => {
+            if (value) prev.set(key, value);
+            else prev.delete(key);
+            return prev;
+        });
+    }
 
     const tabTypes = [
         { value: 'standings', label: 'Standings' },
@@ -59,8 +100,8 @@ export function Predictions(props: PredictionsProps) {
                 label="Season"
                 placeholder="Pick a Season"
                 data={seasonOptions}
-                value={props.selectedSeason}
-                onChange={props.setSelectedSeason}
+                value={selectedSeason}
+                onChange={(value) => handleSearchParamsChange('season', value)}
                 searchable
             />
             <Select
@@ -68,32 +109,32 @@ export function Predictions(props: PredictionsProps) {
                 label="ML Model"
                 placeholder="Pick a Model"
                 data={modelOptions}
-                value={props.selectedModel}
-                onChange={props.setSelectedModel}
+                value={selectedModel}
+                onChange={(value) => handleSearchParamsChange('model', value)}
                 searchable
             />
             <Button
                 variant="filled"
                 onClick={handleRunModel}
                 loading={buttonActive}
-                disabled={!props.selectedModel || !props.selectedSeason}
+                disabled={!selectedModel || !selectedSeason}
             >
                 Run Model
             </Button>
         </div>
 
-        {props.result && !props.result.success && (
-            <Text c="var(--lose)">{props.result.error}</Text> // change message
+        {result && !result.success && (
+            <Text c="var(--lose)">{result.error}</Text> // change message
         )}
 
-        {props.result && props.result.success && (
+        {result && result.success && (
             <>
-                {props.result.metrics && (
+                {result.metrics && (
                     <SimpleGrid cols={4} mb="30px">
-                        <StatTile label="Accuracy" value={`${(props.result.metrics.accuracy * 100).toFixed(1)}%`} />
-                        <StatTile label="AUC" value={props.result.metrics.auc.toFixed(3)} />
-                        <StatTile label="Log loss" value={props.result.metrics.log_loss.toFixed(3)} />
-                        <StatTile label="Brier" value={props.result.metrics.brier.toFixed(3)} />
+                        <StatTile label="Accuracy" value={`${(result.metrics.accuracy * 100).toFixed(1)}%`} />
+                        <StatTile label="AUC" value={result.metrics.auc.toFixed(3)} />
+                        <StatTile label="Log loss" value={result.metrics.log_loss.toFixed(3)} />
+                        <StatTile label="Brier" value={result.metrics.brier.toFixed(3)} />
                     </SimpleGrid>
                 )}
 
@@ -112,12 +153,12 @@ export function Predictions(props: PredictionsProps) {
                     </Tabs.List>
                 </Tabs>
 
-                {props.activeTab === 'standings' && props.result.season_records && props.result.season_records.length > 0 && (
-                    <StandingsTable records={props.result.season_records} />
+                {props.activeTab === 'standings' && result.season_records && result.season_records.length > 0 && (
+                    <StandingsTable records={result.season_records} />
                 )}
 
-                {props.activeTab === 'predictions' && props.result.predictions && props.result.predictions.length > 0 && (
-                    <PredictionsTable records={props.result.predictions} />
+                {props.activeTab === 'predictions' && result.predictions && result.predictions.length > 0 && (
+                    <PredictionsTable records={result.predictions} />
                 )}
             </>
         )}

@@ -6,15 +6,11 @@ import { Navbar } from './components/Navbar/MatineNavbar';
 import { Home } from './components/Home/Home';
 import { Predictions } from './components/Predictions/Predictions';
 import { ViewDataPage } from './components/ViewData/ViewDataPage';
-import type { TrainResponse } from './types/predictions';
 import { theme } from './theme';
 
 
 
 function App() {
-  const [selectedModel, setSelectedModel] = useState<string | null>(null);
-  const [selectedSeason, setSelectedSeason] = useState<string | null>(null);
-  const [result, setResult] = useState<TrainResponse | null>(null);
   const [activeTab, setActiveTab] = useState('standings');
 
   return (
@@ -28,18 +24,7 @@ function App() {
               <Route path="/view" element={<ViewDataPage />}/>
               <Route
                 path="/predictions"
-                element={
-                  <Predictions
-                    selectedModel={selectedModel}
-                    selectedSeason={selectedSeason}
-                    result={result}
-                    activeTab={activeTab}
-                    setSelectedModel={setSelectedModel}
-                    setSelectedSeason={setSelectedSeason}
-                    setResult={setResult}
-                    setActiveTab={setActiveTab}
-                  />
-                }
+                element={<Predictions activeTab={activeTab} setActiveTab={setActiveTab} />}
               />
             </Routes>
           </div>
