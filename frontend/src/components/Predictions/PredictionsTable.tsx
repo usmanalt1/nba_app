@@ -5,6 +5,7 @@ import sortBy from 'lodash/sortBy';
 import type { Prediction } from '../../types/predictions';
 import { Select } from "@mantine/core";
 import { useSearchParams } from 'react-router-dom';
+import { handleSearchParams } from '../Helper/HandleSearchParams';
 
 
 export function PredictionsTable({ records }: { records: Prediction[]}) {
@@ -48,11 +49,7 @@ export function PredictionsTable({ records }: { records: Prediction[]}) {
     }, [filtered, sortStatus]);
 
     const handleSearchParamsChange = (key: string, value: string | null) => {
-        setSearchParams(prev => {
-            if (value) prev.set(key, value);
-            else prev.delete(key);
-            return prev;
-        });
+        handleSearchParams(setSearchParams, key, value);
     }
 
 

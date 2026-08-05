@@ -6,6 +6,7 @@ import { StandingsTable } from './StandingsTable';
 import { PredictionsTable } from './PredictionsTable';
 import type { TrainResponse } from '../../types/predictions';
 import { useSearchParams } from 'react-router-dom';
+import { handleSearchParams } from '../Helper/HandleSearchParams';
 
 
 export function Predictions() {
@@ -83,12 +84,8 @@ export function Predictions() {
     };
 
     const handleSearchParamsChange = (key: string, value: string | null) => {
-        setSearchParams(prev => {
-            if (value) prev.set(key, value);
-            else prev.delete(key);
-            return prev;
-        });
-    }
+        handleSearchParams(setSearchParams, key, value);
+    };
 
     const tabTypes = [
         { value: 'standings', label: 'Standings' },
