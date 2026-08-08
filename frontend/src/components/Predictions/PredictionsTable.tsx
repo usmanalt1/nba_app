@@ -55,7 +55,7 @@ export function PredictionsTable({ records }: { records: Prediction[]}) {
 
     return (
         <div style={{ marginTop: '10px', width: '100%' }}>
-            <div style={{ display: 'flex', gap: "16px", marginBottom: '16px', width: '50%' }}>
+            <div style={{ display: 'flex', gap: "16px", marginBottom: '16px', width: '50%'}}>
                 <Select
                     style={{ flex: 10, maxWidth: '250px' }}
                     label="Result"
@@ -77,7 +77,7 @@ export function PredictionsTable({ records }: { records: Prediction[]}) {
                     searchable
                 />
             </div>
-            <div style={{ width: '100%', border: '1px solid var(--line)', borderRadius: 4, padding: '1px', marginBottom: '30px', fontFamily: "'IBM Plex Mono', monospace" }}>
+            <div style={{ width: '100%', border: '1px solid var(--line)', borderRadius: 4, padding: '1px', marginBottom: '30px', fontFamily: "'IBM Plex Mono', monospace", height: '500px' }}>
             <DataTable<Prediction>
                 idAccessor="game_id"
                 withTableBorder

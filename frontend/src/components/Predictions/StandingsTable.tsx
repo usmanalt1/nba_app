@@ -15,7 +15,7 @@ export function StandingsTable({ records }: { records: SeasonRecord[] }) {
     }, [records, sortStatus]);
 
     return (
-        <div style={{ marginTop: '10px', width: '100%', border: '1px solid var(--line)', borderRadius: 4, padding: '1px', fontFamily: "'IBM Plex Mono', monospace" }}>
+        <div style={{ marginTop: '10px', width: '100%', border: '1px solid var(--line)', borderRadius: 4, padding: '1px', fontFamily: "'IBM Plex Mono', monospace", height: '600px' }}>
             <DataTable<SeasonRecord>
                 idAccessor="team"
                 withTableBorder
