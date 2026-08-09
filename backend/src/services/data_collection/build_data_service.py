@@ -14,7 +14,12 @@ class BuildDataService:
         self.date = date or datetime.today() - timedelta(weeks=52)
 
     def build_nba_data(self, table_name = None, season_id: str = None, season_year: str = None, team_roster: bool = False) -> dict:
-        raw_tables = CollectRawNBAData(date_to_run=self.date).gather_and_import_nba_data(table_name=table_name, season_id=season_id, season_year=season_year, team_roster=team_roster)
+        try:
+            raw_tables = CollectRawNBAData(date_to_run=self.date).gather_and_import_nba_data(table_name=table_name, season_id=season_id, season_year=season_year, team_roster=team_roster)
+
+        except Exception as e:
+            logger.error(f"Error occurred while building NBA data: {e}")
+            raise
 
         return raw_tables
 

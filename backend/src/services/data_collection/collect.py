@@ -9,6 +9,7 @@ from nba_api.stats.endpoints import leagueleaders, teamdashboardbygeneralsplits,
 from nba_api.stats.endpoints import leaguegamelog
 from http.client import RemoteDisconnected
 from services.data_collection.constants import Constants
+from nba_api.stats.library.parameters import SeasonTypePlayoffs, SeasonType
 import time as t
 
 
@@ -67,7 +68,15 @@ class CollectRawNBAData(TransformHelper, Constants):
             df_teams = self._get_team_info()
             df_players = self._get_players_info()
             df_team_logs = self._get_logs(season_year=season_year, pt_abbreviation="T")
+            df_team_logs_playoffs = self._get_logs(season_year=season_year, pt_abbreviation="T", season_type=SeasonTypePlayoffs.playoffs)
+            df_team_logs = pd.concat([df_team_logs, df_team_logs_playoffs], ignore_index=True)
+            df_team_logs = df_team_logs.drop_duplicates(subset=["game_id", "team_id"], keep="last")
+            df_team_logs = df_team_logs.dropna()
             df_player_logs = self._get_logs(season_year=season_year, pt_abbreviation="P")
+            df_player_logs_playoffs = self._get_logs(season_year=season_year, pt_abbreviation="P", season_type=SeasonTypePlayoffs.playoffs)
+            df_player_logs = pd.concat([df_player_logs, df_player_logs_playoffs], ignore_index=True)
+            df_player_logs = df_player_logs.drop_duplicates(subset=["game_id", "player_id"], keep="last")
+            df_player_logs = df_player_logs.dropna()
             df_team_matchups = self._get_team_matchups(team_roster=df_teams, season_year=season_year)
 
             nba_data_dict = {
@@ -159,7 +168,7 @@ class CollectRawNBAData(TransformHelper, Constants):
         return df
 
 
-    def _get_logs(self, season_year: str, pt_abbreviation: str) -> pd.DataFrame:
+    def _get_logs(self, season_year: str, pt_abbreviation: str, season_type: str = SeasonType.default) -> pd.DataFrame:
         logging.info(f"Collecting logs for season: {season_year} and type: {pt_abbreviation}")
         # Retry loop to handle intermittent connection drops from the remote API
         max_retries = 5
@@ -171,6 +180,7 @@ class CollectRawNBAData(TransformHelper, Constants):
                     season=season_year,
                     player_or_team_abbreviation=pt_abbreviation,
                     headers=self.headers,
+                    season_type_all_star=season_type,
                     timeout=60,
                 )
                 df_league_logs = league_logs.get_data_frames()[0]
@@ -223,8 +233,9 @@ class CollectRawNBAData(TransformHelper, Constants):
         logging.info(f"Team IDs for Matchups: {team_roster_ids}")
 
         for team_id in team_roster_ids:
-            gamefinder = leaguegamefinder.LeagueGameFinder(team_id_nullable=team_id, season_nullable=season_year)
-            games = gamefinder.get_data_frames()[0]
+            game_finder_season = leaguegamefinder.LeagueGameFinder(team_id_nullable=team_id, season_nullable=season_year)
+            game_finder_playoffs = leaguegamefinder.LeagueGameFinder(team_id_nullable=team_id, season_nullable=season_year, season_type_nullable=SeasonTypePlayoffs.playoffs)
+            games = pd.concat([game_finder_season.get_data_frames()[0], game_finder_playoffs.get_data_frames()[0]], ignore_index=True)
             games = self.clean_dataframe(games)
             all_games = pd.concat([all_games, games], ignore_index=True)
             t.sleep(1)  # to avoid rate limiting
