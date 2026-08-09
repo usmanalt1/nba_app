@@ -31,13 +31,13 @@ class Service:
             dim_games_model.objects.filter(season=season)
             .order_by("-game_date")
             .values_list("game_date", flat=True)
-            .first()
+            .distinct()[:5]
         )
         if latest_date is None:
             return []
 
         return list(
-            dim_games_model.objects.filter(season=season, game_date=latest_date)
+            dim_games_model.objects.filter(season=season, game_date__in=latest_date)
             .only("game_date", "season", "home_team_name", "away_team_name", "home_pts", "away_pts")
         )
 
