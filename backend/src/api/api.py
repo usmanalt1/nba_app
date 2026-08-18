@@ -14,6 +14,7 @@ from services.warehouse_storage.duck_db.service import DuckDBService
 from services.warehouse_storage.bigquery.service import BigQueryService
 from api.db_api import router as db_router
 from api.model_api import router as model_router
+from api.analytics_api import router as analytics_router
 from services.db.service import Service
 from app.models import DimPlayers
 
@@ -26,6 +27,7 @@ api = NinjaAPI()
 api.add_router("/nba/", router)
 api.add_router("/nba/db/", db_router)
 api.add_router("/nba/model/", model_router)
+api.add_router("/nba/analytics/", analytics_router)
 
 class NBADataResponseSchema(Schema):
     success: bool
