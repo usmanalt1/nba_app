@@ -1,5 +1,8 @@
 import { Games } from  "../ScrollableGames/Games";
 import { HomeTrends } from "./HomeTrends";
+import { HomeTeamLeaders } from "./HomeTeamLeaders";
+import { HomeMostImproved } from "./HomeMostImproved";
+import { HomeLatestPredictions } from "./HomeLatestPredictions";
 
 export function Home() {
     return (
@@ -7,36 +10,17 @@ export function Home() {
             <div style={{ marginBottom: '30px', width: '100%', display: 'flex', justifyContent: 'left' }}>
                 <Games />
             </div>
+
+            <HomeLatestPredictions />
+
+            <h2 style={{ width: '100%' }}>Player Leaders</h2>
             <HomeTrends />
-            {/* <div style={{ marginBottom: '30px', width: '100%', display: 'flex', justifyContent: 'left' , gap: '30px', flexWrap: 'wrap' }}>
-                <Box 
-                    w={{ base: '100%', lg: 400 }} 
-                    h={400} 
-                    p="xl" 
-                    bg="var(--panel)"
-                    c="var(--paper)"
-                    >
-                    This is a large box!
-                </Box>
-                <Box 
-                    w={{ base: '100%', lg: 400 }} 
-                    h={400} 
-                    p="xl" 
-                    bg="var(--panel)"
-                    c="var(--paper)"
-                    >
-                    This is a large box!
-                </Box>
-                <Box 
-                    w={{ base: '100%', lg: 400 }} 
-                    h={400} 
-                    p="xl" 
-                    bg="var(--panel)"
-                    c="var(--paper)"
-                    >
-                    This is a large box!
-                </Box>
-            </div> */}
+
+            <h2 style={{ width: '100%' }}>Team Leaders</h2>
+            <HomeTeamLeaders />
+
+            <h2 style={{ width: '100%' }}>Most Improved</h2>
+            <HomeMostImproved />
         </div>
     );
 }

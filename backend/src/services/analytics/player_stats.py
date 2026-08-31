@@ -8,10 +8,15 @@ class PlayerStats:
 
     def transform(self) -> pd.DataFrame:
         build_player_games_df = self._build_player_games()
+        rank_cols = []
         for stat in self.ALLOWED_STAT_COLS:
             build_player_games_df = self._rank_players(build_player_games_df, stat_col=stat)
+            rank_cols.append(f"rank_{stat}")
 
-        return build_player_games_df
+        # keep a player if they're top 10 in at least one stat, rather than requiring
+        # top 10 in every stat (which the old sequential-filter approach effectively did)
+        top_10_mask = (build_player_games_df[rank_cols] <= 10).any(axis=1)
+        return build_player_games_df.loc[top_10_mask].reset_index(drop=True)
 
 
     def _build_player_games(self) -> pd.DataFrame:
@@ -34,8 +39,4 @@ class PlayerStats:
             raise ValueError(f"Invalid stat_col: {stat_col}. Allowed values are: {self.ALLOWED_STAT_COLS}")
         stat_rank_col = f"rank_{stat_col}"
         df[stat_rank_col] = df.groupby("season_id")[stat_col].rank(ascending=False, method="min")
-        # top 10
-        mask = df[stat_rank_col] <= 10
-        df = df.loc[mask]
-
         return df

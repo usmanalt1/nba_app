@@ -14,9 +14,9 @@ function App() {
   return (
     <MantineProvider theme={theme} defaultColorScheme="dark">
       <Router>
-        <div style={{ display: 'flex', height: '100vh' }}>
+        <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
           <Navbar />
-          <div style={{ flex: 1, padding: '20px', minWidth: 0 }}>
+          <div style={{ flex: 1, padding: '20px', minWidth: 0, height: '100vh', overflowY: 'auto', boxSizing: 'border-box' }}>
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/view" element={<ViewDataPage />}/>

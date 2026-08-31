@@ -14,7 +14,7 @@ export function Games() {
   const length_games = Games.length
 
   return  (
-    <ScrollArea scrollbars="x" w="100%" style={{ minWidth: 0 }}>
+    <ScrollArea scrollbars="x" type="always" w="100%" style={{ minWidth: 0 }}>
       <Box>
         <Group wrap="nowrap" gap="md">
           {Array.from({ length: length_games }).map((_, index) => (
