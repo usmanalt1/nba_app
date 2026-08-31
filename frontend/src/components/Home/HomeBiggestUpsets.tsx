@@ -2,15 +2,23 @@ import { Box, Group, ScrollArea, Text } from '@mantine/core';
 import { usePredictions } from '../../hooks/usePredictions';
 import { parseAwayTeam } from '../../utils/predictions';
 import { PredictionBar } from '../ui/PredictionBar';
+import type { Prediction } from '../../types/predictions';
 
-export function HomeLatestPredictions() {
+function modelConfidence(prediction: Prediction): number {
+    return prediction.predicted_home_win
+        ? prediction.home_win_probability
+        : 1 - prediction.home_win_probability;
+}
+
+export function HomeBiggestUpsets() {
     const { strategy, predictions } = usePredictions();
 
-    const latest = [...predictions]
-        .sort((a, b) => new Date(b.game_date).getTime() - new Date(a.game_date).getTime())
+    const upsets = predictions
+        .filter((prediction) => prediction.predicted_home_win !== prediction.actual_home_win)
+        .sort((a, b) => modelConfidence(b) - modelConfidence(a))
         .slice(0, 8);
 
-    if (!strategy || latest.length === 0) return null;
+    if (!strategy || upsets.length === 0) return null;
 
     return (
         <Box style={{ marginBottom: '30px', width: '100%' }}>
@@ -21,11 +29,11 @@ export function HomeLatestPredictions() {
                 ff="'IBM Plex Mono', monospace"
                 style={{ letterSpacing: '0.06em', marginBottom: 10 }}
             >
-                Latest Games — {strategy}
+                Biggest Upsets — where {strategy} was most confident and wrong
             </Text>
             <ScrollArea scrollbars="x" type="always" w="100%" style={{ minWidth: 0 }}>
                 <Group wrap="nowrap" gap="md">
-                    {latest.map((prediction) => (
+                    {upsets.map((prediction) => (
                         <PredictionBar
                             key={prediction.game_id}
                             homeTeam={prediction.home_team_name}

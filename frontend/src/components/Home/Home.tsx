@@ -3,6 +3,8 @@ import { HomeTrends } from "./HomeTrends";
 import { HomeTeamLeaders } from "./HomeTeamLeaders";
 import { HomeMostImproved } from "./HomeMostImproved";
 import { HomeLatestPredictions } from "./HomeLatestPredictions";
+import { HomeBiggestUpsets } from "./HomeBiggestUpsets";
+import { HomeModelComparison } from "./HomeModelComparison";
 
 export function Home() {
     return (
@@ -12,6 +14,8 @@ export function Home() {
             </div>
 
             <HomeLatestPredictions />
+            <HomeBiggestUpsets />
+            <HomeModelComparison />
 
             <h2 style={{ width: '100%' }}>Player Leaders</h2>
             <HomeTrends />

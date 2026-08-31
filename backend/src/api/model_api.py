@@ -124,3 +124,46 @@ async def get_ml_models(request):
         return MlModelsResponseSchema(success=False, error=str(e))
 
     return MlModelsResponseSchema(success=True, models=models)
+
+
+class ModelRunSummary(Schema):
+    strategy: str
+    season: str
+    metrics: Dict[str, float]
+
+
+class ModelRunsResponseSchema(Schema):
+    success: bool
+    error: Optional[str] = None
+    runs: Optional[List[ModelRunSummary]] = None
+
+
+@router.get("/get_all_runs", response=ModelRunsResponseSchema)
+async def get_all_runs(request):
+    try:
+        redis_client = RedisClient()
+
+        def sync_get():
+            runs = []
+            # cache keys are "{strategy}_{season}_model" (see model_run_cache_key) - season
+            # strings like "2025-26" never contain an underscore, so splitting on the last
+            # underscore reliably separates it from a strategy name that might (e.g.
+            # "logistic_regression")
+            for key in redis_client.keys("*_model"):
+                strategy, _, season = key.removesuffix("_model").rpartition("_")
+                if not strategy:
+                    continue
+                result = redis_client.get(key)
+                if result is None or result.metrics is None:
+                    continue
+                runs.append(ModelRunSummary(strategy=strategy, season=season, metrics=result.metrics))
+
+            runs.sort(key=lambda r: (r.season, r.strategy), reverse=True)
+            return runs
+
+        runs = await asyncio.to_thread(sync_get)
+    except Exception as e:
+        logger.error(f"Error fetching all runs: {e}")
+        return ModelRunsResponseSchema(success=False, error=str(e))
+
+    return ModelRunsResponseSchema(success=True, runs=runs)

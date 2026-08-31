@@ -1,5 +1,5 @@
 import pickle
-from typing import Any, Optional
+from typing import Any, List, Optional
 
 
 class RedisClient:
@@ -23,3 +23,8 @@ class RedisClient:
             self.connect()
         raw = self.client.get(key)
         return pickle.loads(raw) if raw is not None else None
+
+    def keys(self, pattern: str) -> List[str]:
+        if not self.client:
+            self.connect()
+        return [key.decode("utf-8") for key in self.client.keys(pattern)]
