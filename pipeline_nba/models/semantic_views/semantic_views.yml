@@ -1,0 +1,15 @@
+version: 2
+
+models:
+  - name: view_player_stats
+    config:
+      materialized: view
+      tags: ["semantic_view"]
+    alias: view_player_stats
+    description: "This view provides a comprehensive overview of NBA player statistics, aggregating data from various sources to present key performance metrics for each player across different seasons and games."
+  - name: view_team_stats
+    config:
+      materialized: view
+      tags: ["semantic_view"]
+    alias: view_team_stats
+    description: "This view provides a comprehensive overview of NBA team statistics, aggregating data from various sources to present key performance metrics for each team across different seasons and games."

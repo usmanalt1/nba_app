@@ -41,3 +41,18 @@ models:
     marts:
       +schema: marts          # → your_project.dbt_dev_marts
       +materialized: table
+    semantic_views:
+      +schema: analytics      # → nba_analytics, following the same nba_<schema> naming
+                               # dbt's default generate_schema_name macro already applies to marts
+      +materialized: view
+      # views get redefined (not dropped/recreated) on every run, but a one-off GRANT would
+      # still be lost on the first `dbt run` after this schema is created - dbt re-applies
+      # this config's grants after every run instead, so it always stays current. Requires
+      # the llm_readonly role to already exist (see the 0014_llm_roles Django migration).
+      +grants:
+        select: ['llm_readonly']
+
+# dbt's +grants config only grants on the views/tables themselves, not on the schema that
+# contains them - without USAGE, SELECT still fails with "permission denied for schema".
+on-run-end:
+  - "GRANT USAGE ON SCHEMA nba_analytics TO llm_readonly"
