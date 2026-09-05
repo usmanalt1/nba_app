@@ -26,9 +26,12 @@ select
     fps.season
 from
 {{ ref('fct_player_stats') }} as fps
+-- dim_players/dim_teams are current-snapshot dims (one row per player/team, rewritten
+-- every run) not historical ones - joining on season_id here would only ever match
+-- whatever single season the last run captured, so it's deliberately left out.
 left join {{ ref('dim_players') }} as dp
-    on fps.player_id = dp.player_id and fps.season_id = dp.season_id
+    on fps.player_id = dp.player_id
 left join {{ ref('dim_teams') }} as dt
-    on fps.team_id = dt.team_id and fps.season_id = dt.season_id
+    on fps.team_id = dt.team_id
 left join {{ ref('dim_games') }} as dg
     on fps.game_id = dg.game_id

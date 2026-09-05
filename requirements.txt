@@ -35,3 +35,5 @@ adlfs
 fsspec 
 azure-identity
 redis
+anthropic
+sqlglot

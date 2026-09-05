@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     DB_HOST: str = "postgres-host-1"
     LLM_DB_USER: str = "llm_readonly"
     LLM_DB_PASSWORD: str = "llm_readonly"
+    ANTHROPIC_API_KEY: Optional[str] = None
     CONN_STR: str
     AZURE_KEY: str
     CONTAINER_NAME: str

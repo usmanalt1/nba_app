@@ -24,7 +24,10 @@ select
     tps.plus_minus,
     tps.season
 from {{ ref('fct_team_stats') }} as tps
+-- dim_teams is a current-snapshot dim (one row per team, rewritten every run) not a
+-- historical one - joining on season_id here would only ever match whatever single
+-- season the last run captured, so it's deliberately left out.
 left join {{ ref('dim_teams') }} as dt
-    on tps.team_id = dt.team_id and tps.season_id = dt.season_id
+    on tps.team_id = dt.team_id
 left join {{ ref('dim_games') }} as dg
     on tps.game_id = dg.game_id
