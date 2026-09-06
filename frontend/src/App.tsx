@@ -6,7 +6,7 @@ import { Home } from './components/Home/Home';
 import { Predictions } from './components/Predictions/Predictions';
 import { ViewDataPage } from './components/ViewData/ViewDataPage';
 import { theme } from './theme';
-
+import { NbaAi } from './components/NbaAi/NbaAi';
 
 
 function App() {
@@ -21,6 +21,7 @@ function App() {
               <Route path="/" element={<Home />} />
               <Route path="/view" element={<ViewDataPage />}/>
               <Route path="/predictions" element={<Predictions />} />
+              <Route path="/nbai" element={<NbaAi />} />
             </Routes>
           </div>
 

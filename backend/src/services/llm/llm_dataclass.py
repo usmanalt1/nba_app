@@ -15,5 +15,6 @@ class LLMConfig:
 
 @dataclass
 class LLMQueryEngineResult:
+    question: str
     answer: str
     sql_queries: list[str] = field(default_factory=list)

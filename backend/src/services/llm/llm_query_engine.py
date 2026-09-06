@@ -10,6 +10,7 @@ from services.llm.llm_dataclass import LLMConfig, LLMQueryEngineResult
 
 logger = get_logger(__name__)
 
+
 class LLMQueryEngine:
     def __init__(self):
         self.client = Anthropic(api_key=settings.ANTHROPIC_API_KEY)
@@ -34,10 +35,10 @@ class LLMQueryEngine:
             logger.info(f"LLM response: {response}")
 
             if response.stop_reason == "refusal":
-                return LLMQueryEngineResult(answer="I'm not able to answer that question.", sql_queries=executed_queries)
+                return LLMQueryEngineResult(question=question, answer="I'm not able to answer that question.", sql_queries=executed_queries)
 
             if response.stop_reason != "tool_use":
-                return LLMQueryEngineResult(answer=self._extract_text(response), sql_queries=executed_queries)
+                return LLMQueryEngineResult(question=question, answer=self._extract_text(response), sql_queries=executed_queries)
 
             # Appends initial user question and LLM response to messages
             messages.append({"role": "assistant", "content": response.content})
