@@ -90,5 +90,6 @@ class TableModelFactory:
             "dim_games": TableModel(),
             "fct_team_stats": TableModel(),
             "fct_player_stats": TableModel(),
+            "dim_rosters": TableModel(),
         }
         return table_model.get(table)
