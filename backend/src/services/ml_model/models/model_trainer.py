@@ -41,7 +41,8 @@ class ModelTraner(ModelBase):
         self.season = season
 
         SEASON_MAPPING = {
-            "2025-26": 22025
+            "2025-26": 22025,
+            "2026-27": 26027
         }
         self.test_filter = SEASON_MAPPING.get(self.season, None)
         if not self.test_filter:

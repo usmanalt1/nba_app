@@ -211,6 +211,26 @@ class PlayerAwards(models.Model):
         ]
 
 
+class GameSchedule(models.Model):
+    # full-season schedule pulled ahead of time (nba_api ScheduleLeagueV2) - covers games
+    # that haven't been played yet, unlike TeamStats/team_matchups which only have rows
+    # once a box score exists. game_status: 1=Scheduled, 2=Live, 3=Final (per nba_api).
+    season_id = models.IntegerField()
+    season = models.CharField(max_length=20, null=True, blank=True)
+    game_id = models.CharField(max_length=20)
+    game_date = models.DateField(null=True, blank=True)
+    home_team_id = models.IntegerField()
+    away_team_id = models.IntegerField()
+    game_status = models.IntegerField(null=True, blank=True)
+    run_timestamp = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'game_schedule'
+        constraints = [
+            models.UniqueConstraint(fields=["game_id"], name="game_schedule_unique_game_id"),
+        ]
+
+
 # ── Mart models (dbt-managed, read-only) ─────────────────────────────────────
 
 class DimPlayers(models.Model):

@@ -26,3 +26,5 @@ sources:
       - name: player_awards
         description: "Table contining information about player_awards"
         identifier: player_awards
+      - name: game_schedule
+        description: "Full-season game schedule, including games that haven't been played yet"
