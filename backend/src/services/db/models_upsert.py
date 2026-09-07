@@ -64,6 +64,9 @@ class TeamsRoster(TableModel):
 class TeamMatchups(TableModel):
     unique_fields = ["season_id", "team_id", "game_date"]
 
+class GameSchedule(TableModel):
+    unique_fields = ["game_id"]
+
 class PlayerAwards(TableModel):
     # month/week are included since a player can hold the same award description
     # more than once in a season (e.g. multiple "NBA Player of the Month"); for
@@ -83,6 +86,7 @@ class TableModelFactory:
             "teams_roster": TeamsRoster(),
             "team_matchups": TeamMatchups(),
             "player_awards": PlayerAwards(),
+            "game_schedule": GameSchedule(),
             "dim_games": TableModel(),
             "fct_team_stats": TableModel(),
             "fct_player_stats": TableModel(),

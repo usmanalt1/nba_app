@@ -36,4 +36,8 @@ models:
       materialized: view
     alias: staging_nba_player_awards
     description: "This view contains player awards information"
-    
+  - name: stg_nba_game_schedule
+    config:
+      materialized: view
+    alias: staging_nba_game_schedule
+    description: "This view contains the full-season game schedule, including unplayed games"

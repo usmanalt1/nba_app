@@ -209,6 +209,42 @@ async def load_data_from_lfs_to_duckdb(request):
     return NBADataResponseSchema(success=True)
 
 
+# NOTE: this must stay registered BEFORE the generic "/collect/season/{table_name}/{season_year}"
+# below - {table_name} matches any single path segment, so if the generic route were registered
+# first it would intercept "/collect/season/game_schedule/{season_year}" requests too (first-match-wins
+# routing) and dispatch them through the generic table_name path instead (which calls the
+# nonexistent DBService.upsert_nba_data and blows up).
+@router.get("/collect/season/game_schedule/{season_year}", response=NBADataResponseSchema)
+async def collect_game_schedule_by_season(request, season_year: str):
+    try:
+        def sync_collect():
+            split_year = season_year.split("-")
+            season_id = f"{split_year[0][-2:]}0{split_year[1][-2:]}"
+            raw_tables = BuildDataService().build_nba_data(season_id=season_id, season_year=season_year, game_schedule=True)
+            logger.info(f"Raw NBA data for game schedule collected successfully.")
+            object_storage_service = ObjectStorageService().get_storage()
+
+            for table_name, df in raw_tables.items():
+                run_timestamp = pd.Timestamp.now()
+                df["run_timestamp"] = run_timestamp
+                object_storage_service.save(df=df, file_name=table_name, season=season_year)
+
+                logger.info(f"NBA data for table {table_name} saved to object storage successfully.")
+                
+        await asyncio.to_thread(sync_collect)
+
+        def sync_load_data():
+            db_operations = DBService()
+            db_operations.save()
+        
+        await asyncio.to_thread(sync_load_data)
+        
+    except Exception as e:
+        logger.error(f"Error during data collection and upsert for game schedule: {e}")
+        return NBADataResponseSchema(success=False, error=str(e))
+    
+    return NBADataResponseSchema(success=True)
+
 @router.get("/collect/season/{table_name}/{season_year}", response=NBADataResponseSchema)
 async def collect_data_by_table_season(request, table_name: str, season_year: str):
     try:
@@ -217,18 +253,17 @@ async def collect_data_by_table_season(request, table_name: str, season_year: st
             season_id = f"{split_year[0][-2:]}0{split_year[1][-2:]}"
             raw_tables = BuildDataService().build_nba_data(table_name=table_name, season_id=season_id, season_year=season_year)
             logger.info(f"Raw NBA data for table {table_name} collected successfully.")
-            
+
             db_operations = DBService()
             db_operations.upsert_nba_data(raw_tables=raw_tables, get_table_name=table_name)
             logger.info(f"NBA data for table {table_name} upserted to the database successfully.")
         await sync_to_async(sync_collect)()
-        
+
     except Exception as e:
         logger.error(f"Error during data collection and upsert for table {table_name}: {e}")
         return NBADataResponseSchema(success=False, error=str(e))
-    
-    return NBADataResponseSchema(success=True)
 
+    return NBADataResponseSchema(success=True)
 
 @router.get("/stats/{table_name}")
 async def get_table_data(request, table_name: str):

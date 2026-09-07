@@ -7,6 +7,7 @@ from services.data_collection.transformer_helper import TransformHelper
 import logging
 from nba_api.stats.endpoints import leagueleaders, teamdashboardbygeneralsplits, leaguegamefinder, playbyplayv3, playerawards
 from nba_api.stats.endpoints import leaguegamelog
+from nba_api.stats.endpoints import scheduleleaguev2
 from http.client import RemoteDisconnected
 from services.data_collection.constants import Constants
 from nba_api.stats.library.parameters import SeasonTypePlayoffs, SeasonType
@@ -42,7 +43,7 @@ class CollectRawNBAData(TransformHelper, Constants):
             ),
         }
 
-    def gather_and_import_nba_data(self, table_name = None, season_id: str = None, season_year: str = None, team_roster = None) -> dict:
+    def gather_and_import_nba_data(self, table_name = None, season_id: str = None, season_year: str = None, team_roster = None, game_schedule: bool = False) -> dict:
         if season_id is None:
             season_id = self.season_id
         if season_year is None:
@@ -64,6 +65,13 @@ class CollectRawNBAData(TransformHelper, Constants):
             logging.info("Gathering data for all tables")
             logging.info(f"Season_ID: {season_id}")
             logging.info(f"Season_Year: {season_year}")
+            if game_schedule:
+                logging.info("Collecting Game Schedule...")
+                df_game_schedule = self._get_game_schedule(season_year=season_year, season_id=season_id)
+                nba_data_dict = {self.GAME_SCHEDULE: df_game_schedule}
+
+                return nba_data_dict
+
             df_season = self._get_season_record(season_id=season_id)
             df_teams = self._get_team_info()
             df_players = self._get_players_info()
@@ -85,7 +93,7 @@ class CollectRawNBAData(TransformHelper, Constants):
                 self.PLAYERS_INFO: df_players,
                 self.TEAM_STATS: df_team_logs,
                 self.PLAYER_STATS: df_player_logs,
-                self.TEAM_MATCHUPS: df_team_matchups
+                self.TEAM_MATCHUPS: df_team_matchups,
             }
             if team_roster:
                 nba_data_dict[self.TEAMS_ROSTER] = self._get_team_roster(df_team_info=df_teams, season_year=season_year, season_id=season_id)
@@ -243,6 +251,34 @@ class CollectRawNBAData(TransformHelper, Constants):
         all_games = all_games.dropna()
         return all_games
     
+    def _get_game_schedule(self, season_year: str = None, season_id: str = None) -> pd.DataFrame:
+        """Full-season schedule, including games that haven't been played yet.
+
+        Unlike team_stats/team_matchups (sourced from box scores, so a game only shows up
+        once it's been played), this hits the league schedule directly so future games
+        exist as rows before tip-off.
+        """
+        season_year = season_year or self.season_year
+        season_id = season_id or self.season_id
+
+        schedule = scheduleleaguev2.ScheduleLeagueV2(season=season_year, headers=self.headers)
+        df = schedule.season_games.get_data_frame()
+        df = self.clean_dataframe(df)
+        df = df.rename(columns={
+            "gameid": "game_id",
+            "gamedateest": "game_date",
+            "hometeam_teamid": "home_team_id",
+            "awayteam_teamid": "away_team_id",
+            "gamestatus": "game_status",
+        })
+        df = df[["game_id", "game_date", "home_team_id", "away_team_id", "game_status"]].copy()
+        df["game_date"] = df["game_date"].apply(self.convert_date_format)
+        df["season_id"] = int(season_id)
+        df["season"] = season_year
+
+        logging.info("...Raw Game Schedule DF Generated")
+        return df
+
     def _get_player_awards(self, df_players: pd.DataFrame) -> pd.DataFrame:
         logging.info("Starting getting player awards...")
         # df_players is the roster of players to fetch awards FOR (column "player_id"),
