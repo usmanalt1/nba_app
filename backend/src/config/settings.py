@@ -30,5 +30,7 @@ class Settings(BaseSettings):
     CONN_STR: str
     AZURE_KEY: str
     CONTAINER_NAME: str
+    DJANGO_SECRET_KEY: str
+    JWT_SIGNING_KEY: str
 
 settings = Settings()
