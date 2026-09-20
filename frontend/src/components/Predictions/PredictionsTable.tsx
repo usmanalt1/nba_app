@@ -6,6 +6,7 @@ import type { Prediction } from '../../types/predictions';
 import { Select } from "@mantine/core";
 import { useSearchParams } from 'react-router-dom';
 import { handleSearchParams } from '../Helper/HandleSearchParams';
+import { apiFetch } from '../../lib/api';
 
 
 export function PredictionsTable({ records }: { records: Prediction[]}) {
@@ -19,7 +20,7 @@ export function PredictionsTable({ records }: { records: Prediction[]}) {
     const selectedTeamParam = searchParams.get('team');
 
     useEffect(() => {
-        fetch("/api/nba/db/list_all_teams")
+        apiFetch("/api/nba/db/list_all_teams")
             .then(r => r.json())
             .then(setTeamFilter);
     }, []);

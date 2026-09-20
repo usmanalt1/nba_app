@@ -9,9 +9,9 @@ from services.analytics.player_stats import PlayerStats
 from services.analytics.team_stats import TeamStats
 from services.analytics.most_improved import MostImprovedPlayers, MostImprovedTeams
 from app.models import DimPlayers, FctPlayerStats, DimSeasons, DimTeams, DimGames, FctTeamStats
+from ninja_jwt.authentication import AsyncJWTAuth
 
-
-router = Router()
+router = Router(auth=AsyncJWTAuth(), tags=["analytics"])
 
 class NBADataResponseSchema(Schema):
     success: bool

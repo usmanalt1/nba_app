@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Prediction } from '../types/predictions';
+import { apiFetch } from '../lib/api';
 
 interface PredictionsState {
     strategy: string | null;
@@ -11,12 +12,12 @@ export function usePredictions(): PredictionsState {
     const [predictions, setPredictions] = useState<Prediction[]>([]);
 
     useEffect(() => {
-        fetch('/api/nba/model/get_last_run')
+        apiFetch('/api/nba/model/get_last_run')
             .then(r => r.json())
             .then(data => {
                 if (!data.success) return;
                 setStrategy(data.strategy);
-                fetch(`/api/nba/model/get_ml_trained_models/${data.strategy}/${data.season}`)
+                apiFetch(`/api/nba/model/get_ml_trained_models/${data.strategy}/${data.season}`)
                     .then(r => r.json())
                     .then(result => {
                         if (result.success) setPredictions(result.predictions ?? []);
