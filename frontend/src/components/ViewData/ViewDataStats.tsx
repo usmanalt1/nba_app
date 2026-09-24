@@ -2,7 +2,6 @@ import type { RawPlayerStats, PlayerStats } from '../../types/player';
 import { useEffect, useState } from "react";
 import { Select } from "@mantine/core";
 import NBADataTable from "../DataTable/NBADataTable";
-import { apiFetch } from '../../lib/api';
 
 interface ViewDataStatsProps {
     selectedPlayer: string | null;
@@ -25,19 +24,19 @@ useEffect(() => {
         props.setSelectedPlayer(null);
         return;
     }
-    apiFetch(`/api/nba/db/list_all_players/${props.selectedSeason}/${props.selectedTeam}`)
+    fetch(`/api/nba/db/list_all_players/${props.selectedSeason}/${props.selectedTeam}`)
         .then(r => r.json())
         .then(setPlayers);
 }, [props.selectedSeason, props.selectedTeam]);
 
     useEffect(() => {
-        apiFetch("/api/nba/db/list_all_seasons")
+        fetch("/api/nba/db/list_all_seasons")
             .then(r => r.json())
             .then(setSeasons);
     }, []);
 
     useEffect(() => {
-        apiFetch("/api/nba/db/list_all_teams")
+        fetch("/api/nba/db/list_all_teams")
             .then(r => r.json())
             .then(setTeams);
     }, []);
@@ -45,7 +44,7 @@ useEffect(() => {
     useEffect(() => {
         if (props.selectedPlayer === null) return props.setRows([]);
         const controller = new AbortController();
-        apiFetch(`/api/nba/db/get_player/${props.selectedPlayer}`, { signal: controller.signal })
+        fetch(`/api/nba/db/get_player/${props.selectedPlayer}`, { signal: controller.signal })
             .then(r => r.json())
             .then(data => props.setRows(data.map((row: RawPlayerStats) => ({
                 season: row.season_id,

@@ -2,7 +2,7 @@
 import pandas as pd
 from ninja import Router
 from ninja import Schema
-from ninja_extra import NinjaExtraAPI
+from ninja import NinjaAPI
 import logging
 from services.data_collection.build_data_service import BuildDataService
 from services.db.db_service import DBService
@@ -18,19 +18,13 @@ from api.analytics_api import router as analytics_router
 from api.llm_api import router as llm_router
 from services.db.service import Service
 from app.models import DimPlayers
-from ninja_jwt.controller import NinjaJWTDefaultController
-from .auth_api import router as auth_router
-from ninja_jwt.authentication import AsyncJWTAuth
 
 
 logger = logging.getLogger(__name__)
 
-router = Router(auth=AsyncJWTAuth(), tags=["nba"])
+router = Router()
 
-api = NinjaExtraAPI()
-api.register_controllers(NinjaJWTDefaultController) 
-api.add_router("/auth/", auth_router)
-
+api = NinjaAPI()
 api.add_router("/nba/", router)
 api.add_router("/nba/db/", db_router)
 api.add_router("/nba/model/", model_router)

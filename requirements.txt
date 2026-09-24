@@ -37,6 +37,3 @@ azure-identity
 redis
 anthropic
 sqlglot
-django-ninja-jwt 
-django-cors-headers 
-python-decouple
