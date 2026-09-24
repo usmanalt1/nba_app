@@ -7,9 +7,8 @@ from services.db.service import Service
 from app.models import DimPlayers, FctPlayerStats, DimSeasons, DimTeams, DimGames
 import asyncio
 from datetime import datetime
-from ninja_jwt.authentication import AsyncJWTAuth
 
-router = Router(auth=AsyncJWTAuth(), tags=["nba"])
+router = Router()
 
 class PlayerOption(Schema):
     player_id: int

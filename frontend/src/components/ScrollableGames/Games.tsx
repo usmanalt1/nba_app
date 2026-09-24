@@ -1,13 +1,12 @@
 import { Box, Group, ScrollArea } from '@mantine/core';
 import { useEffect, useState } from 'react';
 import { GamesInfo } from './GamesInfo';
-import { apiFetch } from '../../lib/api';
 
 export function Games() {
     const [Games, setGames] = useState([]);
 
   useEffect(() => {
-    apiFetch(`/api/nba/db/get_latest_games`)
+    fetch(`/api/nba/db/get_latest_games`)
       .then(r => r.json())
       .then(setGames);
   }, []);

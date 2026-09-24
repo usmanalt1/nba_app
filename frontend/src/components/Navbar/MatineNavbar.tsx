@@ -1,12 +1,10 @@
 import {
   IconAdjustments,
-  IconLogout,
   IconReportAnalytics,
   IconSmartHome,
   IconPresentationAnalytics,
 } from '@tabler/icons-react';
-import { Button, ScrollArea } from '@mantine/core';
-import { useNavigate } from 'react-router-dom';
+import { ScrollArea } from '@mantine/core';
 import { LinksGroup } from '../NavbarLinksGroup/NavbarLinksGroup';
 import { Logo } from './Logo';
 import classes from './NavbarNested.module.css';
@@ -20,14 +18,7 @@ const pages = [
 ];
 
 export function Navbar() {
-  const navigate = useNavigate();
   const links = pages.map((item) => <LinksGroup {...item} key={item.label} />);
-
-  function handleLogout() {
-    sessionStorage.removeItem('access_token');
-    sessionStorage.removeItem('refresh_token');
-    navigate('/auth', { replace: true });
-  }
 
   return (
     <nav className={classes.navbar}>
@@ -38,18 +29,6 @@ export function Navbar() {
       <ScrollArea className={classes.links}>
         <div className={classes.linksInner}>{links}</div>
       </ScrollArea>
-      <div className={classes.footer}>
-        <Button
-          fullWidth
-          variant="subtle"
-          color="gray"
-          justify="flex-start"
-          leftSection={<IconLogout size={18} />}
-          onClick={handleLogout}
-        >
-          Log out
-        </Button>
-      </div>
     </nav>
   );
 }

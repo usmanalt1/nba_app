@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Textarea, Button, Text } from '@mantine/core';
 import { Panel } from '../ui/Panel';
-import { apiFetch } from '../../lib/api';
 
 interface ConversationHistory {
     question: string;
@@ -22,7 +21,10 @@ export function NbaAi() {
             setLoading(true);
             setError(null);
             try {
-                const response = await apiFetch('/api/nba/llm/get_conversation');
+                const response = await fetch('/api/nba/llm/get_conversation');
+                if (!response.ok) {
+                    throw new Error(`Error: ${response.statusText}`);
+                }
                 const data = await response.json();
                 setConversations(data.answers ?? []);
 
@@ -42,7 +44,7 @@ export function NbaAi() {
         setLoading(true);
         setError(null);
         try {
-            const response = await apiFetch('/api/nba/llm/ask', {
+            const response = await fetch('/api/nba/llm/ask', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ question }),

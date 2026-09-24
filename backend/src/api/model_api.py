@@ -9,11 +9,10 @@ from config.logger import get_logger
 from services.ml_model.models.model_trainer import ModelTraner
 from services.redis.redis_client import RedisClient
 from services.redis.redis_key_constants import model_run_cache_key, LAST_RUN
-from ninja_jwt.authentication import AsyncJWTAuth
 
 logger = get_logger(__name__)
 
-router = Router(auth=AsyncJWTAuth(), tags=["ml"])
+router = Router()
 
 
 class ModelOutput(Schema):

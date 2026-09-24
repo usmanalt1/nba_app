@@ -1,7 +1,6 @@
 import { Box, Group, ScrollArea } from '@mantine/core';
 import { useEffect, useState } from 'react';
 import { Helper } from './Helper';
-import { apiFetch } from '../../lib/api';
 
 export function Trends() {
   const [playersPoints, setPlayersPoints] = useState([]);
@@ -11,16 +10,16 @@ export function Trends() {
 
 
   useEffect(() => {
-    apiFetch(`/api/nba/db/get_top_3_best_players_latest_season/points`)
+    fetch(`/api/nba/db/get_top_3_best_players_latest_season/points`)
       .then(r => r.json())
       .then(setPlayersPoints);
-    apiFetch(`/api/nba/db/get_top_3_best_players_latest_season/rebounds`)
+    fetch(`/api/nba/db/get_top_3_best_players_latest_season/rebounds`)
       .then(r => r.json())
       .then(setPlayersRebounds);
-    apiFetch(`/api/nba/db/get_top_3_best_players_latest_season/assists`)
+    fetch(`/api/nba/db/get_top_3_best_players_latest_season/assists`)
       .then(r => r.json())
       .then(setPlayersAssists);
-    apiFetch(`/api/nba/db/get_top_3_best_players_latest_season/plus_minus`)
+    fetch(`/api/nba/db/get_top_3_best_players_latest_season/plus_minus`)
       .then(r => r.json())
       .then(setPlayersPlusMinus);
   }, []);

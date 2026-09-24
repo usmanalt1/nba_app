@@ -2,13 +2,12 @@ import { useEffect, useState } from 'react';
 import { SimpleGrid, Text } from '@mantine/core';
 import { StatTile } from '../Predictions/StatTile';
 import type { ModelRunSummary } from '../../types/predictions';
-import { apiFetch } from '../../lib/api';
 
 export function HomeModelComparison() {
     const [runs, setRuns] = useState<ModelRunSummary[]>([]);
 
     useEffect(() => {
-        apiFetch('/api/nba/model/get_all_runs')
+        fetch('/api/nba/model/get_all_runs')
             .then(r => r.json())
             .then(data => setRuns(data.runs ?? []));
     }, []);
