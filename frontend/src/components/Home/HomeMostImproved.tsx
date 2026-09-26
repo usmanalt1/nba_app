@@ -1,19 +1,20 @@
 import { useEffect, useState } from "react";
 import type { MostImprovedPlayer, MostImprovedTeam } from '../../types/mostImproved';
 import { Leaderboard, type LeaderboardRow } from '../ui/Leaderboard';
+import { apiFetch } from '../../lib/api';
 
 export function HomeMostImproved() {
     const [players, setPlayers] = useState<MostImprovedPlayer[]>([]);
     const [teams, setTeams] = useState<MostImprovedTeam[]>([]);
 
     useEffect(() => {
-        fetch("/api/nba/analytics/most_improved_players")
+        apiFetch("/api/nba/analytics/most_improved_players")
             .then(r => r.json())
             .then(data => setPlayers(data.records ?? []));
     }, []);
 
     useEffect(() => {
-        fetch("/api/nba/analytics/most_improved_teams")
+        apiFetch("/api/nba/analytics/most_improved_teams")
             .then(r => r.json())
             .then(data => setTeams(data.records ?? []));
     }, []);

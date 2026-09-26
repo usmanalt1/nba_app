@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { RankedTeamStats } from '../../types/team';
 import { Leaderboard, type LeaderboardRow } from '../ui/Leaderboard';
+import { apiFetch } from '../../lib/api';
 
 type StatKey = 'points' | 'rebounds' | 'assists';
 
@@ -14,7 +15,7 @@ export function HomeTeamLeaders() {
     const [teams, setTeams] = useState<RankedTeamStats[]>([]);
 
     useEffect(() => {
-        fetch("/api/nba/analytics/average_team_stats")
+        apiFetch("/api/nba/analytics/average_team_stats")
             .then(r => r.json())
             .then(data => setTeams(data.records ?? []));
     }, []);

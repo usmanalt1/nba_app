@@ -7,6 +7,7 @@ import { PredictionsTable } from './PredictionsTable';
 import type { TrainResponse } from '../../types/predictions';
 import { useSearchParams } from 'react-router-dom';
 import { handleSearchParams } from '../Helper/HandleSearchParams';
+import { apiFetch } from '../../lib/api';
 
 
 export function Predictions() {
@@ -22,13 +23,13 @@ export function Predictions() {
     const predictionsTab = searchParams.get('predictions_tab');
 
     useEffect(() => {
-        fetch("/api/nba/model/get_ml_models")
+        apiFetch("/api/nba/model/get_ml_models")
             .then(r => r.json())
             .then(data => setModels(data.models ?? []));
     }, []);
 
     useEffect(() => {
-        fetch("/api/nba/db/list_all_seasons")
+        apiFetch("/api/nba/db/list_all_seasons")
             .then(r => r.json())
             .then(setSeasons);
     }, []);
@@ -36,7 +37,7 @@ export function Predictions() {
     useEffect(() => {
         if (!selectedModel || !selectedSeason) return;
 
-        fetch(`/api/nba/model/get_ml_trained_models/${selectedModel}/${selectedSeason}`)
+        apiFetch(`/api/nba/model/get_ml_trained_models/${selectedModel}/${selectedSeason}`)
             .then(r => r.json())
             .then(data => {
                 if (data.success) setResult(data);
@@ -46,7 +47,7 @@ export function Predictions() {
     useEffect(() => {
         if (selectedModel || selectedSeason) return;
 
-        fetch("/api/nba/model/get_last_run")
+        apiFetch("/api/nba/model/get_last_run")
             .then(r => r.json())
             .then(data => {
                 if (data.success) {
@@ -75,7 +76,7 @@ export function Predictions() {
 
         setButtonActive(true);
         try {
-            const response = await fetch(`/api/nba/model/train/${selectedModel}/${selectedSeason}`);
+            const response = await apiFetch(`/api/nba/model/train/${selectedModel}/${selectedSeason}`);
             const data = await response.json();
             setResult(data);
         } finally {

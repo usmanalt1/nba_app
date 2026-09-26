@@ -5,11 +5,12 @@ import logging
 
 from services.llm.llm_query_engine import LLMQueryEngine
 from services.redis.redis_client import RedisClient
+from ninja_jwt.authentication import AsyncJWTAuth
 
 
 logger = logging.getLogger(__name__)
 
-router = Router()
+router = Router(auth=AsyncJWTAuth(), tags=["llm"])
 
 
 class AskRequest(Schema):
