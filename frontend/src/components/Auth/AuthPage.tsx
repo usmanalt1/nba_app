@@ -44,7 +44,6 @@ export function AuthPage() {
       } else {
         const tokens = await loginUser(username, password);
         sessionStorage.setItem('access_token', tokens.access);
-        sessionStorage.setItem('refresh_token', tokens.refresh);
         navigate('/');
       }
     } catch {
