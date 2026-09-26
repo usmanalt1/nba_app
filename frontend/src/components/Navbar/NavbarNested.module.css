@@ -24,5 +24,6 @@
 .footer {
   margin-left: calc(var(--mantine-spacing-md) * -1);
   margin-right: calc(var(--mantine-spacing-md) * -1);
+  padding: var(--mantine-spacing-md);
   border-top: 1px solid var(--line);
 }
