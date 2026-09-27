@@ -84,11 +84,10 @@ async def get_top_3_best_players_latest_season(request, stat_type: str):
 
     return await asyncio.to_thread(sync_get_top_3_best_players_latest_season)
 
-@router.get("/get_latest_games", response=List[LatestGames])
-async def latest_games(request):
+@router.get("/get_latest_games/season={season_name}/season_type={season_type}", response=List[LatestGames])
+async def latest_games(request, season_name: str, season_type: str):
     def sync_latest_games():
-        latest_season: DimSeasons = Service(DimSeasons).get_all_seasons()[-1]
-        return Service(DimGames).get_latest_games(season=latest_season.season_name)
+        return Service(DimGames).get_latest_games(season=season_name, season_type=season_type)
 
     return await asyncio.to_thread(sync_latest_games)
 

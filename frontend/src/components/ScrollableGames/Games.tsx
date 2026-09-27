@@ -2,12 +2,14 @@ import { Box, Group, ScrollArea } from '@mantine/core';
 import { useEffect, useState } from 'react';
 import { GamesInfo } from './GamesInfo';
 import { apiFetch } from '../../lib/api';
+import { env } from '../../env';
 
 export function Games() {
     const [Games, setGames] = useState([]);
 
   useEffect(() => {
-    apiFetch(`/api/nba/db/get_latest_games`)
+    const { VITE_DEFAULT_SEASON: season, VITE_DEFAULT_SEASON_TYPE: season_type } = env;
+    apiFetch(`/api/nba/db/get_latest_games/season=${season}/season_type=${season_type}`)
       .then(r => r.json())
       .then(setGames);
   }, []);

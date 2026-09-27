@@ -5,10 +5,12 @@ import { HomeMostImproved } from "./HomeMostImproved";
 import { HomeLatestPredictions } from "./HomeLatestPredictions";
 import { HomeBiggestUpsets } from "./HomeBiggestUpsets";
 import { HomeModelComparison } from "./HomeModelComparison";
+import { env } from '../../env';
 
 export function Home() {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
+            <h2 style={{ width: '100%', textAlign: 'right' }}>Season: {env.VITE_DEFAULT_SEASON} ({env.VITE_DEFAULT_SEASON_TYPE})</h2>
             <div style={{ marginBottom: '30px', width: '100%', display: 'flex', justifyContent: 'left' }}>
                 <Games />
             </div>

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { RankedPlayerStats } from '../../types/player';
 import { Leaderboard, type LeaderboardRow } from '../ui/Leaderboard';
 import { apiFetch } from '../../lib/api';
+import { env } from '../../env';
 
 type StatKey = 'points' | 'rebounds' | 'assists';
 
@@ -15,22 +16,14 @@ export function HomeTrends() {
     const [players, setPlayers] = useState<RankedPlayerStats[]>([]);
 
     useEffect(() => {
-        apiFetch("/api/nba/analytics/average_stats")
+        apiFetch(`/api/nba/analytics/average_stats/season=${env.VITE_DEFAULT_SEASON}/season_type=${env.VITE_DEFAULT_SEASON_TYPE}`)
             .then(r => r.json())
             .then(data => setPlayers(data.records ?? []));
     }, []);
 
-    const latestSeason = players.reduce((latest, player) => (
-        player.season > latest ? player.season : latest
-    ), "");
-
-    const regularSeasonPlayers = players.filter(
-        (player) => player.season === latestSeason && !player.season_id.startsWith("42")
-    );
-
     const buildLeaderboardRows = (stat: StatKey): LeaderboardRow[] => {
         const { valueKey, rankKey } = STAT_CONFIG[stat];
-        return [...regularSeasonPlayers]
+        return [...players]
             .sort((a, b) => (a[rankKey] as number) - (b[rankKey] as number))
             .slice(0, 10)
             .map((player) => ({

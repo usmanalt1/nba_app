@@ -209,6 +209,7 @@ class DimGames(Schema):
     game_id: str
     game_date: Optional[date] = None
     season_id: int
+    season_type: Optional[str] = None
     season: Optional[str] = None
     home_team_id: int
     home_team_abbreviation: str
@@ -258,6 +259,7 @@ class FctPlayerStats(Schema):
     player_id: int
     team_id: int
     game_id: str
+    season_type: Optional[str] = None
     wl: Optional[str] = None
     min: Optional[float] = None
     fgm: Optional[float] = None
@@ -287,6 +289,7 @@ class FctTeamStats(Schema):
     season_id: int
     team_id: int
     game_id: str
+    season_type: Optional[str] = None
     wl: Optional[str] = None
     min: Optional[float] = None
     fgm: Optional[float] = None
