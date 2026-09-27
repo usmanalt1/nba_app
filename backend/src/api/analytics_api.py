@@ -75,8 +75,8 @@ async def get_average_team_stats(request, season_name: str, season_type: str):
         return NBADataResponseSchema(success=False, error=str(e))
 
 
-@router.get("/most_improved_players/season={season_name}/season_type={season_type}", response=NBADataResponseSchema)
-async def get_most_improved_players(request, season_name: str, season_type: str):
+@router.get("/most_improved_players/season_type={season_type}", response=NBADataResponseSchema)
+async def get_most_improved_players(request, season_type: str):
 
     try:
         def sync_get():
@@ -103,15 +103,13 @@ async def get_most_improved_players(request, season_name: str, season_type: str)
         return NBADataResponseSchema(success=False, error=str(e))
 
 
-@router.get("/most_improved_teams/season={season_name}/season_type={season_type}", response=NBADataResponseSchema)
-async def get_most_improved_teams(request, season_name: str, season_type: str):
+@router.get("/most_improved_teams/season_type={season_type}", response=NBADataResponseSchema)
+async def get_most_improved_teams(request, season_type: str):
 
     try:
         def sync_get():
             logger.info("Fetching most improved teams from the database...")
 
-            # season_name isn't used to filter here - the comparison needs both the
-            # current and previous season's data, so only season_type narrows the query.
             team_stats_df = pd.DataFrame(list(
                 FctTeamStats.objects.filter(season_type=season_type).values("season_id", "team_id", "season", "wl", "season_type")
             ))

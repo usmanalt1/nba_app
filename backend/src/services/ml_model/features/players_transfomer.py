@@ -19,7 +19,7 @@ class PlayersTransformer(TransformerBase):
         self.df_player_stats = df_player_stats
         self.df_games = df_games.copy()
         self.df_games["game_date"] = pd.to_datetime(self.df_games["game_date"])
-        self.df_games["season_id"] = self.df_games["season_id"].astype(str)
+
         self.logger = get_logger(__name__)
 
     def transform(self) -> pd.DataFrame:
@@ -40,19 +40,19 @@ class PlayersTransformer(TransformerBase):
 
     def _build_player_games(self) -> pd.DataFrame:
         """Join player stats to game dates and build the prior-game scoring feature."""
-        player_stats = self.df_player_stats[["season_id", "player_id", "team_id", "game_id", "min", "pts"]].copy()
-        player_stats["season_id"] = player_stats["season_id"].astype(str)
+        player_stats = self.df_player_stats[["season", "player_id", "team_id", "game_id", "min", "pts"]].copy()
+        player_stats["season"] = player_stats["season"].astype(str)
 
         player_games = player_stats.merge(
-            self.df_games[["game_id", "season_id", "game_date"]], on=["season_id", "game_id"], how="left"
+            self.df_games[["game_id", "season", "game_date"]], on=["season", "game_id"], how="left"
         )
         player_games = player_games.dropna(subset=["game_date"])
-        player_games = player_games.sort_values(["player_id", "season_id", "game_date"]).reset_index(drop=True)
+        player_games = player_games.sort_values(["player_id", "season", "game_date"]).reset_index(drop=True)
 
-        player_grp = player_games.groupby(["player_id", "season_id"])
+        player_grp = player_games.groupby(["player_id", "season"])
         shifted_pts = player_grp["pts"].shift(1)
         player_games["pre_player_pts"] = (
-            shifted_pts.groupby([player_games["player_id"], player_games["season_id"]]).expanding().mean()
+            shifted_pts.groupby([player_games["player_id"], player_games["season"]]).expanding().mean()
             .reset_index(level=[0, 1], drop=True)
         )
 
@@ -64,14 +64,14 @@ class PlayersTransformer(TransformerBase):
     def _build_league_ratings(self, player_games: pd.DataFrame) -> pd.DataFrame:
         """Build season-by-season player ratings from the latest known prior-game form."""
         events = player_games.dropna(subset=["pre_player_pts"])[
-            ["season_id", "player_id", "game_date", "pre_player_pts"]
+            ["season", "player_id", "game_date", "pre_player_pts"]
         ].sort_values("game_date")
 
-        all_dates = self.df_games[["season_id", "game_date"]].drop_duplicates().sort_values("game_date")
+        all_dates = self.df_games[["season", "game_date"]].drop_duplicates().sort_values("game_date")
 
         rating_frames = []
-        for season_id, season_events in events.groupby("season_id"):
-            season_dates = all_dates.loc[all_dates["season_id"] == season_id, "game_date"]
+        for season, season_events in events.groupby("season"):
+            season_dates = all_dates.loc[all_dates["season"] == season, "game_date"]
             players = season_events["player_id"].unique()
 
             query = pd.MultiIndex.from_product(
@@ -83,13 +83,13 @@ class PlayersTransformer(TransformerBase):
                 season_events.sort_values("game_date")[["player_id", "game_date", "pre_player_pts"]],
                 on="game_date", by="player_id", direction="backward",
             )
-            asof["season_id"] = season_id
+            asof["season"] = season
             rating_frames.append(asof)
 
         league_ratings = pd.concat(rating_frames, ignore_index=True).dropna(subset=["pre_player_pts"])
-        league_ratings["season_id"] = league_ratings["season_id"].astype(str)
+        league_ratings["season"] = league_ratings["season"].astype(str)
 
-        league_ratings["league_rank"] = league_ratings.groupby(["season_id", "game_date"])["pre_player_pts"].rank(
+        league_ratings["league_rank"] = league_ratings.groupby(["season", "game_date"])["pre_player_pts"].rank(
             ascending=False, method="min"
         )
 
@@ -102,39 +102,39 @@ class PlayersTransformer(TransformerBase):
         """Count how many players on each team met the league star thresholds for a game."""
         star_cols = [f"is_top{k}" for k in STAR_THRESHOLDS]
 
-        merged = player_games[["season_id", "team_id", "game_id", "player_id", "game_date"]].merge(
-            league_ratings[["season_id", "player_id", "game_date"] + star_cols],
-            on=["season_id", "player_id", "game_date"], how="left",
+        merged = player_games[["season", "team_id", "game_id", "player_id", "game_date"]].merge(
+            league_ratings[["season", "player_id", "game_date"] + star_cols],
+            on=["season", "player_id", "game_date"], how="left",
         )
         merged[star_cols] = merged[star_cols].fillna(0)
 
-        return merged.groupby(["season_id", "game_id", "team_id"])[star_cols].sum().reset_index()
+        return merged.groupby(["season", "game_id", "team_id"])[star_cols].sum().reset_index()
 
     def _build_prior_season_star_baseline(self, counts: pd.DataFrame, star_cols: list) -> pd.DataFrame:
         """Use the previous season's average star count as a fallback baseline."""
         prior_cols = [f"prior_{c}" for c in star_cols]
         season_avg = (
-            counts.groupby(["team_id", "season_id"])[star_cols].mean().reset_index()
+            counts.groupby(["team_id", "season"])[star_cols].mean().reset_index()
             .rename(columns={c: f"prior_{c}" for c in star_cols})
-            .sort_values(["team_id", "season_id"])
+            .sort_values(["team_id", "season"])
         )
         season_avg[prior_cols] = season_avg.groupby("team_id")[prior_cols].shift(1)
 
-        return season_avg[["team_id", "season_id"] + prior_cols]
+        return season_avg[["team_id", "season"] + prior_cols]
 
     def _build_team_schedule(self) -> pd.DataFrame:
         """Create one row per team per game, including scheduled games with no played stats yet."""
-        home = self.df_games[["game_id", "season_id", "game_date", "home_team_id"]].rename(columns={"home_team_id": "team_id"})
-        away = self.df_games[["game_id", "season_id", "game_date", "away_team_id"]].rename(columns={"away_team_id": "team_id"})
+        home = self.df_games[["game_id", "season", "game_date", "home_team_id"]].rename(columns={"home_team_id": "team_id"})
+        away = self.df_games[["game_id", "season", "game_date", "away_team_id"]].rename(columns={"away_team_id": "team_id"})
         return pd.concat([home, away], ignore_index=True)
 
     def _build_team_star_baseline(self, team_star_counts: pd.DataFrame) -> pd.DataFrame:
         """Create a rolling team star baseline and blend it with last season's average."""
         star_cols = [f"is_top{k}" for k in STAR_THRESHOLDS]
-        grp_keys = ["team_id", "season_id"]
+        grp_keys = ["team_id", "season"]
 
         team_schedule_with_stars = self._build_team_schedule().merge(
-            team_star_counts, on=["team_id", "season_id", "game_id"], how="left"
+            team_star_counts, on=["team_id", "season", "game_id"], how="left"
         )
         team_schedule_with_stars = team_schedule_with_stars.sort_values(grp_keys + ["game_date"])
 
@@ -142,7 +142,7 @@ class PlayersTransformer(TransformerBase):
         games_so_far = team_schedule_with_stars.groupby(grp_keys).cumcount()
 
         season_to_date_star_avg = prior_game_star_counts.groupby([
-            team_schedule_with_stars["team_id"], team_schedule_with_stars["season_id"]
+            team_schedule_with_stars["team_id"], team_schedule_with_stars["season"]
         ]).expanding().mean()
         season_to_date_star_avg = season_to_date_star_avg.reset_index(level=[0, 1], drop=True)
         season_to_date_star_avg.columns = [f"this_season_{c}" for c in season_to_date_star_avg.columns]
@@ -164,7 +164,7 @@ class PlayersTransformer(TransformerBase):
             ) / (games_so_far + STAR_SHRINKAGE_GAMES)
             team_schedule_with_stars[f"pre_top{k}"] = blended.where(prior_season_val.notna(), this_season_val)
 
-        return team_schedule_with_stars[["team_id", "season_id", "game_id"] + [f"pre_top{k}" for k in STAR_THRESHOLDS]]
+        return team_schedule_with_stars[["team_id", "season", "game_id"] + [f"pre_top{k}" for k in STAR_THRESHOLDS]]
 
     def _merge_star_diff(self, team_star_counts: pd.DataFrame, team_star_baseline: pd.DataFrame) -> pd.DataFrame:
         """Merge home/away star counts into the base model and compute star differentials."""

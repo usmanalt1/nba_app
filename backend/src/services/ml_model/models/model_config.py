@@ -8,7 +8,7 @@ from services.ml_model.features.transformer_base import TransformerBase
 @dataclass
 class ModelsConfig:
     target_col: str
-    test_filter: int
+    test_filter: str
     transformers: list[TransformerBase] = field(default_factory=list)
     test_size: float = 0.2
     random_state: int = 42

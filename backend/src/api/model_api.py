@@ -18,7 +18,6 @@ router = Router(auth=AsyncJWTAuth(), tags=["ml"])
 
 class ModelOutput(Schema):
     game_id: str
-    season_id: int
     actual_home_win: bool
     home_win_probability: float
     predicted_home_win: bool
@@ -26,12 +25,14 @@ class ModelOutput(Schema):
     home_team_name: str
     game_date: datetime
     season: str
+    season_type: str
 
 class ModelSeasonOutput(Schema):
     team: str  
     wins: int
     loss: int  
     season: str
+    season_type: str
 
 
 class ModelRunResponseSchema(Schema):
@@ -49,12 +50,12 @@ class ModelLastRunResponseSchema(Schema):
 
 
 
-@router.get("/train/{strategy}/{season}", response=ModelRunResponseSchema)
-async def train_model(request, strategy: str, season: str):
+@router.get("/train/{strategy}/{season}/{season_type}", response=ModelRunResponseSchema)
+async def train_model(request, strategy: str, season: str, season_type: str):
     try:
         redis_client = RedisClient()
         def sync_train():
-            trainer = ModelTraner(strategy=strategy, season=season)
+            trainer = ModelTraner(strategy=strategy, season=season, season_type=season_type)
             result = trainer.train()
             redis_client.set(model_run_cache_key(strategy, season), result)
             redis_client.set(LAST_RUN, {"strategy": strategy, "season": season})
@@ -130,6 +131,7 @@ async def get_ml_models(request):
 class ModelRunSummary(Schema):
     strategy: str
     season: str
+    season_type: str
     metrics: Dict[str, float]
 
 
@@ -157,7 +159,7 @@ async def get_all_runs(request):
                 result = redis_client.get(key)
                 if result is None or result.metrics is None:
                     continue
-                runs.append(ModelRunSummary(strategy=strategy, season=season, metrics=result.metrics))
+                runs.append(ModelRunSummary(strategy=strategy, season=season, season_type=result.season_type, metrics=result.metrics))
 
             runs.sort(key=lambda r: (r.season, r.strategy), reverse=True)
             return runs

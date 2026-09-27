@@ -38,7 +38,7 @@ class BoxscoreTransformer(TransformerBase):
         """Keep only the columns needed for rolling team-form features."""
         return self.df_boxscore[
             [
-                "season_id", "team_id", "game_id", "min", "fgm", "fga", "fg_pct", "fg3m", "fg3a",
+                "season", "team_id", "game_id", "min", "fgm", "fga", "fg_pct", "fg3m", "fg3a",
                 "fg3_pct", "ftm", "fta", "ft_pct", "oreb", "dreb", "reb", "ast", "stl", "blk",
                 "tov", "pf", "pts", "plus_minus",
             ]
@@ -46,9 +46,9 @@ class BoxscoreTransformer(TransformerBase):
 
     def _build_boxscore_df(self, df_games: pd.DataFrame, df_boxscore: pd.DataFrame) -> pd.DataFrame:
         """Merge box-score rows onto schedule data and add rest/b2b indicators."""
-        merged = df_games.merge(df_boxscore, on=["season_id", "team_id", "game_id"], how="left")
-        merged = merged.sort_values(["team_id", "season_id", "game_date"]).reset_index(drop=True)
-        merged["days_rest"] = merged.groupby(["team_id", "season_id"])["game_date"].diff().dt.days
+        merged = df_games.merge(df_boxscore, on=["season", "team_id", "game_id"], how="left")
+        merged = merged.sort_values(["team_id", "season", "game_date"]).reset_index(drop=True)
+        merged["days_rest"] = merged.groupby(["team_id", "season"])["game_date"].diff().dt.days
         merged["b2b"] = (merged["days_rest"] <= 1).astype("Int64")
 
         return merged
@@ -58,34 +58,34 @@ class BoxscoreTransformer(TransformerBase):
         prior_cols = [f"prior_{c}" for c in STAT_COLS] + ["prior_win_pct"]
 
         season_avg = (
-            df_boxscore.groupby(["team_id", "season_id"])[STAT_COLS + ["team_win"]]
+            df_boxscore.groupby(["team_id", "season"])[STAT_COLS + ["team_win"]]
             .mean()
             .reset_index()
             .rename(columns={c: f"prior_{c}" for c in STAT_COLS})
             .rename(columns={"team_win": "prior_win_pct"})
-            .sort_values(["team_id", "season_id"])
+            .sort_values(["team_id", "season"])
         )
         season_avg[prior_cols] = season_avg.groupby("team_id")[prior_cols].shift(1)
 
         coverage = season_avg["prior_win_pct"].notna().mean()
         self.logger.info(f"Prior-season baseline available for {coverage:.1%} of team-seasons")
 
-        return season_avg[["team_id", "season_id"] + prior_cols]
+        return season_avg[["team_id", "season"] + prior_cols]
 
     def _build_rolling_avg(self, df_boxscore: pd.DataFrame) -> pd.DataFrame:
         """Build each team's season-to-date rolling form and blend it with the prior-season baseline."""
-        grp_keys = ["team_id", "season_id"]
+        grp_keys = ["team_id", "season"]
         shifted = df_boxscore.groupby(grp_keys)[STAT_COLS + ["team_win"]].shift(1)
         games_so_far = df_boxscore.groupby(grp_keys).cumcount()
 
-        season_to_date = shifted.groupby([df_boxscore["team_id"], df_boxscore["season_id"]]).expanding().mean()
+        season_to_date = shifted.groupby([df_boxscore["team_id"], df_boxscore["season"]]).expanding().mean()
         season_to_date = season_to_date.reset_index(level=[0, 1], drop=True)
         season_to_date.columns = [f"this_season_{c}" for c in season_to_date.columns]
         season_to_date = season_to_date.rename(columns={"this_season_team_win": "this_season_win_pct"})
 
         df_boxscore = pd.concat([df_boxscore, season_to_date], axis=1)
         df_boxscore = df_boxscore.merge(
-            self._build_prior_season_baseline(df_boxscore), on=["team_id", "season_id"], how="left"
+            self._build_prior_season_baseline(df_boxscore), on=["team_id", "season"], how="left"
         )
 
         blend_specs = [(c, f"this_season_{c}", f"prior_{c}") for c in STAT_COLS]
@@ -105,8 +105,8 @@ class BoxscoreTransformer(TransformerBase):
     def _build_differential(self, df_boxscore: pd.DataFrame) -> pd.DataFrame:
         """Convert the per-team features into home-vs-away differentials for modeling."""
         feature_cols = ["days_rest", "b2b"] + [c for c in df_boxscore.columns if c.startswith("pre_")]
-        home_feat = df_boxscore[df_boxscore.is_home == 1][["game_id", "season_id"] + feature_cols + ["team_win"]].copy()
-        home_feat.columns = ["game_id", "season_id"] + [f"home_{c}" for c in feature_cols] + ["home_win"]
+        home_feat = df_boxscore[df_boxscore.is_home == 1][["game_id", "season"] + feature_cols + ["team_win"]].copy()
+        home_feat.columns = ["game_id", "season"] + [f"home_{c}" for c in feature_cols] + ["home_win"]
 
         away_feat = df_boxscore[df_boxscore.is_home == 0][["game_id"] + feature_cols].copy()
         away_feat.columns = ["game_id"] + [f"away_{c}" for c in feature_cols]

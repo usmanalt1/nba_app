@@ -32,21 +32,19 @@ def _report(name, y_true, pred, proba) -> dict[str, float]:
 
 
 class ModelTraner(ModelBase):
-    def __init__(self, strategy: str, season: str):
+    def __init__(self, strategy: str, season: str, season_type: str):
         if strategy not in STRATEGY_REGISTRY:
             raise ValueError(f"Unknown strategy: {strategy}")
 
-        self.db_service = DBService()
-        self.df_games, self.df_team_stats, self.df_player_stats = self.load_data()
-        self.season = season
+        logger.info(f"Initialising ModelTrainer with strategy={strategy} and season={season} and season_type={season_type}")
 
-        SEASON_MAPPING = {
-            "2025-26": 22025,
-            "2026-27": 26027
-        }
-        self.test_filter = SEASON_MAPPING.get(self.season, None)
-        if not self.test_filter:
-            raise ValueError("No Season Filter...")
+        self.db_service = DBService()
+        self.season = season
+        self.season_type = season_type
+        self.df_games, self.df_team_stats, self.df_player_stats = self.load_data()
+        self.df_games = self.df_games[self.df_games["season_type"] == self.season_type]
+        self.df_team_stats = self.df_team_stats[self.df_team_stats["season_type"] == self.season_type]
+        self.df_player_stats = self.df_player_stats[self.df_player_stats["season_type"] == self.season_type]
 
         games_transformer = GamesTransformer(df_games=self.df_games)
         team_games_df = games_transformer.transform()
@@ -56,7 +54,7 @@ class ModelTraner(ModelBase):
 
         self.config = ModelsConfig(
             target_col="home_win",
-            test_filter=self.test_filter,
+            test_filter=self.season,
             transformers=[
                 games_transformer,
                 boxscore_transformer,
@@ -69,7 +67,6 @@ class ModelTraner(ModelBase):
             model=STRATEGY_REGISTRY[strategy](),
         )
         self.scaler = StandardScaler()
-
     def load_data(self):
         df_games = self.db_service.read("dim_games")
         df_team_stats = self.db_service.read("fct_team_stats")
@@ -84,13 +81,13 @@ class ModelTraner(ModelBase):
         test_season = self.config.test_filter
         diff_cols = [c for c in model_df.columns if c.startswith("diff_")]
 
-        train_df = model_df[model_df["season_id"].astype(int) < test_season]
-        test_df = model_df[model_df["season_id"].astype(int) == test_season].reset_index(drop=True)
+        train_df = model_df[model_df["season"] != test_season]
+        test_df = model_df[model_df["season"] == test_season].reset_index(drop=True)
 
         target_col = self.config.target_col
         X_train, y_train = train_df[diff_cols], train_df[target_col]
         X_test, y_test = test_df[diff_cols], test_df[target_col]
-        test_ids = test_df[["game_id", "season_id"]]
+        test_ids = test_df[["game_id", "season"]]
 
         logger.info(f"train: {X_train.shape}  test: {X_test.shape}")
 
@@ -120,15 +117,19 @@ class ModelTraner(ModelBase):
         predictions["actual_home_win"] = y_test.values
         predictions["home_win_probability"] = proba
         predictions["predicted_home_win"] = pred.astype(bool)
+        predictions["season"] = self.season
+        predictions["season_type"] = self.season_type
 
-        predictions = predictions.merge(self.df_games[["game_id", "game_date", "home_team_name", "away_team_name", "season"]], on="game_id")
+        predictions = predictions.merge(self.df_games[["game_id", "game_date", "home_team_name", "away_team_name"]], on="game_id")
         predictions["matchup"] = predictions["home_team_name"] + " vs " + predictions["away_team_name"]
         predictions["predicted_winner"] = np.where(
             predictions["predicted_home_win"], predictions["home_team_name"], predictions["away_team_name"]
         )
+
         predicted_df: pd.DataFrame = predictions["predicted_winner"].value_counts().reset_index()
         predicted_df = predicted_df.rename(columns={"count": "wins"})
         predicted_df["loss"] = SEASON_TOTAL_GAMES - predicted_df["wins"]
+        predicted_df["season_type"] = self.season_type
         predicted_df["season"] = self.season
         predicted_df.rename(columns={"predicted_winner": "team"}, inplace=True)
 

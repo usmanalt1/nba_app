@@ -20,6 +20,7 @@ export function Predictions() {
 
     const selectedModel = searchParams.get('model');
     const selectedSeason = searchParams.get('season');
+    const selectedSeasonType = searchParams.get('season_type');
     const predictionsTab = searchParams.get('predictions_tab');
 
     useEffect(() => {
@@ -76,7 +77,7 @@ export function Predictions() {
 
         setButtonActive(true);
         try {
-            const response = await apiFetch(`/api/nba/model/train/${selectedModel}/${selectedSeason}`);
+            const response = await apiFetch(`/api/nba/model/train/${selectedModel}/${selectedSeason}/${selectedSeasonType}`);
             const data = await response.json();
             setResult(data);
         } finally {
@@ -102,6 +103,18 @@ export function Predictions() {
                 data={seasonOptions}
                 value={selectedSeason}
                 onChange={(value) => handleSearchParamsChange('season', value)}
+                searchable
+            />
+            <Select
+                style={{ flex: 1 }}
+                label="Season Type"
+                placeholder="Pick a Season Type"
+                data={[
+                    { value: "regular", label: "Regular" },
+                    { value: "playoffs", label: "Playoffs" },
+                ]}
+                value={selectedSeasonType}
+                onChange={(value) => handleSearchParamsChange('season_type', value)}
                 searchable
             />
             <Select
