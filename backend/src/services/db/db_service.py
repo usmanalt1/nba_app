@@ -1,6 +1,6 @@
 from logging import getLogger
 from pathlib import Path
-from app.models import SeasonRecord, TeamInfo, PlayerInfo, TeamRoster, TeamStats, PlayerStats, TeamMatchups, PlayerAwards, GameSchedule, DimGames, FctTeamStats, FctPlayerStats, DimRosters
+from app.models import SeasonRecord, TeamInfo, PlayerInfo, TeamRoster, TeamStats, PlayerStats, TeamMatchups, PlayerAwards, GameSchedule, DimGames, FctTeamStats, FctPlayerStats, DimRosters, DimTeams
 from sqlalchemy import create_engine
 import os
 from services.db.models_upsert import TableModelFactory
@@ -26,6 +26,7 @@ class DBService(StorageBase):
             "fct_team_stats": FctTeamStats,
             "fct_player_stats": FctPlayerStats,
             "dim_rosters": DimRosters,
+            "dim_teams": DimTeams,
         }
         self.user = os.getenv("DB_USER")
         self.password = os.getenv("DB_PASSWORD")

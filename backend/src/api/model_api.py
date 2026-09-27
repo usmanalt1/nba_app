@@ -6,7 +6,7 @@ from ninja import Router, Schema
 
 from app.models import MlModels
 from config.logger import get_logger
-from services.ml_model.models.model_trainer import ModelTraner
+from services.ml_model.models.model_trainer import ModelTraner, MODE_BACKTEST
 from services.redis.redis_client import RedisClient
 from services.redis.redis_key_constants import model_run_cache_key, LAST_RUN
 from ninja_jwt.authentication import AsyncJWTAuth
@@ -15,10 +15,18 @@ logger = get_logger(__name__)
 
 router = Router(auth=AsyncJWTAuth(), tags=["ml"])
 
+# cached TrainResults never expired before this - a fix to the model/feature pipeline, or
+# the underlying data simply changing (dim_games gaining/losing rows on a later
+# ingestion run), left stale results sitting under the same strategy+season key
+# indefinitely, with nothing forcing a refresh until someone happened to re-run that
+# exact strategy+season. 6h keeps results fresh across a game day without refitting on
+# every request.
+MODEL_CACHE_TTL_SECONDS = 6 * 60 * 60
+
 
 class ModelOutput(Schema):
     game_id: str
-    actual_home_win: bool
+    actual_home_win: Optional[bool] = None
     home_win_probability: float
     predicted_home_win: bool
     matchup: str
@@ -41,24 +49,27 @@ class ModelRunResponseSchema(Schema):
     metrics: Optional[Dict[str, float]] = None
     season_records: Optional[List[ModelSeasonOutput]] = None
     predictions: Optional[List[ModelOutput]] = None
+    warnings: Optional[List[str]] = None
 
 class ModelLastRunResponseSchema(Schema):
     success: bool
     error: Optional[str] = None
     strategy: Optional[str] = None
     season: Optional[str] = None
+    season_type: Optional[str] = None
+    mode: Optional[str] = None
 
 
 
 @router.get("/train/{strategy}/{season}/{season_type}", response=ModelRunResponseSchema)
-async def train_model(request, strategy: str, season: str, season_type: str):
+async def train_model(request, strategy: str, season: str, season_type: str, mode: str = MODE_BACKTEST):
     try:
         redis_client = RedisClient()
         def sync_train():
-            trainer = ModelTraner(strategy=strategy, season=season, season_type=season_type)
+            trainer = ModelTraner(strategy=strategy, season=season, season_type=season_type, mode=mode)
             result = trainer.train()
-            redis_client.set(model_run_cache_key(strategy, season), result)
-            redis_client.set(LAST_RUN, {"strategy": strategy, "season": season})
+            redis_client.set(model_run_cache_key(strategy, season), result, ex=MODEL_CACHE_TTL_SECONDS)
+            redis_client.set(LAST_RUN, {"strategy": strategy, "season": season, "season_type": season_type, "mode": mode})
             return result
 
         result = await asyncio.to_thread(sync_train)
@@ -70,7 +81,8 @@ async def train_model(request, strategy: str, season: str, season_type: str):
         success=True,
         metrics=result.metrics,
         season_records=result.season_record.to_dict(orient="records"),
-        predictions=result.predictions.to_dict(orient="records")
+        predictions=result.predictions.to_dict(orient="records"),
+        warnings=result.warnings,
     )
 
 @router.get("/get_ml_trained_models/{strategy}/{season}", response=ModelRunResponseSchema)
@@ -89,6 +101,8 @@ def get_latest_trained_models(request, strategy: str, season: str):
         metrics=result.metrics,
         season_records=result.season_record.to_dict(orient="records"),
         predictions=result.predictions.to_dict(orient="records"),
+        # older cached runs were pickled before `warnings` existed on TrainResult
+        warnings=getattr(result, "warnings", None),
     )
 
 @router.get("/get_last_run", response=ModelLastRunResponseSchema)
@@ -102,7 +116,13 @@ def get_last_run(request):
     if not last_run:
         return ModelLastRunResponseSchema(success=False)
 
-    return ModelLastRunResponseSchema(success=True, strategy=last_run.get("strategy"), season=last_run.get("season"))
+    return ModelLastRunResponseSchema(
+        success=True,
+        strategy=last_run.get("strategy"),
+        season=last_run.get("season"),
+        season_type=last_run.get("season_type"),
+        mode=last_run.get("mode"),
+    )
 
 class MlModelOutput(Schema):
     model_name: str

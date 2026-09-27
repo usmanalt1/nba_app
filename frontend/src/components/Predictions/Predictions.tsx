@@ -21,6 +21,7 @@ export function Predictions() {
     const selectedModel = searchParams.get('model');
     const selectedSeason = searchParams.get('season');
     const selectedSeasonType = searchParams.get('season_type');
+    const selectedMode = searchParams.get('mode') ?? 'backtest';
     const predictionsTab = searchParams.get('predictions_tab');
 
     useEffect(() => {
@@ -36,17 +37,17 @@ export function Predictions() {
     }, []);
 
     useEffect(() => {
-        if (!selectedModel || !selectedSeason) return;
+        if (!selectedModel || !selectedSeason || !selectedSeasonType) return;
 
         apiFetch(`/api/nba/model/get_ml_trained_models/${selectedModel}/${selectedSeason}`)
             .then(r => r.json())
             .then(data => {
                 if (data.success) setResult(data);
             });
-    }, [selectedModel, selectedSeason]);
+    }, [selectedModel, selectedSeason, selectedSeasonType]);
 
     useEffect(() => {
-        if (selectedModel || selectedSeason) return;
+        if (selectedModel || selectedSeason || selectedSeasonType) return;
 
         apiFetch("/api/nba/model/get_last_run")
             .then(r => r.json())
@@ -55,6 +56,8 @@ export function Predictions() {
                     setSearchParams(prev => {
                         prev.set('model', data.strategy);
                         prev.set('season', data.season);
+                        prev.set('season_type', data.season_type);
+                        prev.set('mode', data.mode ?? 'backtest');
                         prev.set('predictions_tab', 'standings');
                         return prev;
                     });
@@ -73,11 +76,11 @@ export function Predictions() {
     }));
 
     const handleRunModel = async () => {
-        if (!selectedModel || !selectedSeason) return;
+        if (!selectedModel || !selectedSeason || !selectedSeasonType) return;
 
         setButtonActive(true);
         try {
-            const response = await apiFetch(`/api/nba/model/train/${selectedModel}/${selectedSeason}/${selectedSeasonType}`);
+            const response = await apiFetch(`/api/nba/model/train/${selectedModel}/${selectedSeason}/${selectedSeasonType}?mode=${selectedMode}`);
             const data = await response.json();
             setResult(data);
         } finally {
@@ -126,11 +129,21 @@ export function Predictions() {
                 onChange={(value) => handleSearchParamsChange('model', value)}
                 searchable
             />
+            <Select
+                style={{ flex: 1 }}
+                label="Mode"
+                data={[
+                    { value: "backtest", label: "Backtest" },
+                    { value: "live", label: "Live (in-season)" },
+                ]}
+                value={selectedMode}
+                onChange={(value) => handleSearchParamsChange('mode', value)}
+            />
             <Button
                 variant="filled"
                 onClick={handleRunModel}
                 loading={buttonActive}
-                disabled={!selectedModel || !selectedSeason}
+                disabled={!selectedModel || !selectedSeason || !selectedSeasonType}
             >
                 Run Model
             </Button>

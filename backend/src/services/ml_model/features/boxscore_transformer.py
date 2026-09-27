@@ -49,6 +49,7 @@ class BoxscoreTransformer(TransformerBase):
         merged = df_games.merge(df_boxscore, on=["season", "team_id", "game_id"], how="left")
         merged = merged.sort_values(["team_id", "season", "game_date"]).reset_index(drop=True)
         merged["days_rest"] = merged.groupby(["team_id", "season"])["game_date"].diff().dt.days
+        merged["days_rest"] = merged["days_rest"].fillna(merged["days_rest"].mean())
         merged["b2b"] = (merged["days_rest"] <= 1).astype("Int64")
 
         return merged

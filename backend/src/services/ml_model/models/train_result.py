@@ -1,4 +1,5 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import Optional
 
 import pandas as pd
 from sklearn.base import BaseEstimator
@@ -7,6 +8,7 @@ from sklearn.base import BaseEstimator
 @dataclass
 class TrainResult:
     model: BaseEstimator
-    metrics: dict[str, float]
     predictions: pd.DataFrame
+    metrics: Optional[dict[str, float]] = None
     season_record: pd.DataFrame = pd.DataFrame()
+    warnings: list[str] = field(default_factory=list)
