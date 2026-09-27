@@ -347,6 +347,7 @@ class FctPlayerStats(models.Model):
     pts = models.FloatField(null=True, blank=True)
     plus_minus = models.FloatField(null=True, blank=True)
     season = models.CharField(max_length=20, null=True, blank=True)
+    season_type = models.CharField(max_length=20, null=True, blank=True)
     run_timestamp = models.DateTimeField(null=True, blank=True)
 
     class Meta:
@@ -380,6 +381,7 @@ class FctTeamStats(models.Model):
     pts = models.FloatField(null=True, blank=True)
     plus_minus = models.FloatField(null=True, blank=True)
     season = models.CharField(max_length=20, null=True, blank=True)
+    season_type = models.CharField(max_length=20, null=True, blank=True)
     run_timestamp = models.DateTimeField(null=True, blank=True)
 
     class Meta:
