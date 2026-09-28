@@ -2,9 +2,16 @@
   --ink: #0b1013;
   --court: #141c21;
   --panel: #1b252b;
+  --panel-2: #212b31;
   --line: #2b383f;
   --paper: #edeae1;
   --paper-dim: #a9a69c;
+  --paper-faint: #6e7680;
+
+  /* Brand. The Worm runs on one loud accent against a lot of dark. */
+  --worm: #e8622c;
+  --worm-deep: #b04618;
+
   --home: #e8622c;
   --away: #3e8ede;
   --win: #4fae7a;
@@ -16,7 +23,7 @@
   --bg: var(--ink);
   --border: var(--line);
   --code-bg: var(--panel);
-  --accent: var(--home);
+  --accent: var(--worm);
   --accent-bg: rgba(232, 98, 44, 0.12);
   --accent-border: rgba(232, 98, 44, 0.5);
   --social-bg: rgba(27, 37, 43, 0.5);
@@ -26,6 +33,9 @@
   --sans: 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
   --heading: 'Oswald', system-ui, 'Segoe UI', Roboto, sans-serif;
   --mono: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
+
+  /* Vertical rhythm between top-level home sections. */
+  --section-gap: 46px;
 
   font: 18px/145% var(--sans);
   letter-spacing: 0.18px;
@@ -39,6 +49,7 @@
 
   @media (max-width: 1024px) {
     font-size: 16px;
+    --section-gap: 32px;
   }
 }
 
@@ -97,4 +108,37 @@ code {
   line-height: 135%;
   padding: 4px 8px;
   background: var(--code-bg);
+}
+
+/* Small caps mono label used for every eyebrow, axis tick and table head. */
+.kicker {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--paper-dim);
+}
+
+/* Horizontal rails (games, predictions) hide their scrollbar until hovered so a
+   row of cards doesn't sit on a permanent grey bar. */
+.rail {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  padding-bottom: 6px;
+}
+.rail:hover {
+  scrollbar-color: var(--line) transparent;
+}
+.rail::-webkit-scrollbar {
+  height: 6px;
+}
+.rail::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 3px;
+}
+.rail:hover::-webkit-scrollbar-thumb {
+  background: var(--line);
 }

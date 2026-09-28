@@ -32,7 +32,7 @@ export function Navbar() {
   return (
     <nav className={classes.navbar}>
       <div className={classes.header}>
-          <Logo style={{ width: 250 }} />
+          <Logo />
       </div>
     
       <ScrollArea className={classes.links}>
