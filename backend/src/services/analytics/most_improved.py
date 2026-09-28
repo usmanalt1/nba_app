@@ -2,16 +2,9 @@ import pandas as pd
 
 MIN_GAMES = 20
 
-# season_id "2xxxx" is regular season, "4xxxx" is playoffs for the same year - mixing them
-# would compare a full 82-game season against a handful of playoff games, so year-over-year
-# improvement is always computed on regular season only.
-def _regular_season_only(df: pd.DataFrame) -> pd.DataFrame:
-    return df[~df["season_id"].astype(str).str.startswith("4")]
-
-
 class MostImprovedPlayers:
     def __init__(self, player_stats_df: pd.DataFrame, players_info_df: pd.DataFrame, teams_info_df: pd.DataFrame):
-        self.player_stats_df = _regular_season_only(player_stats_df)[["season_id", "player_id", "team_id", "pts", "season"]]
+        self.player_stats_df = player_stats_df[["season_id", "player_id", "team_id", "pts", "season"]]
         self.players_info_df = players_info_df[["player_id", "player_name"]]
         self.teams_info_df = teams_info_df[["team_id", "team_name"]]
 
@@ -53,7 +46,7 @@ class MostImprovedPlayers:
 
 class MostImprovedTeams:
     def __init__(self, team_stats_df: pd.DataFrame, teams_info_df: pd.DataFrame):
-        self.team_stats_df = _regular_season_only(team_stats_df)[["season_id", "team_id", "season", "wl"]]
+        self.team_stats_df = team_stats_df[["season_id", "team_id", "season", "wl"]]
         self.teams_info_df = teams_info_df[["team_id", "team_name"]]
 
     def transform(self) -> pd.DataFrame:

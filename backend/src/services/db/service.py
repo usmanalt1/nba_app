@@ -25,19 +25,19 @@ class Service:
     def get_all_teams(self) -> list:
         return list(self.model.objects.only("team_id", "team_name"))
     
-    def get_latest_games(self, season: str) -> list:
+    def get_latest_games(self, season: str, season_type: str) -> list:
         dim_games_model: DimGames = self.model
         latest_date = (
-            dim_games_model.objects.filter(season=season)
+            dim_games_model.objects.filter(season=season, season_type=season_type)
             .order_by("-game_date")
             .values_list("game_date", flat=True)
             .distinct()[:5]
         )
-        if latest_date is None:
+        if not latest_date:
             return []
 
         return list(
-            dim_games_model.objects.filter(season=season, game_date__in=latest_date)
+            dim_games_model.objects.filter(season=season, season_type=season_type, game_date__in=latest_date)
             .only("game_date", "season", "home_team_name", "away_team_name", "home_pts", "away_pts")
         )
 

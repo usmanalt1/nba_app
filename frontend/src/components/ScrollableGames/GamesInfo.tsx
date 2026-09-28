@@ -1,36 +1,69 @@
-function TeamRow({ name, pts, dotColor, won }: { name: string; pts: number; dotColor: string; won: boolean }) {
+interface TeamRowProps {
+    name: string;
+    pts: number;
+    dotColor: string;
+    won: boolean;
+}
+
+function TeamRow({ name, pts, dotColor, won }: TeamRowProps) {
     return (
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '3px 0', fontFamily: "'IBM Plex Mono', monospace", fontSize: '14px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: won ? 600 : 400, color: won ? 'var(--gold)' : 'var(--paper)' }}>
-                <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: dotColor, flexShrink: 0 }} />
-                {name}
+        <div
+            style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '4px 0',
+                fontFamily: 'var(--mono)',
+                fontSize: 13,
+            }}
+        >
+            <div
+                style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    minWidth: 0,
+                    fontWeight: won ? 600 : 400,
+                    color: won ? 'var(--paper)' : 'var(--paper-dim)',
+                }}
+            >
+                <span style={{ width: 7, height: 7, borderRadius: '50%', backgroundColor: dotColor, flexShrink: 0 }} />
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={name}>
+                    {name}
+                </span>
             </div>
-            <div style={{ fontWeight: won ? 700 : 400, color: won ? 'var(--gold)' : 'var(--paper-dim)' }}>
+            <div
+                style={{
+                    fontWeight: won ? 700 : 400,
+                    color: won ? 'var(--paper)' : 'var(--paper-dim)',
+                    fontVariantNumeric: 'tabular-nums',
+                    paddingLeft: 10,
+                }}
+            >
                 {pts}
             </div>
         </div>
     );
 }
 
-export function GamesInfo(games: any) {
-    const homeWon = games.home_pts > games.away_pts;
-    const date = new Date(games.game_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+export interface LatestGame {
+    game_id?: string;
+    game_date: string;
+    home_team_name: string;
+    away_team_name: string;
+    home_pts: number;
+    away_pts: number;
+}
+
+export function GamesInfo({ game_date, home_team_name, away_team_name, home_pts, away_pts }: LatestGame) {
+    const homeWon = home_pts > away_pts;
+    const date = new Date(game_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 
     return (
         <div>
-            <div
-                style={{
-                    fontFamily: "'IBM Plex Mono', monospace",
-                    fontSize: '8px',
-                    letterSpacing: '0.04em',
-                    color: 'var(--paper-dim)',
-                    marginBottom: '10px'
-                }}
-            >
-                {date}
-            </div>
-            <TeamRow name={games.home_team_name} pts={games.home_pts} dotColor="var(--home)" won={homeWon} />
-            <TeamRow name={games.away_team_name} pts={games.away_pts} dotColor="var(--away)" won={!homeWon} />
+            <div className="kicker" style={{ marginBottom: 10 }}>{date} · Final</div>
+            <TeamRow name={away_team_name} pts={away_pts} dotColor="var(--away)" won={!homeWon} />
+            <TeamRow name={home_team_name} pts={home_pts} dotColor="var(--home)" won={homeWon} />
         </div>
     );
 }

@@ -1,7 +1,7 @@
 import pandas as pd
 class PlayerStats:
     def __init__(self, player_stats_df: pd.DataFrame, players_info_df: pd.DataFrame, teams_info_df: pd.DataFrame):
-        self.player_stats_df = player_stats_df[["season_id", "player_id", "team_id", "pts", "reb", "plus_minus", "ast", "dreb", "oreb", "season"]]
+        self.player_stats_df = player_stats_df[["season_id", "player_id", "team_id", "pts", "reb", "plus_minus", "ast", "dreb", "oreb", "season", "season_type"]]
         self.players_info_df = players_info_df[["player_id", "player_name"]]
         self.teams_info_df = teams_info_df[["team_id", "team_name"]]
         self.ALLOWED_STAT_COLS = ["average_points", "average_rebounds", "average_plus_minus", "average_assists", "average_defensive_rebounds", "average_offensive_rebounds"]
@@ -20,7 +20,7 @@ class PlayerStats:
 
 
     def _build_player_games(self) -> pd.DataFrame:
-        average_stats = self.player_stats_df.groupby(["season_id", "player_id", "team_id", "season"]).agg(
+        average_stats = self.player_stats_df.groupby(["season_id", "player_id", "team_id", "season", "season_type"]).agg(
             average_points=pd.NamedAgg(column="pts", aggfunc="mean"),
             average_rebounds=pd.NamedAgg(column="reb", aggfunc="mean"),
             average_plus_minus=pd.NamedAgg(column="plus_minus", aggfunc="mean"),

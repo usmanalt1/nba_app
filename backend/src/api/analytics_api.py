@@ -18,8 +18,8 @@ class NBADataResponseSchema(Schema):
     error: Optional[str] = None
     records: Optional[List[Dict[str, Any]]] = None
 
-@router.get("/average_stats", response=NBADataResponseSchema)
-async def get_average_player_stats(request):
+@router.get("/average_stats/season={season_name}/season_type={season_type}", response=NBADataResponseSchema)
+async def get_average_player_stats(request, season_name: str, season_type: str):
 
     try:
         def sync_get():
@@ -27,8 +27,8 @@ async def get_average_player_stats(request):
 
             # Fetch player stats, player info, and team info from the database to df
             player_stats_df = pd.DataFrame(list(
-                FctPlayerStats.objects.values(
-                    "season_id", "player_id", "pts", "reb", "plus_minus", "ast", "dreb", "oreb", "team_id", "season"
+                FctPlayerStats.objects.filter(season=season_name, season_type=season_type).values(
+                    "season_id", "player_id", "pts", "reb", "plus_minus", "ast", "dreb", "oreb", "team_id", "season", "season_type",
                 )
             ))
             players_info_df = pd.DataFrame(list(
@@ -49,16 +49,16 @@ async def get_average_player_stats(request):
         return NBADataResponseSchema(success=False, error=str(e))
 
 
-@router.get("/average_team_stats", response=NBADataResponseSchema)
-async def get_average_team_stats(request):
+@router.get("/average_team_stats/season={season_name}/season_type={season_type}", response=NBADataResponseSchema)
+async def get_average_team_stats(request, season_name: str, season_type: str):
 
     try:
         def sync_get():
             logger.info("Fetching average team stats from the database...")
 
             team_stats_df = pd.DataFrame(list(
-                FctTeamStats.objects.values(
-                    "season_id", "team_id", "pts", "reb", "plus_minus", "ast", "season", "wl"
+                FctTeamStats.objects.filter(season=season_name, season_type=season_type).values(
+                    "season_id", "team_id", "pts", "reb", "plus_minus", "ast", "season", "wl", "season_type"
                 )
             ))
             teams_info_df = pd.DataFrame(list(
@@ -75,15 +75,17 @@ async def get_average_team_stats(request):
         return NBADataResponseSchema(success=False, error=str(e))
 
 
-@router.get("/most_improved_players", response=NBADataResponseSchema)
-async def get_most_improved_players(request):
+@router.get("/most_improved_players/season_type={season_type}", response=NBADataResponseSchema)
+async def get_most_improved_players(request, season_type: str):
 
     try:
         def sync_get():
             logger.info("Fetching most improved players from the database...")
 
+            # season_name isn't used to filter here - the comparison needs both the
+            # current and previous season's data, so only season_type narrows the query.
             player_stats_df = pd.DataFrame(list(
-                FctPlayerStats.objects.values("season_id", "player_id", "team_id", "pts", "season")
+                FctPlayerStats.objects.filter(season_type=season_type).values("season_id", "player_id", "team_id", "pts", "season", "season_type")
             ))
             players_info_df = pd.DataFrame(list(
                 DimPlayers.objects.values("player_id", "season_id", "player_name")
@@ -101,15 +103,15 @@ async def get_most_improved_players(request):
         return NBADataResponseSchema(success=False, error=str(e))
 
 
-@router.get("/most_improved_teams", response=NBADataResponseSchema)
-async def get_most_improved_teams(request):
+@router.get("/most_improved_teams/season_type={season_type}", response=NBADataResponseSchema)
+async def get_most_improved_teams(request, season_type: str):
 
     try:
         def sync_get():
             logger.info("Fetching most improved teams from the database...")
 
             team_stats_df = pd.DataFrame(list(
-                FctTeamStats.objects.values("season_id", "team_id", "season", "wl")
+                FctTeamStats.objects.filter(season_type=season_type).values("season_id", "team_id", "season", "wl", "season_type")
             ))
             teams_info_df = pd.DataFrame(list(
                 DimTeams.objects.values("team_id", "team_name")

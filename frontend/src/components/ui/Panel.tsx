@@ -2,6 +2,10 @@ import type { CSSProperties, ReactNode } from 'react';
 
 interface PanelProps {
     title?: string;
+    /** Right-aligned content on the title row: counts, units, legends. */
+    titleMeta?: ReactNode;
+    /** Draws a brand rule down the left edge to mark a panel as the section's lead. */
+    accent?: boolean;
     children: ReactNode;
     style?: CSSProperties;
 }
@@ -9,31 +13,32 @@ interface PanelProps {
 // Plain div rather than Mantine's Box: Box's w/h/p shorthands are rem-based and this
 // app sets a non-default 18px root font-size for typography, which silently scales
 // those props by 1.125x and throws off layout math done in raw pixels elsewhere.
-export function Panel({ title, children, style }: PanelProps) {
+export function Panel({ title, titleMeta, accent, children, style }: PanelProps) {
     return (
         <div
             style={{
                 border: '1px solid var(--line)',
+                borderLeft: accent ? '2px solid var(--worm)' : '1px solid var(--line)',
                 borderRadius: 4,
-                padding: '18px 20px',
+                padding: '16px 18px',
                 background: 'var(--panel)',
                 color: 'var(--paper)',
                 boxSizing: 'border-box',
                 ...style,
             }}
         >
-            {title && (
+            {(title || titleMeta) && (
                 <div
                     style={{
-                        fontFamily: "'IBM Plex Mono', monospace",
-                        fontSize: '10px',
-                        letterSpacing: '0.06em',
-                        textTransform: 'uppercase',
-                        color: 'var(--paper-dim)',
+                        display: 'flex',
+                        alignItems: 'baseline',
+                        justifyContent: 'space-between',
+                        gap: 12,
                         marginBottom: 14,
                     }}
                 >
-                    {title}
+                    {title && <span className="kicker">{title}</span>}
+                    {titleMeta && <span className="kicker" style={{ color: 'var(--paper-faint)' }}>{titleMeta}</span>}
                 </div>
             )}
             {children}

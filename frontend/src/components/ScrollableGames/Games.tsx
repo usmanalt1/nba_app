@@ -1,49 +1,42 @@
-import { Box, Group, ScrollArea } from '@mantine/core';
 import { useEffect, useState } from 'react';
-import { GamesInfo } from './GamesInfo';
+import { GamesInfo, type LatestGame } from './GamesInfo';
 import { apiFetch } from '../../lib/api';
+import { env } from '../../env';
 
 export function Games() {
-    const [Games, setGames] = useState([]);
+  const [games, setGames] = useState<LatestGame[]>([]);
 
   useEffect(() => {
-    apiFetch(`/api/nba/db/get_latest_games`)
+    const { VITE_DEFAULT_SEASON: season, VITE_DEFAULT_SEASON_TYPE: season_type } = env;
+    apiFetch(`/api/nba/db/get_latest_games/season=${season}/season_type=${season_type}`)
       .then(r => r.json())
-      .then(setGames);
+      .then(data => setGames(Array.isArray(data) ? data : []))
+      .catch(() => setGames([]));
   }, []);
 
-  const length_games = Games.length
+  if (games.length === 0) {
+    return <div style={{ fontSize: 13, color: 'var(--paper-faint)', padding: '8px 0' }}>No recent games.</div>;
+  }
 
-  return  (
-    <ScrollArea scrollbars="x" type="always" w="100%" style={{ minWidth: 0 }}>
-      <Box>
-        <Group wrap="nowrap" gap="md">
-          {Array.from({ length: length_games }).map((_, index) => (
-            <Box
-              key={index}
-              style={{
-                minWidth: 350,
-                height: 110,
-                backgroundColor: 'var(--panel)',
-                border: '1px solid var(--line)',
-                borderRadius: 4,
-                padding: '14px 18px',
-                color: 'var(--paper)',
-              }}
-            >
-              {GamesInfo(Games[index])}
-            </Box>
-          ))}
-        </Group>
-      </Box>
-    </ScrollArea>
+  return (
+    <div className="rail">
+      <div style={{ display: 'flex', gap: 14, width: 'max-content' }}>
+        {games.map((game, index) => (
+          <div
+            key={game.game_id ?? index}
+            style={{
+              minWidth: 268,
+              backgroundColor: 'var(--panel)',
+              border: '1px solid var(--line)',
+              borderRadius: 4,
+              padding: '14px 18px',
+              color: 'var(--paper)',
+            }}
+          >
+            <GamesInfo {...game} />
+          </div>
+        ))}
+      </div>
+    </div>
   );
-
-
-
-
-
-
-
-
 }

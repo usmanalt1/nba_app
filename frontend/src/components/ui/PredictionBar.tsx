@@ -11,6 +11,54 @@ interface PredictionBarProps {
     gameDate?: string;
 }
 
+interface SideProps {
+    team: string;
+    pct: number;
+    pts?: number;
+    color: string;
+    picked: boolean;
+}
+
+function Side({ team, pct, pts, color, picked }: SideProps) {
+    return (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '3px 0' }}>
+            <span style={{ width: 7, height: 7, borderRadius: '50%', background: color, flexShrink: 0 }} />
+            <span
+                title={team}
+                style={{
+                    flex: 1,
+                    minWidth: 0,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    fontSize: 13,
+                    fontWeight: picked ? 600 : 400,
+                    color: picked ? 'var(--paper)' : 'var(--paper-dim)',
+                }}
+            >
+                {team}
+            </span>
+            {typeof pts === 'number' && (
+                <span style={{ fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--paper)', fontVariantNumeric: 'tabular-nums' }}>
+                    {pts}
+                </span>
+            )}
+            <span
+                style={{
+                    fontFamily: 'var(--mono)',
+                    fontSize: 12,
+                    color: picked ? 'var(--paper)' : 'var(--paper-dim)',
+                    fontVariantNumeric: 'tabular-nums',
+                    width: 34,
+                    textAlign: 'right',
+                }}
+            >
+                {pct}%
+            </span>
+        </div>
+    );
+}
+
 export function PredictionBar({
     homeTeam,
     awayTeam,
@@ -23,77 +71,35 @@ export function PredictionBar({
 }: PredictionBarProps) {
     const homePct = Math.round(homeWinProbability * 100);
     const awayPct = 100 - homePct;
-    const hasResult = actualHomeWin !== undefined;
+    const hasResult = typeof actualHomeWin === 'boolean';
     const correct = hasResult && predictedHomeWin === actualHomeWin;
 
-    // the name row's width split roughly tracks the bar's split so the two visually
-    // correspond, clamped so neither side collapses to unreadable width on lopsided games
-    const awayFlex = Math.min(Math.max(awayPct, 30), 70);
-    const homeFlex = 100 - awayFlex;
-
     return (
-        <Panel style={{ width: 280, flexShrink: 0 }}>
-            <div
-                style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: 10,
-                    fontFamily: "'IBM Plex Mono', monospace",
-                }}
-            >
-                <span style={{ fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--paper-dim)' }}>
+        <Panel style={{ width: 284, flexShrink: 0 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                <span className="kicker">
                     {gameDate ? new Date(gameDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : ''}
                 </span>
                 {hasResult && (
-                    <span style={{ fontSize: 11, fontWeight: 700, color: correct ? 'var(--win)' : 'var(--lose)' }}>
-                        {correct ? 'CORRECT' : 'INCORRECT'}
+                    <span
+                        className="kicker"
+                        style={{ color: correct ? 'var(--win)' : 'var(--lose)', fontWeight: 600 }}
+                    >
+                        {correct ? '✓ Hit' : '✕ Miss'}
                     </span>
                 )}
             </div>
 
-            <div style={{ display: 'flex', gap: 8, fontSize: 13, marginBottom: 6 }}>
-                <div style={{ flex: `0 0 ${awayFlex}%`, minWidth: 0 }}>
-                    <span
-                        title={awayTeam}
-                        style={{
-                            display: 'block',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                            color: 'var(--away)',
-                            fontWeight: predictedHomeWin === false ? 700 : 400,
-                        }}
-                    >
-                        {awayTeam}{typeof awayPts === 'number' ? ` — ${awayPts}` : ''}
-                    </span>
-                    <span style={{ fontSize: 11, color: 'var(--paper-dim)' }}>{awayPct}%</span>
-                </div>
-                <div style={{ flex: `0 0 ${homeFlex}%`, minWidth: 0, textAlign: 'right' }}>
-                    <span
-                        title={homeTeam}
-                        style={{
-                            display: 'block',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                            color: 'var(--home)',
-                            fontWeight: predictedHomeWin ? 700 : 400,
-                        }}
-                    >
-                        {homeTeam}{typeof homePts === 'number' ? ` — ${homePts}` : ''}
-                    </span>
-                    <span style={{ fontSize: 11, color: 'var(--paper-dim)' }}>{homePct}%</span>
-                </div>
-            </div>
+            {/* Stacked rather than side-by-side: full-length NBA team names need the
+                whole card width or they all truncate to "Golden State ...". */}
+            <Side team={awayTeam} pct={awayPct} pts={awayPts} color="var(--away)" picked={predictedHomeWin === false} />
+            <Side team={homeTeam} pct={homePct} pts={homePts} color="var(--home)" picked={predictedHomeWin === true} />
 
-            <div
-                style={{
-                    height: 8,
-                    borderRadius: 4,
-                    background: `linear-gradient(to right, var(--away) ${awayPct}%, var(--home) ${awayPct}%)`,
-                }}
-            />
+            {/* 2px surface gap between the two fills rather than a stroke around them. */}
+            <div style={{ display: 'flex', gap: 2, height: 6, marginTop: 10 }}>
+                <div style={{ width: `${awayPct}%`, background: 'var(--away)', borderRadius: '3px 0 0 3px' }} />
+                <div style={{ flex: 1, background: 'var(--home)', borderRadius: '0 3px 3px 0' }} />
+            </div>
         </Panel>
     );
 }

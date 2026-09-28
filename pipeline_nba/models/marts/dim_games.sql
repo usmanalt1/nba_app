@@ -4,6 +4,10 @@ SELECT
     game_date,
     season_id,
     season,
+    case 
+        when season_id like '%420%' then 'playoffs'
+        else 'regular'
+    end as season_type,
     home_team_id,
     home_team_abbreviation,
     home_team_name,

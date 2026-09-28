@@ -16,4 +16,4 @@ export type TrainResponse = {
     season_records: SeasonRecord[] | null;
     predictions: Prediction[] | null;
 };
-export type ModelRunSummary = { strategy: string; season: string; metrics: Metrics };
+export type ModelRunSummary = { strategy: string; season: string; season_type: string; metrics: Metrics };

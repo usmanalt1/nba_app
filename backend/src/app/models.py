@@ -255,6 +255,7 @@ class DimGames(models.Model):
     game_date = models.DateField(null=True, blank=True)
     season_id = models.IntegerField()
     season = models.CharField(max_length=20, null=True, blank=True)
+    season_type = models.CharField(max_length=20, null=True, blank=True)
     home_team_id = models.IntegerField()
     home_team_abbreviation = models.CharField(max_length=10)
     home_team_name = models.CharField(max_length=50)
@@ -287,7 +288,6 @@ class DimTeams(models.Model):
     class Meta:
         managed = False
         db_table = '"nba_marts"."dim_teams"'
-
 
 class DimRosters(models.Model):
     player_id = models.IntegerField(primary_key=True)
@@ -347,6 +347,7 @@ class FctPlayerStats(models.Model):
     pts = models.FloatField(null=True, blank=True)
     plus_minus = models.FloatField(null=True, blank=True)
     season = models.CharField(max_length=20, null=True, blank=True)
+    season_type = models.CharField(max_length=20, null=True, blank=True)
     run_timestamp = models.DateTimeField(null=True, blank=True)
 
     class Meta:
@@ -380,6 +381,7 @@ class FctTeamStats(models.Model):
     pts = models.FloatField(null=True, blank=True)
     plus_minus = models.FloatField(null=True, blank=True)
     season = models.CharField(max_length=20, null=True, blank=True)
+    season_type = models.CharField(max_length=20, null=True, blank=True)
     run_timestamp = models.DateTimeField(null=True, blank=True)
 
     class Meta:
