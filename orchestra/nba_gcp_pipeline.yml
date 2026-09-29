@@ -1,0 +1,132 @@
+version: v1
+name: NBA GCP End to End
+
+# The all-cloud architecture: collect to GCS, load GCS -> BigQuery, transform with
+# dbt inside BigQuery. This is the version Orchestra can run unaided, because every
+# component is internet-reachable - no tunnel, no laptop in the critical path.
+#
+#   collect ──────> load ────────> transform
+#   (to GCS)        (to BQ)         (dbt build --target bigquery)
+#
+# Unlike nba_dbt_pipeline.yml / nba_collect_pipeline.yml (which target the local
+# container and are split so the fast dbt demo stays one command), this is a single
+# DAG: once everything is cloud-side there is no reason to run the halves apart.
+#
+# collect and load run orchestra/nba_task.py as PYTHON tasks straight from git, so
+# no part of this needs the Django API deployed. Orchestra clones the repo onto its
+# own runner, installs requirements-task.txt, then runs the command.
+#
+# Because it is a fresh runner, nothing gitignored comes with it: config arrives via
+# environment_variables below, and the service-account key must be set as
+# GCS_SERVICE_ACCOUNT_JSON_CONTENT in the Python connection's secrets. See
+# orchestra/README.md.
+
+inputs:
+  season_year:
+    type: string
+    default: "2024-25"
+  seasons:
+    type: number
+    default: 1
+  dbt_command:
+    type: string
+    default: build
+    options:
+      - build
+      - run
+
+pipeline:
+  collect:
+    name: Collect season to GCS
+    dependsOn: []
+    tasks:
+      # A standalone script, not an API call: Orchestra clones the repo and runs it.
+      # No web server, no JWT, no tunnel - and it raises on failure instead of
+      # returning HTTP 200 with {"success": false}, so a broken collect actually
+      # turns the task red and stops the DAG.
+      #
+      # Requires STORAGE=gcs, which switches ObjectStorageService to GCSStorage and
+      # writes gs://<PARENT_BUCKET>/<run_id>/season=<season>/<table>.parquet.
+      collect_season:
+        name: Collect season
+        integration: PYTHON
+        integrationJob: PYTHON_EXECUTE_SCRIPT
+        dependsOn: []
+        # The Python connection is not a connection to a target system - it holds the
+        # repo to clone, the git token, and the secrets exported as env vars
+        # (GCS_SERVICE_ACCOUNT_JSON_CONTENT).
+        connection: ${{ ENV.PYTHON_CONNECTION }}
+        parameters:
+          source: GIT
+          project_dir: .
+          # The runner offers 3.11 or 3.12 only - the backend container is 3.9, so
+          # nba_task.py has to work on both. It sticks to stdlib argparse/logging.
+          python_version: "3.12"
+          package_manager: PIP
+          build_command: pip install -r orchestra/requirements-task.txt
+          # .env is gitignored, so none of this reaches the cloned repo on its own.
+          # Without it pydantic-settings defaults STORAGE to "local" and the data is
+          # written to an ephemeral disk. GCS_SERVICE_ACCOUNT_JSON_CONTENT is the key
+          # itself and belongs in the Python connection's secrets, not here.
+          environment_variables: '{"STORAGE": "gcs", "PARENT_BUCKET": "nba-ua-dev-bucket", "GCS_PROJECT_NAME": "nba-ua-dev", "FILE_FORMAT": "parquet", "BIGQUERY_DATASET_ID": "nba_dataset"}'
+          command: python orchestra/nba_task.py collect --season-year ${{ inputs.season_year }} --seasons ${{ inputs.seasons }} --expect-storage gcs
+
+  load:
+    name: Load GCS to BigQuery
+    dependsOn:
+      - collect
+    tasks:
+      # Appending is intentional: every staging model dedupes on run_timestamp via
+      # the get_latest_by_run_timestamp macro, so re-running a season supersedes it
+      # rather than double-counting.
+      load_to_bigquery:
+        name: Load to BigQuery
+        integration: PYTHON
+        integrationJob: PYTHON_EXECUTE_SCRIPT
+        dependsOn: []
+        # The Python connection is not a connection to a target system - it holds the
+        # repo to clone, the git token, and the secrets exported as env vars
+        # (GCS_SERVICE_ACCOUNT_JSON_CONTENT).
+        connection: ${{ ENV.PYTHON_CONNECTION }}
+        parameters:
+          source: GIT
+          project_dir: .
+          # The runner offers 3.11 or 3.12 only - the backend container is 3.9, so
+          # nba_task.py has to work on both. It sticks to stdlib argparse/logging.
+          python_version: "3.12"
+          package_manager: PIP
+          build_command: pip install -r orchestra/requirements-task.txt
+          # .env is gitignored, so none of this reaches the cloned repo on its own.
+          # Without it pydantic-settings defaults STORAGE to "local" and the data is
+          # written to an ephemeral disk. GCS_SERVICE_ACCOUNT_JSON_CONTENT is the key
+          # itself and belongs in the Python connection's secrets, not here.
+          environment_variables: '{"STORAGE": "gcs", "PARENT_BUCKET": "nba-ua-dev-bucket", "GCS_PROJECT_NAME": "nba-ua-dev", "FILE_FORMAT": "parquet", "BIGQUERY_DATASET_ID": "nba_dataset"}'
+          command: python orchestra/nba_task.py load-bigquery --seasons ${{ inputs.season_year }} --expect-storage gcs
+
+  transform:
+    name: dbt transform
+    dependsOn:
+      - load
+    tasks:
+      # One `dbt build` rather than a task per layer. Two reasons: this account caps
+      # pipelines at 5 tasks, and Orchestra's dbt Core integration already reports
+      # per-model status and lineage from a single build - so splitting by layer
+      # bought presentation, not correctness. dbt resolves build order from the
+      # ref() graph either way.
+      dbt_build:
+        name: dbt build
+        integration: DBT_CORE
+        integrationJob: DBT_CORE_EXECUTE
+        dependsOn: []
+        connection: ${{ ENV.DBT_CORE_CONNECTION }}
+        parameters:
+          commands: dbt ${{ inputs.dbt_command }} --target bigquery
+          project_dir: pipeline_nba
+
+configuration:
+  retries: 1
+  retryDelay: 120
+  timeout: 3600
+
+webhook:
+  enabled: false

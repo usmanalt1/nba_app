@@ -1,0 +1,27 @@
+# Dependencies for orchestra/nba_task.py, for Orchestra's Python runner to install
+# with `build_command`. Deliberately not the root requirements.txt: that one pulls
+# Django, mysqlclient, snowflake-snowpark, scikit-learn and the dbt adapters, none
+# of which the collect or load steps touch - and mysqlclient needs system libraries
+# that a bare Python runner will not have.
+#
+# Pinned to the versions the backend container runs, so a cloud run behaves like a
+# local one. Keep in sync with the root requirements.txt when bumping.
+
+# NBA API client and the dataframe/parquet stack it feeds
+nba_api==1.10.2
+pandas==2.3.3
+pyarrow==21.0.0
+requests==2.32.5
+
+# Settings: config/settings.py is pydantic-settings, not Django settings
+pydantic-settings==2.11.0
+
+# GCS (GCSStorage) and the BigQuery load step
+gcsfs==2025.10.0
+google-cloud-storage==3.9.0
+google-cloud-bigquery==3.41.0
+
+# object_storage/service.py imports azure.core at module scope for AzureBlobStorage,
+# so it is needed even on the GCS path. azure-core alone is enough - the full
+# azure-storage-blob is only used if STORAGE=az.
+azure-core==1.39.0

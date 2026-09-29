@@ -2,8 +2,6 @@
 from services.data_collection.collect import CollectRawNBAData
 from services.object_storage.service import ObjectStorageService
 from datetime import datetime, timedelta
-from django.utils import timezone
-from app.models import PlayerAwards
 import logging
 import pandas as pd
 
@@ -30,7 +28,14 @@ class BuildDataService:
 
         Awards are static history - once a player has rows in player_awards there's
         no need to hit the (slow, rate-limited) nba_api endpoint for them again.
+
+        Imports Django locally rather than at module scope: this is the only method
+        that needs the ORM, and keeping it out of the module's imports lets
+        build_nba_data run from a standalone script with no Django setup at all.
         """
+        from django.utils import timezone
+        from app.models import PlayerAwards
+
         existing_player_ids = set(PlayerAwards.objects.values_list("player_id", flat=True).distinct())
         players_to_fetch = players_table[~players_table["player_id"].isin(existing_player_ids)]
 

@@ -3,7 +3,10 @@ version: 2
 sources:
   - name: nba_dataset
     description: "Source data for NBA statistics"
-    schema: "{{ 'test' if target.name == 'local' else 'public' }}"
+    # DuckDB keeps the raw tables in `test`, Postgres in `public`, and BigQuery in
+    # the dataset the loader writes to (BIGQUERY_DATASET_ID). Override with
+    # `--vars '{raw_dataset: other}'` if that dataset is renamed.
+    schema: "{{ 'test' if target.type == 'duckdb' else (var('raw_dataset', 'nba_dataset') if target.type == 'bigquery' else 'public') }}"
     tables:
       - name: player_stats
         description: "Raw data of NBA players"

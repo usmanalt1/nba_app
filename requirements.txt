@@ -29,6 +29,7 @@ pyArrow
 duckdb
 dbt-duckdb
 dbt-postgres
+dbt-bigquery
 snowflake-snowpark-python
 azure-storage-blob
 adlfs

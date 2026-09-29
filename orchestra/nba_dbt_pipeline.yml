@@ -1,0 +1,100 @@
+version: v1
+name: NBA dbt Transform
+
+# Stage 1 of moving the NBA pipeline onto Orchestra: the dbt half only.
+#
+# The DAG mirrors the layers in pipeline_nba/models, so Orchestra shows four
+# dependent nodes rather than one opaque `dbt build`. Each group is a plain dbt
+# selector over the same project, so the layering here and the refs in the SQL
+# can't drift apart - if a marts model refs a staging model, dbt still builds it
+# in the right order inside the group.
+#
+# Collection (the /collect/season/... API call) is deliberately not here yet -
+# see orchestra/README.md for why it needs a different task type.
+
+inputs:
+  # container_postgres is the default because it is the only local target with a
+  # complete set of raw tables - the DuckDB file is missing `game_schedule`, so
+  # `container` fails at stg_nba_game_schedule until that table is collected.
+  dbt_target:
+    type: string
+    default: container_postgres
+    options:
+      - container_postgres
+      - container
+      - local
+      - dev
+  # `build` runs models + tests together; drop to `run` to skip tests.
+  dbt_command:
+    type: string
+    default: build
+    options:
+      - build
+      - run
+
+pipeline:
+  staging:
+    name: Staging
+    dependsOn: []
+    tasks:
+      dbt_staging:
+        name: dbt build staging
+        integration: DBT_CORE
+        integrationJob: DBT_CORE_EXECUTE
+        dependsOn: []
+        connection: ${{ ENV.DBT_CORE_CONNECTION }}
+        parameters:
+          commands: dbt ${{ inputs.dbt_command }} --target ${{ inputs.dbt_target }} --select staging
+          project_dir: pipeline_nba
+
+  intermediate:
+    name: Intermediate
+    dependsOn:
+      - staging
+    tasks:
+      dbt_intermediate:
+        name: dbt build intermediate
+        integration: DBT_CORE
+        integrationJob: DBT_CORE_EXECUTE
+        dependsOn: []
+        connection: ${{ ENV.DBT_CORE_CONNECTION }}
+        parameters:
+          commands: dbt ${{ inputs.dbt_command }} --target ${{ inputs.dbt_target }} --select intermediate
+          project_dir: pipeline_nba
+
+  marts:
+    name: Marts
+    dependsOn:
+      - intermediate
+    tasks:
+      dbt_marts:
+        name: dbt build marts
+        integration: DBT_CORE
+        integrationJob: DBT_CORE_EXECUTE
+        dependsOn: []
+        connection: ${{ ENV.DBT_CORE_CONNECTION }}
+        parameters:
+          commands: dbt ${{ inputs.dbt_command }} --target ${{ inputs.dbt_target }} --select marts
+          project_dir: pipeline_nba
+
+  semantic_views:
+    name: Semantic views
+    dependsOn:
+      - marts
+    tasks:
+      dbt_semantic_views:
+        name: dbt build semantic views
+        integration: DBT_CORE
+        integrationJob: DBT_CORE_EXECUTE
+        dependsOn: []
+        connection: ${{ ENV.DBT_CORE_CONNECTION }}
+        parameters:
+          commands: dbt ${{ inputs.dbt_command }} --target ${{ inputs.dbt_target }} --select semantic_views
+          project_dir: pipeline_nba
+
+configuration:
+  retries: 1
+  retryDelay: 60
+
+webhook:
+  enabled: false

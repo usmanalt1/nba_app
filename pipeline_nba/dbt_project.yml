@@ -54,5 +54,6 @@ models:
 
 # dbt's +grants config only grants on the views/tables themselves, not on the schema that
 # contains them - without USAGE, SELECT still fails with "permission denied for schema".
+# DuckDB has no roles/GRANT, so this is a no-op outside Postgres.
 on-run-end:
-  - "GRANT USAGE ON SCHEMA nba_analytics TO llm_readonly"
+  - "{% if target.type == 'postgres' %}GRANT USAGE ON SCHEMA nba_analytics TO llm_readonly{% endif %}"

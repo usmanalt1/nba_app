@@ -1,0 +1,65 @@
+version: v1
+name: NBA Collect and Load
+
+# Stage 2: the API half of the pipeline - collect a season from the NBA API into
+# object storage, then load it into Postgres. Runs against the Django API in the
+# nba_app_backend container.
+#
+# Kept separate from nba_dbt_pipeline.yml rather than bolted onto the front of it,
+# so each half stays independently runnable and the fast dbt-only demo is still
+# one command. Chain them in Orchestra with a `triggerEvents` entry on the dbt
+# pipeline; locally, just run the two scripts in sequence.
+#
+# Both endpoints below `await` their work, so the task finishes when the work
+# does. That is deliberate and load-bearing - see the note in orchestra/README.md
+# about the multi-season endpoint, which returns before collection completes and
+# must not be orchestrated as-is.
+#
+# HttpParametersModel takes only `path`, `method` and an optional string `body`.
+# There is no base-URL or headers field: the host and the Authorization header
+# live in the Orchestra HTTP connection (locally, run_local.py supplies them).
+
+inputs:
+  season_year:
+    type: string
+    default: "2024-25"
+
+pipeline:
+  collect:
+    name: Collect season
+    dependsOn: []
+    tasks:
+      collect_season:
+        name: Collect season to object storage
+        integration: HTTP
+        integrationJob: HTTP_REQUEST
+        dependsOn: []
+        connection: ${{ ENV.NBA_API_CONNECTION }}
+        parameters:
+          path: /api/nba/collect/season/${{ inputs.season_year }}
+          method: GET
+
+  load:
+    name: Load to Postgres
+    dependsOn:
+      - collect
+    tasks:
+      load_to_postgres:
+        name: Load object storage into Postgres
+        integration: HTTP
+        integrationJob: HTTP_REQUEST
+        dependsOn: []
+        connection: ${{ ENV.NBA_API_CONNECTION }}
+        parameters:
+          path: /api/nba/load_to_postgres
+          method: GET
+
+configuration:
+  # Collection hits the NBA API for a whole season, so give it room. Retries are
+  # safe: both endpoints overwrite by season rather than appending.
+  retries: 1
+  retryDelay: 120
+  timeout: 3600
+
+webhook:
+  enabled: false
