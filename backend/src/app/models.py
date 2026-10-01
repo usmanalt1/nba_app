@@ -317,6 +317,9 @@ class DimSeasons(models.Model):
 
 class FctPlayerStats(models.Model):
     season_id = models.CharField(max_length=20)
+    # Denormalised in dbt: dim_players only covers the latest season, so reading a
+    # name through the FK inner-joins away every earlier player.
+    player_name = models.CharField(max_length=100, null=True, blank=True)
     player = models.ForeignKey(
         DimPlayers,
         on_delete=models.DO_NOTHING,
@@ -394,3 +397,162 @@ class MlModels(models.Model):
 
     class Meta:
         db_table = 'ml_models'
+
+# ── Advanced season stats: raw (Django-managed) ──────────────────────────────
+# One row per player/team per season per season_type, straight from
+# leaguedashplayerstats / leaguedashteamstats with MeasureType=Advanced. These
+# endpoints return a whole season per call, so a full backfill is ~36 calls.
+# The *_RANK and sp_work_* columns are dropped: they are derivable noise.
+
+class AdvancedPlayerSeasonStats(models.Model):
+    season_id = models.CharField(max_length=20)
+    season = models.CharField(max_length=20)
+    season_type = models.CharField(max_length=20)
+    player_id = models.BigIntegerField()
+    player_name = models.CharField(max_length=100, null=True, blank=True)
+    nickname = models.CharField(max_length=100, null=True, blank=True)
+    team_id = models.BigIntegerField(null=True, blank=True)
+    team_abbreviation = models.CharField(max_length=10, null=True, blank=True)
+    age = models.FloatField(null=True, blank=True)
+    gp = models.IntegerField(null=True, blank=True)
+    w = models.IntegerField(null=True, blank=True)
+    l = models.IntegerField(null=True, blank=True)
+    w_pct = models.FloatField(null=True, blank=True)
+    min = models.FloatField(null=True, blank=True)
+    off_rating = models.FloatField(null=True, blank=True)
+    def_rating = models.FloatField(null=True, blank=True)
+    net_rating = models.FloatField(null=True, blank=True)
+    ast_pct = models.FloatField(null=True, blank=True)
+    ast_to = models.FloatField(null=True, blank=True)
+    ast_ratio = models.FloatField(null=True, blank=True)
+    oreb_pct = models.FloatField(null=True, blank=True)
+    dreb_pct = models.FloatField(null=True, blank=True)
+    reb_pct = models.FloatField(null=True, blank=True)
+    tm_tov_pct = models.FloatField(null=True, blank=True)
+    efg_pct = models.FloatField(null=True, blank=True)
+    ts_pct = models.FloatField(null=True, blank=True)
+    usg_pct = models.FloatField(null=True, blank=True)
+    pace = models.FloatField(null=True, blank=True)
+    pace_per40 = models.FloatField(null=True, blank=True)
+    poss = models.FloatField(null=True, blank=True)
+    pie = models.FloatField(null=True, blank=True)
+    fgm = models.FloatField(null=True, blank=True)
+    fga = models.FloatField(null=True, blank=True)
+    fg_pct = models.FloatField(null=True, blank=True)
+    run_timestamp = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'advanced_player_season_stats'
+        constraints = [
+            models.UniqueConstraint(
+                fields=["season", "season_type", "player_id"],
+                name="adv_player_season_unique",
+            ),
+        ]
+
+
+class AdvancedTeamSeasonStats(models.Model):
+    season_id = models.CharField(max_length=20)
+    season = models.CharField(max_length=20)
+    season_type = models.CharField(max_length=20)
+    team_id = models.BigIntegerField()
+    team_name = models.CharField(max_length=50, null=True, blank=True)
+    gp = models.IntegerField(null=True, blank=True)
+    w = models.IntegerField(null=True, blank=True)
+    l = models.IntegerField(null=True, blank=True)
+    w_pct = models.FloatField(null=True, blank=True)
+    min = models.FloatField(null=True, blank=True)
+    off_rating = models.FloatField(null=True, blank=True)
+    def_rating = models.FloatField(null=True, blank=True)
+    net_rating = models.FloatField(null=True, blank=True)
+    ast_pct = models.FloatField(null=True, blank=True)
+    ast_to = models.FloatField(null=True, blank=True)
+    ast_ratio = models.FloatField(null=True, blank=True)
+    oreb_pct = models.FloatField(null=True, blank=True)
+    dreb_pct = models.FloatField(null=True, blank=True)
+    reb_pct = models.FloatField(null=True, blank=True)
+    tm_tov_pct = models.FloatField(null=True, blank=True)
+    efg_pct = models.FloatField(null=True, blank=True)
+    ts_pct = models.FloatField(null=True, blank=True)
+    pace = models.FloatField(null=True, blank=True)
+    pace_per40 = models.FloatField(null=True, blank=True)
+    poss = models.FloatField(null=True, blank=True)
+    pie = models.FloatField(null=True, blank=True)
+    run_timestamp = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'advanced_team_season_stats'
+        constraints = [
+            models.UniqueConstraint(
+                fields=["season", "season_type", "team_id"],
+                name="adv_team_season_unique",
+            ),
+        ]
+
+
+# ── Advanced season stats: marts (dbt-managed, read-only) ────────────────────
+
+class FctAdvancedPlayerSeasonStats(models.Model):
+    season = models.CharField(max_length=20)
+    season_type = models.CharField(max_length=20)
+    player_id = models.BigIntegerField(primary_key=True)
+    player_name = models.CharField(max_length=100, null=True, blank=True)
+    team_id = models.BigIntegerField(null=True, blank=True)
+    team_abbreviation = models.CharField(max_length=10, null=True, blank=True)
+    age = models.FloatField(null=True, blank=True)
+    games_played = models.IntegerField(null=True, blank=True)
+    wins = models.IntegerField(null=True, blank=True)
+    losses = models.IntegerField(null=True, blank=True)
+    average_minutes = models.FloatField(null=True, blank=True)
+    offensive_rating = models.FloatField(null=True, blank=True)
+    defensive_rating = models.FloatField(null=True, blank=True)
+    net_rating = models.FloatField(null=True, blank=True)
+    assist_percentage = models.FloatField(null=True, blank=True)
+    assist_to_turnover = models.FloatField(null=True, blank=True)
+    assist_ratio = models.FloatField(null=True, blank=True)
+    offensive_rebound_percentage = models.FloatField(null=True, blank=True)
+    defensive_rebound_percentage = models.FloatField(null=True, blank=True)
+    rebound_percentage = models.FloatField(null=True, blank=True)
+    turnover_percentage = models.FloatField(null=True, blank=True)
+    effective_field_goal_percentage = models.FloatField(null=True, blank=True)
+    true_shooting_percentage = models.FloatField(null=True, blank=True)
+    usage_percentage = models.FloatField(null=True, blank=True)
+    pace = models.FloatField(null=True, blank=True)
+    possessions = models.FloatField(null=True, blank=True)
+    pie = models.FloatField(null=True, blank=True)
+    run_timestamp = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        managed = False
+        db_table = '"nba_marts"."fct_advanced_player_season_stats"'
+
+
+class FctAdvancedTeamSeasonStats(models.Model):
+    season = models.CharField(max_length=20)
+    season_type = models.CharField(max_length=20)
+    team_id = models.BigIntegerField(primary_key=True)
+    team_name = models.CharField(max_length=50, null=True, blank=True)
+    games_played = models.IntegerField(null=True, blank=True)
+    wins = models.IntegerField(null=True, blank=True)
+    losses = models.IntegerField(null=True, blank=True)
+    average_minutes = models.FloatField(null=True, blank=True)
+    offensive_rating = models.FloatField(null=True, blank=True)
+    defensive_rating = models.FloatField(null=True, blank=True)
+    net_rating = models.FloatField(null=True, blank=True)
+    assist_percentage = models.FloatField(null=True, blank=True)
+    assist_to_turnover = models.FloatField(null=True, blank=True)
+    assist_ratio = models.FloatField(null=True, blank=True)
+    offensive_rebound_percentage = models.FloatField(null=True, blank=True)
+    defensive_rebound_percentage = models.FloatField(null=True, blank=True)
+    rebound_percentage = models.FloatField(null=True, blank=True)
+    turnover_percentage = models.FloatField(null=True, blank=True)
+    effective_field_goal_percentage = models.FloatField(null=True, blank=True)
+    true_shooting_percentage = models.FloatField(null=True, blank=True)
+    pace = models.FloatField(null=True, blank=True)
+    possessions = models.FloatField(null=True, blank=True)
+    pie = models.FloatField(null=True, blank=True)
+    run_timestamp = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        managed = False
+        db_table = '"nba_marts"."fct_advanced_team_season_stats"'

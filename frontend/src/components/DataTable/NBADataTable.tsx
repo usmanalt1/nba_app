@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import sortBy from 'lodash/sortBy';
 import 'mantine-datatable/styles.layer.css';
 import type { SeasonPlayerStats } from '../../types/player';
-import { cellStyle, nameCellStyle, statColumns, tableProps } from './tableTheme';
+import { cellStyle, header, nameCellStyle, statColumns, tableProps } from './tableTheme';
 
 export default function NBADataTable({ nbaData = [] }: { nbaData: SeasonPlayerStats[] }) {
     const [sortStatus, setSortStatus] = useState<DataTableSortStatus<SeasonPlayerStats>>({
@@ -27,9 +27,9 @@ export default function NBADataTable({ nbaData = [] }: { nbaData: SeasonPlayerSt
             sortStatus={sortStatus}
             onSortStatusChange={setSortStatus}
             columns={[
-                { accessor: 'player_name', title: 'Player', sortable: true, width: 190, cellsStyle: () => nameCellStyle },
+                { accessor: 'player_name', title: header('Player', 'Player name'), sortable: true, width: 190, cellsStyle: () => nameCellStyle },
                 {
-                    accessor: 'position', title: 'Pos', sortable: true, width: 70,
+                    accessor: 'position', title: header('Pos', 'Listed position: G guard, F forward, C center'), sortable: true, width: 70,
                     cellsStyle: () => ({ ...cellStyle, color: 'var(--paper-faint)' }),
                     render: ({ position }) => position ?? '—',
                 },

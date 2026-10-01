@@ -1,7 +1,11 @@
 
 from typing import TypeVar, Optional
 from django.db.models import Model
-from app.models import FctPlayerStats, FctTeamStats, DimPlayers, DimRosters, DimSeasons, DimGames, DimTeams
+from app.models import (
+    FctPlayerStats, FctTeamStats,
+    FctAdvancedPlayerSeasonStats, FctAdvancedTeamSeasonStats,
+    DimPlayers, DimRosters, DimSeasons, DimGames, DimTeams,
+)
 from django.db.models import Avg, Count, ExpressionWrapper, FloatField, Max, Q, Sum, Value
 from django.db.models.functions import NullIf, Round
 
@@ -119,24 +123,38 @@ class Service:
         season_type is 'regular' or 'playoffs'. fct_player_stats holds both, so
         leaving it out averages playoff games into the regular-season numbers.
         """
-        qs = FctPlayerStats.objects.select_related("player").filter(
+        # Nothing here traverses the player FK. dim_players only covers the latest
+        # season, so any join through it is an INNER JOIN that silently drops every
+        # earlier player - 393 of 540 for 2017-18. The name is denormalised onto the
+        # fact by dbt, and position is looked up separately.
+        qs = FctPlayerStats.objects.filter(
             season=str(season_name), season_type=season_type,
         )
         if team_id:
             qs = qs.filter(team_id=team_id)
         if position:
-            qs = qs.filter(player__position__icontains=position)
+            # Resolved to ids first, so this stays a filter rather than a join.
+            matching_ids = DimPlayers.objects.filter(
+                position__icontains=position,
+            ).values_list("player_id", flat=True)
+            qs = qs.filter(player_id__in=list(matching_ids))
 
-        return list(
+        rows = list(
             qs.values("player_id", "season")
             .annotate(
                 games_played=Count("game_id", distinct=True),
-                player_name=Max("player__player_name"),
-                position=Max("player__position"),
+                # Max, not a group-by: the source spells some names two ways
+                # (Valanciunas/Valančiūnas, Portis/Portis Jr.) and grouping on the
+                # name would return that player twice.
+                player_name=Max("player_name"),
                 **_box_score_averages(),
             )
             .order_by("-average_points")
         )
+        positions = dict(DimPlayers.objects.values_list("player_id", "position"))
+        for row in rows:
+            row["position"] = positions.get(row["player_id"])
+        return rows
 
     def get_season_team_stats(
         self,
@@ -164,6 +182,51 @@ class Service:
         for row in rows:
             row["team_name"] = names.get(row["team_id"], str(row["team_id"]))
         return rows
+
+    def get_season_advanced_player_stats(
+        self,
+        season_name: str,
+        team_id: Optional[int] = None,
+        position: Optional[str] = None,
+        season_type: str = "regular",
+    ) -> list:
+        """Advanced season stats per player - a straight read, no aggregation.
+
+        leaguedashplayerstats already returns one pre-aggregated row per player per
+        season, so unlike the basic stats there is nothing to average here.
+        """
+        qs = FctAdvancedPlayerSeasonStats.objects.filter(
+            season=str(season_name), season_type=season_type,
+        )
+        if team_id:
+            qs = qs.filter(team_id=team_id)
+        if position:
+            # Same id-first approach as the basic stats: dim_players covers only the
+            # latest season, so joining to it would drop earlier players.
+            matching_ids = DimPlayers.objects.filter(
+                position__icontains=position,
+            ).values_list("player_id", flat=True)
+            qs = qs.filter(player_id__in=list(matching_ids))
+
+        rows = list(qs.values().order_by("-pie"))
+        positions = dict(DimPlayers.objects.values_list("player_id", "position"))
+        for row in rows:
+            row["position"] = positions.get(row["player_id"])
+        return rows
+
+    def get_season_advanced_team_stats(
+        self,
+        season_name: str,
+        team_id: Optional[int] = None,
+        season_type: str = "regular",
+    ) -> list:
+        """Advanced season stats per team - a straight read, no aggregation."""
+        qs = FctAdvancedTeamSeasonStats.objects.filter(
+            season=str(season_name), season_type=season_type,
+        )
+        if team_id:
+            qs = qs.filter(team_id=team_id)
+        return list(qs.values().order_by("-net_rating"))
 
     def get_player_stats(
         self,

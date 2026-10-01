@@ -74,6 +74,12 @@ class PlayerAwards(TableModel):
     # to one row per (player, season, description) as expected.
     unique_fields = ["player_id", "season", "description", "all_nba_team_number", "month", "week"]
 
+class AdvancedPlayerSeasonStats(TableModel):
+    unique_fields = ["season", "season_type", "player_id"]
+
+class AdvancedTeamSeasonStats(TableModel):
+    unique_fields = ["season", "season_type", "team_id"]
+
 class TableModelFactory:
     @staticmethod
     def get_table_model(table: str) -> TableModel:
@@ -87,6 +93,8 @@ class TableModelFactory:
             "team_matchups": TeamMatchups(),
             "player_awards": PlayerAwards(),
             "game_schedule": GameSchedule(),
+            "advanced_player_season_stats": AdvancedPlayerSeasonStats(),
+            "advanced_team_season_stats": AdvancedTeamSeasonStats(),
             "dim_games": TableModel(),
             "fct_team_stats": TableModel(),
             "fct_player_stats": TableModel(),

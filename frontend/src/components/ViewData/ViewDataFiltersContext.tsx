@@ -2,10 +2,13 @@ import { createContext, useContext, useState, type Dispatch, type ReactNode, typ
 
 export type Stage = "Regular" | "Playoffs";
 export type ViewMode = "Players" | "Teams";
+export type StatSet = "Basic" | "Advanced";
 
 interface ViewDataFilters {
     viewMode: ViewMode;
     setViewMode: Dispatch<SetStateAction<ViewMode>>;
+    statSet: StatSet;
+    setStatSet: Dispatch<SetStateAction<StatSet>>;
     selectedSeason: string | null;
     setSelectedSeason: Dispatch<SetStateAction<string | null>>;
     selectedTeam: string | null;
@@ -22,6 +25,7 @@ const ViewDataFiltersContext = createContext<ViewDataFilters | null>(null);
 
 export function ViewDataFiltersProvider({ children }: { children: ReactNode }) {
     const [viewMode, setViewMode] = useState<ViewMode>("Players");
+    const [statSet, setStatSet] = useState<StatSet>("Basic");
     const [selectedSeason, setSelectedSeason] = useState<string | null>(null);
     const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
     const [selectedStage, setSelectedStage] = useState<Stage>("Regular");
@@ -32,6 +36,7 @@ export function ViewDataFiltersProvider({ children }: { children: ReactNode }) {
         <ViewDataFiltersContext.Provider
             value={{
                 viewMode, setViewMode,
+                statSet, setStatSet,
                 selectedSeason, setSelectedSeason,
                 selectedTeam, setSelectedTeam,
                 selectedStage, setSelectedStage,

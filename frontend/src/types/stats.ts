@@ -22,3 +22,42 @@ export interface BoxScoreAverages {
     average_fouls: number | null;
     average_plus_minus: number | null;
 }
+
+/** Season-level advanced metrics. Shares are already 0-100 from the API. */
+export interface AdvancedAverages {
+    games_played: number | null;
+    wins: number | null;
+    losses: number | null;
+    average_minutes: number | null;
+    offensive_rating: number | null;
+    defensive_rating: number | null;
+    net_rating: number | null;
+    true_shooting_percentage: number | null;
+    effective_field_goal_percentage: number | null;
+    usage_percentage: number | null;
+    assist_percentage: number | null;
+    assist_to_turnover: number | null;
+    assist_ratio: number | null;
+    turnover_percentage: number | null;
+    offensive_rebound_percentage: number | null;
+    defensive_rebound_percentage: number | null;
+    rebound_percentage: number | null;
+    pace: number | null;
+    possessions: number | null;
+    pie: number | null;
+}
+
+export interface SeasonAdvancedPlayerStats extends AdvancedAverages {
+    player_id: number;
+    player_name: string | null;
+    season: string;
+    position: string | null;
+    team_abbreviation: string | null;
+    age: number | null;
+}
+
+export interface SeasonAdvancedTeamStats extends AdvancedAverages {
+    team_id: number;
+    team_name: string | null;
+    season: string;
+}

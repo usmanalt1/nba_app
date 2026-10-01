@@ -1,10 +1,12 @@
 import { apiFetch } from "../../lib/api";
 import NBADataTable from "../DataTable/NBADataTable";
 import TeamDataTable from "../DataTable/TeamDataTable";
+import { AdvancedPlayerTable, AdvancedTeamTable } from "../DataTable/AdvancedDataTable";
 import { Select, TextInput } from "@mantine/core";
 import { useState, useEffect, type CSSProperties } from "react";
 import type { SeasonOption, SeasonPlayerStats } from "../../types/player";
 import type { SeasonTeamStats } from "../../types/team";
+import type { SeasonAdvancedPlayerStats, SeasonAdvancedTeamStats } from "../../types/stats";
 import { useViewDataFilters } from "./ViewDataFiltersContext";
 
 // Mirrors the Mantine "pills" tabs below: worm accent when active, dim paper when not.
@@ -48,6 +50,7 @@ export function ViewDataPage() {
     const [teams, setTeams] = useState([]);
     const {
         viewMode, setViewMode,
+        statSet, setStatSet,
         selectedSeason, setSelectedSeason,
         selectedTeam, setSelectedTeam,
         selectedStage, setSelectedStage,
@@ -56,6 +59,8 @@ export function ViewDataPage() {
     } = useViewDataFilters();
     const [rows, setRows] = useState<SeasonPlayerStats[]>([]);
     const [teamRows, setTeamRows] = useState<SeasonTeamStats[]>([]);
+    const [advPlayerRows, setAdvPlayerRows] = useState<SeasonAdvancedPlayerStats[]>([]);
+    const [advTeamRows, setAdvTeamRows] = useState<SeasonAdvancedTeamStats[]>([]);
     const [loading, setLoading] = useState(false);
 
     // Default to the newest season so the table has data on first paint.
@@ -83,6 +88,8 @@ export function ViewDataPage() {
         if (selectedSeason === null) {
             setRows([]);
             setTeamRows([]);
+            setAdvPlayerRows([]);
+            setAdvTeamRows([]);
             return;
         }
         const params = new URLSearchParams({
@@ -91,17 +98,25 @@ export function ViewDataPage() {
         });
         if (selectedTeam !== null) params.set("team_id", selectedTeam);
 
-        // Two endpoints, same filters: whichever mode is showing is the one fetched.
-        const endpoint = viewMode === "Teams" ? "season_team_stats" : "season_player_stats";
+        // Four endpoints share these filters; only the active view is fetched.
+        const teams = viewMode === "Teams";
+        const advanced = statSet === "Advanced";
+        const endpoint = advanced
+            ? (teams ? "season_advanced_team_stats" : "season_advanced_player_stats")
+            : (teams ? "season_team_stats" : "season_player_stats");
+
         const controller = new AbortController();
         setLoading(true);
         apiFetch(`/api/nba/db/${endpoint}?${params}`, { signal: controller.signal })
             .then(r => r.json())
-            .then(data => (viewMode === "Teams" ? setTeamRows(data) : setRows(data)))
+            .then(data => {
+                if (advanced) return teams ? setAdvTeamRows(data) : setAdvPlayerRows(data);
+                return teams ? setTeamRows(data) : setRows(data);
+            })
             .then(() => setLoading(false))
             .catch(() => { });
         return () => controller.abort();
-    }, [selectedSeason, selectedTeam, selectedStage, viewMode]);
+    }, [selectedSeason, selectedTeam, selectedStage, viewMode, statSet]);
 
     const seasonOptions = seasons.map((p: any) => ({
         value: String(p.season_name),
@@ -133,9 +148,24 @@ export function ViewDataPage() {
         ? teamRows
         : teamRows.filter(row => row.team_name.toLowerCase().includes(query));
 
+    // One name filter for every shape: players carry player_name, teams team_name.
+    const byName = <T extends { player_name?: string | null; team_name?: string | null }>(list: T[]) =>
+        query === ""
+            ? list
+            : list.filter(r => (r.player_name ?? r.team_name ?? "").toLowerCase().includes(query));
+
+    const visibleAdvPlayers = byName(advPlayerRows);
+    const visibleAdvTeams = byName(advTeamRows);
+
     const showingTeams = viewMode === "Teams";
-    const visibleCount = showingTeams ? visibleTeamRows.length : visibleRows.length;
-    const totalCount = showingTeams ? teamRows.length : rows.length;
+    const showingAdvanced = statSet === "Advanced";
+
+    const visibleCount = showingAdvanced
+        ? (showingTeams ? visibleAdvTeams.length : visibleAdvPlayers.length)
+        : (showingTeams ? visibleTeamRows.length : visibleRows.length);
+    const totalCount = showingAdvanced
+        ? (showingTeams ? advTeamRows.length : advPlayerRows.length)
+        : (showingTeams ? teamRows.length : rows.length);
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, height: '100%', minHeight: 0 }}>
@@ -155,6 +185,17 @@ export function ViewDataPage() {
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '20px' }}>
+                <div style={toggleGroupStyle}>
+                    {(["Basic", "Advanced"] as const).map(set => (
+                        <button
+                            key={set}
+                            style={{ ...stageButtonStyle, ...(statSet === set ? stageButtonActiveStyle : null) }}
+                            onClick={() => setStatSet(set)}
+                        >
+                            {set}
+                        </button>
+                    ))}
+                </div>
                 <div style={toggleGroupStyle}>
                     {(["Players", "Teams"] as const).map(mode => (
                         <button
@@ -225,9 +266,13 @@ export function ViewDataPage() {
                 </p>
                 {/* Definite height from flex, so the table's height:100% resolves. */}
                 <div style={{ flex: 1, minHeight: 0 }}>
-                    {showingTeams
-                        ? <TeamDataTable teamData={visibleTeamRows} />
-                        : <NBADataTable nbaData={visibleRows} />}
+                    {showingAdvanced
+                        ? (showingTeams
+                            ? <AdvancedTeamTable rows={visibleAdvTeams} />
+                            : <AdvancedPlayerTable rows={visibleAdvPlayers} />)
+                        : (showingTeams
+                            ? <TeamDataTable teamData={visibleTeamRows} />
+                            : <NBADataTable nbaData={visibleRows} />)}
                 </div>
                 {!loading && visibleCount === 0 && (
                     <p style={{ color: 'var(--paper-faint)', fontSize: 14, marginTop: '10px' }}>

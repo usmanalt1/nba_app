@@ -1,5 +1,6 @@
 # api.py
 import pandas as pd
+from nba_api.stats.library.parameters import SeasonTypePlayoffs, SeasonType
 from ninja import Router
 from ninja import Schema
 from ninja_extra import NinjaExtraAPI
@@ -170,6 +171,35 @@ async def collect_data_by_number_of_seasons(request, season_year: str, seasons: 
         
         return NBADataResponseSchema(success=True)
 
+
+@router.get("/collect/advanced_season_stats/{seasons}", response=NBADataResponseSchema)
+async def collect_advanced_season_stats(request, seasons: str, season_types: str = None):
+    """Collect season-level advanced stats for a comma separated list of seasons.
+
+    e.g. /collect/advanced_season_stats/2024-25,2023-24 - two API calls per season
+    per season_type, so all nine seasons takes a couple of minutes. Pass
+    season_types=regular or season_types=playoffs to do just one.
+    Follow with /load_to_postgres, then `dbt build --select tag:advanced`.
+    """
+    try:
+        season_list = [s.strip() for s in seasons.split(",") if s.strip()]
+        type_map = {"regular": SeasonType.default, "playoffs": SeasonTypePlayoffs.playoffs}
+        type_list = None
+        if season_types:
+            type_list = [type_map[t.strip()] for t in season_types.split(",") if t.strip()]
+
+        def sync_collect():
+            return BuildDataService().build_advanced_season_stats(
+                seasons=season_list, season_types=type_list,
+            )
+
+        result = await asyncio.to_thread(sync_collect)
+        logger.info(f"Advanced season stats collection finished: {result}")
+    except Exception as e:
+        logger.error(f"Error collecting advanced season stats: {e}")
+        return NBADataResponseSchema(success=False, error=str(e))
+
+    return NBADataResponseSchema(success=True, records=[result])
 
 @router.get("/load_to_postgres", response=NBADataResponseSchema)
 async def load_data_to_postgres(request):

@@ -7,6 +7,7 @@ from services.data_collection.transformer_helper import TransformHelper
 import logging
 from nba_api.stats.endpoints import leagueleaders, teamdashboardbygeneralsplits, leaguegamefinder, playbyplayv3, playerawards
 from nba_api.stats.endpoints import leaguegamelog
+from nba_api.stats.endpoints import leaguedashplayerstats, leaguedashteamstats
 from nba_api.stats.endpoints import scheduleleaguev2
 from http.client import RemoteDisconnected
 from services.data_collection.constants import Constants
@@ -98,6 +99,60 @@ class CollectRawNBAData(TransformHelper, Constants):
             if team_roster:
                 nba_data_dict[self.TEAMS_ROSTER] = self._get_team_roster(df_team_info=df_teams, season_year=season_year, season_id=season_id)
         return nba_data_dict
+
+    def _get_advanced_season_stats(self, season_year: str, season_id: str, season_type: str) -> dict:
+        """Season-level advanced stats for every player and team, in two API calls.
+
+        leaguedash{player,team}stats with MeasureType=Advanced return a whole
+        season per call - already aggregated per player/team - so a full nine-season
+        backfill is about 36 calls rather than one per game.
+
+        season_type is the nba_api value ("Regular Season" or "Playoffs").
+        """
+        logging.info(f"Collecting advanced season stats for {season_year} ({season_type})")
+        frames = {}
+        for table_name, endpoint in (
+            (self.ADVANCED_PLAYER_SEASON_STATS, leaguedashplayerstats.LeagueDashPlayerStats),
+            (self.ADVANCED_TEAM_SEASON_STATS, leaguedashteamstats.LeagueDashTeamStats),
+        ):
+            df = None
+            max_retries = 5
+            backoff_base = 2
+            for attempt in range(1, max_retries + 1):
+                try:
+                    response = endpoint(
+                        season=season_year,
+                        season_type_all_star=season_type,
+                        measure_type_detailed_defense="Advanced",
+                        per_mode_detailed="PerGame",
+                        headers=self.headers,
+                        timeout=60,
+                    )
+                    df = self.clean_dataframe(response.get_data_frames()[0])
+                    break
+                except (RemoteDisconnected, Exception) as e:
+                    logging.warning(
+                        f"Error fetching {table_name} for {season_year} "
+                        f"on attempt {attempt}/{max_retries}: {e}"
+                    )
+                    if attempt < max_retries:
+                        t.sleep(backoff_base ** attempt)
+
+            if df is None or df.empty:
+                logging.error(f"No {table_name} returned for {season_year} ({season_type})")
+                frames[table_name] = pd.DataFrame()
+                continue
+
+            # The *_RANK and sp_work_* columns are derivable from the rest.
+            df = df[[c for c in df.columns if not c.endswith("_rank") and not c.startswith("sp_work")]]
+            df["season_id"] = str(season_id)
+            df["season"] = season_year
+            df["season_type"] = "playoffs" if season_type == SeasonTypePlayoffs.playoffs else "regular"
+            frames[table_name] = df
+            t.sleep(1)  # to avoid rate limiting
+
+        logging.info("...Raw Advanced Season Stats DFs Generated")
+        return frames
 
     def _get_season_record(self, season_id: str) -> pd.DataFrame:
 
