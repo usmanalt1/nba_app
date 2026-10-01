@@ -2,11 +2,53 @@
 from typing import TypeVar, Optional
 from django.db.models import Model
 from app.models import FctPlayerStats, FctTeamStats, DimPlayers, DimRosters, DimSeasons, DimGames, DimTeams
-from django.db.models import Avg, Count, Max, Q
-from django.db.models.functions import Round
+from django.db.models import Avg, Count, ExpressionWrapper, FloatField, Max, Q, Sum, Value
+from django.db.models.functions import NullIf, Round
 
 ROUND = 1
 M = TypeVar("M", bound=Model)
+
+
+def _shooting_pct(made: str, attempted: str):
+    """Season shooting percentage, computed from totals rather than per-game ratios.
+
+    Averaging each game's fg_pct would weight a 1-for-1 night the same as a
+    12-for-20 night. NullIf keeps a player with zero attempts from dividing by zero
+    (the result is NULL instead).
+    """
+    return Round(
+        ExpressionWrapper(
+            Sum(made) * Value(100.0) / NullIf(Sum(attempted), Value(0.0)),
+            output_field=FloatField(),
+        ),
+        ROUND,
+    )
+
+
+def _box_score_averages() -> dict:
+    """Per-game averages for every stat on the box-score fact tables."""
+    return dict(
+        average_minutes=Round(Avg("min"), ROUND),
+        average_points=Round(Avg("pts"), ROUND),
+        average_field_goals_made=Round(Avg("fgm"), ROUND),
+        average_field_goals_attempted=Round(Avg("fga"), ROUND),
+        average_three_pointers_made=Round(Avg("fg3m"), ROUND),
+        average_three_pointers_attempted=Round(Avg("fg3a"), ROUND),
+        average_free_throws_made=Round(Avg("ftm"), ROUND),
+        average_free_throws_attempted=Round(Avg("fta"), ROUND),
+        average_offensive_rebounds=Round(Avg("oreb"), ROUND),
+        average_defensive_rebounds=Round(Avg("dreb"), ROUND),
+        average_rebounds=Round(Avg("reb"), ROUND),
+        average_assists=Round(Avg("ast"), ROUND),
+        average_steals=Round(Avg("stl"), ROUND),
+        average_blocks=Round(Avg("blk"), ROUND),
+        average_turnovers=Round(Avg("tov"), ROUND),
+        average_fouls=Round(Avg("pf"), ROUND),
+        average_plus_minus=Round(Avg("plus_minus"), ROUND),
+        field_goal_pct=_shooting_pct("fgm", "fga"),
+        three_point_pct=_shooting_pct("fg3m", "fg3a"),
+        free_throw_pct=_shooting_pct("ftm", "fta"),
+    )
 
 class Service:
     def __init__(self, model: M):
@@ -88,13 +130,10 @@ class Service:
         return list(
             qs.values("player_id", "season")
             .annotate(
-                average_points=Round(Avg("pts"), ROUND),
-                average_rebounds=Round(Avg("reb"), ROUND),
-                average_plus_minus=Round(Avg("plus_minus"), ROUND),
-                average_assists=Round(Avg("ast"), ROUND),
                 games_played=Count("game_id", distinct=True),
                 player_name=Max("player__player_name"),
                 position=Max("player__position"),
+                **_box_score_averages(),
             )
             .order_by("-average_points")
         )
@@ -116,10 +155,7 @@ class Service:
                 games_played=Count("game_id", distinct=True),
                 wins=Count("game_id", filter=Q(wl="W"), distinct=True),
                 losses=Count("game_id", filter=Q(wl="L"), distinct=True),
-                average_points=Round(Avg("pts"), ROUND),
-                average_rebounds=Round(Avg("reb"), ROUND),
-                average_assists=Round(Avg("ast"), ROUND),
-                average_plus_minus=Round(Avg("plus_minus"), ROUND),
+                **_box_score_averages(),
             )
             .order_by("-wins")
         )

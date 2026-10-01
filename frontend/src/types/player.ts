@@ -1,3 +1,5 @@
+import type { BoxScoreAverages } from "./stats";
+
 export interface RawPlayerStats {
     season_id: string;
     average_points: number;
@@ -41,16 +43,11 @@ export interface PlayerOption {
     player_name: string;
 }
 
-export interface SeasonPlayerStats {
+export interface SeasonPlayerStats extends BoxScoreAverages {
     player_id: number;
     player_name: string;
     season: string;
     position: string | null;
-    games_played: number;
-    average_points: number;
-    average_rebounds: number;
-    average_plus_minus: number;
-    average_assists: number;
 }
 
 export interface SeasonOption {

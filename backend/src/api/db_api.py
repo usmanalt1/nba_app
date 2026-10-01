@@ -23,28 +23,43 @@ class TeamOption(Schema):
     team_id: int
     team_name: str
 
-class SeasonPlayerStats(Schema):
+class BoxScoreAverages(Schema):
+    """Per-game averages shared by the player and team stat responses."""
+    games_played: int
+    average_minutes: Optional[float] = None
+    average_points: Optional[float] = None
+    average_field_goals_made: Optional[float] = None
+    average_field_goals_attempted: Optional[float] = None
+    field_goal_pct: Optional[float] = None
+    average_three_pointers_made: Optional[float] = None
+    average_three_pointers_attempted: Optional[float] = None
+    three_point_pct: Optional[float] = None
+    average_free_throws_made: Optional[float] = None
+    average_free_throws_attempted: Optional[float] = None
+    free_throw_pct: Optional[float] = None
+    average_offensive_rebounds: Optional[float] = None
+    average_defensive_rebounds: Optional[float] = None
+    average_rebounds: Optional[float] = None
+    average_assists: Optional[float] = None
+    average_steals: Optional[float] = None
+    average_blocks: Optional[float] = None
+    average_turnovers: Optional[float] = None
+    average_fouls: Optional[float] = None
+    average_plus_minus: Optional[float] = None
+
+
+class SeasonPlayerStats(BoxScoreAverages):
     player_id: int
     player_name: str
     season: str
     position: Optional[str] = None
-    games_played: int
-    average_points: float
-    average_rebounds: float
-    average_plus_minus: float
-    average_assists: float
 
-class SeasonTeamStats(Schema):
+class SeasonTeamStats(BoxScoreAverages):
     team_id: int
     team_name: str
     season: str
-    games_played: int
     wins: int
     losses: int
-    average_points: float
-    average_rebounds: float
-    average_assists: float
-    average_plus_minus: float
 
 class PlayerAggStats(Schema):
     player_id: int

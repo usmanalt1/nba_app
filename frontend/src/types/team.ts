@@ -1,3 +1,5 @@
+import type { BoxScoreAverages } from "./stats";
+
 export interface RankedTeamStats {
     season_id: string
     season: string
@@ -16,15 +18,10 @@ export interface RankedTeamStats {
     rank_average_assists: number
 }
 
-export interface SeasonTeamStats {
+export interface SeasonTeamStats extends BoxScoreAverages {
     team_id: number;
     team_name: string;
     season: string;
-    games_played: number;
     wins: number;
     losses: number;
-    average_points: number;
-    average_rebounds: number;
-    average_assists: number;
-    average_plus_minus: number;
 }
