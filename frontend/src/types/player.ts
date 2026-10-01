@@ -35,3 +35,25 @@ export interface RankedPlayerStats {
     rank_average_defensive_rebounds: number
     rank_average_offensive_rebounds: number
 }
+
+export interface PlayerOption {
+    player_id: number;
+    player_name: string;
+}
+
+export interface SeasonPlayerStats {
+    player_id: number;
+    player_name: string;
+    season: string;
+    position: string | null;
+    games_played: number;
+    average_points: number;
+    average_rebounds: number;
+    average_plus_minus: number;
+    average_assists: number;
+}
+
+export interface SeasonOption {
+    season_id: string;
+    season_name: string;
+}

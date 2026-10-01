@@ -15,3 +15,16 @@ export interface RankedTeamStats {
     rank_average_plus_minus: number
     rank_average_assists: number
 }
+
+export interface SeasonTeamStats {
+    team_id: number;
+    team_name: string;
+    season: string;
+    games_played: number;
+    wins: number;
+    losses: number;
+    average_points: number;
+    average_rebounds: number;
+    average_assists: number;
+    average_plus_minus: number;
+}

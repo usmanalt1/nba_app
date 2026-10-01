@@ -9,7 +9,9 @@ import { ViewDataPage } from './components/ViewData/ViewDataPage';
 import { theme } from './theme';
 import { NbaAi } from './components/NbaAi/NbaAi';
 import { AuthPage } from './components/Auth/AuthPage';
+import { CollectData } from './components/CollectData/CollectData';
 import { clearSession, isAccessTokenExpired } from './lib/api';
+import { ViewDataFiltersProvider } from './components/ViewData/ViewDataFiltersContext';
 
 
 function AppContent() {
@@ -29,6 +31,7 @@ function AppContent() {
       <Route path="/view" element={<ViewDataPage />}/>
       <Route path="/predictions" element={<Predictions />} />
       <Route path="/nbai" element={<NbaAi />} />
+      <Route path="/collect" element={<CollectData />} />
     </Routes>
   );
 
@@ -58,7 +61,10 @@ function App() {
   return (
     <MantineProvider theme={theme} defaultColorScheme="dark">
       <Router>
-        <AppContent />
+        {/* Above the router, so filter selections survive navigating between pages. */}
+        <ViewDataFiltersProvider>
+          <AppContent />
+        </ViewDataFiltersProvider>
       </Router>
     </MantineProvider>
   )
