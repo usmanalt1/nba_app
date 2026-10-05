@@ -3,7 +3,6 @@ import {
   IconLogout,
   IconReportAnalytics,
   IconSmartHome,
-  IconPresentationAnalytics,
 } from '@tabler/icons-react';
 import { Button, ScrollArea } from '@mantine/core';
 import { useNavigate } from 'react-router-dom';
@@ -13,7 +12,6 @@ import classes from './NavbarNested.module.css';
 
 const pages = [
   { label: 'Home', icon: IconSmartHome, link: '/' },
-  { label: 'Collect Data', icon: IconPresentationAnalytics, link: '/collect' },
   { label: 'View Data', icon: IconReportAnalytics, link: '/view' },
   { label: 'Predictions', icon: IconAdjustments, link: '/predictions' },
   { label: 'NBAI', icon: IconAdjustments, link: '/nbai' },

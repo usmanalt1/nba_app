@@ -31,7 +31,6 @@ function AppContent() {
       <Route path="/view" element={<ViewDataPage />}/>
       <Route path="/predictions" element={<Predictions />} />
       <Route path="/nbai" element={<NbaAi />} />
-      <Route path="/collect" element={<CollectData />} />
     </Routes>
   );
 
