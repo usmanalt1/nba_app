@@ -1,0 +1,30 @@
+{{ config(tags=['advanced']) }}
+
+-- Teams have no usage_percentage: by definition a team uses 100% of its own
+-- possessions, so the endpoint does not return it.
+select
+    season,
+    season_type,
+    team_id,
+    team_name,
+    gp                          as games_played,
+    w                           as wins,
+    l                           as losses,
+    min                         as average_minutes,
+    off_rating                  as offensive_rating,
+    def_rating                  as defensive_rating,
+    net_rating,
+    ast_to                      as assist_to_turnover,
+    ast_ratio                   as assist_ratio,
+    pace,
+    poss                        as possessions,
+    round((ast_pct    * 100)::numeric, 1)::float as assist_percentage,
+    round((oreb_pct   * 100)::numeric, 1)::float as offensive_rebound_percentage,
+    round((dreb_pct   * 100)::numeric, 1)::float as defensive_rebound_percentage,
+    round((reb_pct    * 100)::numeric, 1)::float as rebound_percentage,
+    round((tm_tov_pct * 100)::numeric, 1)::float as turnover_percentage,
+    round((efg_pct    * 100)::numeric, 1)::float as effective_field_goal_percentage,
+    round((ts_pct     * 100)::numeric, 1)::float as true_shooting_percentage,
+    round((pie        * 100)::numeric, 1)::float as pie,
+    run_timestamp
+FROM {{ ref('stg_nba_advanced_team_season_stats') }}

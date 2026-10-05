@@ -1,9 +1,10 @@
 
 from services.data_collection.collect import CollectRawNBAData
+from nba_api.stats.library.parameters import SeasonTypePlayoffs, SeasonType
 from services.object_storage.service import ObjectStorageService
 from datetime import datetime, timedelta
 from django.utils import timezone
-from app.models import PlayerAwards
+from app.models import PlayerAwards, AdvancedPlayerSeasonStats, AdvancedTeamSeasonStats
 import logging
 import pandas as pd
 
@@ -58,3 +59,57 @@ class BuildDataService:
             saved = len(df_awards)
 
         return {"fetched": len(players_to_fetch), "saved": saved, "skipped": len(existing_player_ids)}
+
+    def build_advanced_season_stats(self, seasons: list, season_types: list = None) -> dict:
+        """Collect season-level advanced stats for the given seasons and save them
+        to object storage - the usual collect -> object storage -> /load_to_postgres
+        flow.
+
+        Two API calls per season per season_type, so all nine seasons for both
+        types is ~36 calls. Cheap enough that there is no skip-what-we-have step:
+        re-running simply refreshes the rows.
+        """
+        if season_types is None:
+            season_types = [SeasonType.default, SeasonTypePlayoffs.playoffs]
+
+        collector = CollectRawNBAData(date_to_run=self.date)
+        object_storage_service = ObjectStorageService().get_storage()
+        run_timestamp = timezone.now()
+        model_for = {
+            collector.ADVANCED_PLAYER_SEASON_STATS: AdvancedPlayerSeasonStats,
+            collector.ADVANCED_TEAM_SEASON_STATS: AdvancedTeamSeasonStats,
+        }
+        saved = {}
+
+        for season_year in seasons:
+            split_year = season_year.split("-")
+            season_id = f"{split_year[0][-2:]}0{split_year[1][-2:]}"
+
+            # Object storage keys on (run, season, table_name) and /load_to_postgres
+            # reads the table name off the filename, so regular and playoffs have to
+            # be combined into one frame per table - saving them separately would
+            # have the second overwrite the first.
+            combined = {table: [] for table in model_for}
+            for season_type in season_types:
+                raw_tables = collector._get_advanced_season_stats(
+                    season_year=season_year, season_id=season_id, season_type=season_type,
+                )
+                for table_name, df in raw_tables.items():
+                    if df is not None and not df.empty:
+                        combined[table_name].append(df)
+
+            for table_name, frames in combined.items():
+                if not frames:
+                    continue
+                df = pd.concat(frames, ignore_index=True)
+                # the endpoints return columns the models deliberately don't store
+                model = model_for[table_name]
+                model_fields = {f.name for f in model._meta.get_fields() if f.concrete and f.name != "id"}
+                df = df[[c for c in df.columns if c in model_fields]]
+                df["run_timestamp"] = run_timestamp
+                object_storage_service.save(df=df, file_name=table_name, season=season_year)
+                key = f"{season_year}/{table_name}"
+                saved[key] = len(df)
+                logger.info(f"Saved {len(df)} rows for {key} to object storage")
+
+        return {"seasons": seasons, "saved": saved}

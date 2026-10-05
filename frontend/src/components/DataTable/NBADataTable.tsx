@@ -2,11 +2,12 @@ import { DataTable, type DataTableSortStatus } from 'mantine-datatable';
 import { useMemo, useState } from 'react';
 import sortBy from 'lodash/sortBy';
 import 'mantine-datatable/styles.layer.css';
-import type { PlayerStats } from '../../types/player';
+import type { SeasonPlayerStats } from '../../types/player';
+import { cellStyle, header, nameCellStyle, statColumns, tableProps } from './tableTheme';
 
-export default function NBADataTable({ nbaData = [] }: { nbaData: PlayerStats[] }) {
-    const [sortStatus, setSortStatus] = useState<DataTableSortStatus<PlayerStats>>({
-        columnAccessor: 'season',
+export default function NBADataTable({ nbaData = [] }: { nbaData: SeasonPlayerStats[] }) {
+    const [sortStatus, setSortStatus] = useState<DataTableSortStatus<SeasonPlayerStats>>({
+        columnAccessor: 'average_points',
         direction: 'desc',
     });
 
@@ -16,21 +17,24 @@ export default function NBADataTable({ nbaData = [] }: { nbaData: PlayerStats[] 
     }, [nbaData, sortStatus]);
 
     return (
-    <DataTable<PlayerStats>
-      idAccessor="season"
-      withTableBorder
-      withColumnBorders
-      records={records}
-      emptyState={null}
-      columns={[
-        { accessor: 'season', width: '10%', sortable: true },
-        { accessor: 'points', width: '10%', sortable: true },
-        { accessor: 'rebounds', width: '10%', sortable: true },
-        { accessor: 'plusMinus', width: '10%', sortable: true, textAlign: 'right' },
-        { accessor: 'assists', width: '10%', sortable: true, textAlign: 'right' },
-      ]}
-      sortStatus={sortStatus}
-      onSortStatusChange={setSortStatus}
-    />
-  );
+        <DataTable<SeasonPlayerStats>
+            {...tableProps}
+            idAccessor="player_id"
+            // The name stays put while the stat columns scroll sideways.
+            pinFirstColumn
+            records={records}
+            emptyState={null}
+            sortStatus={sortStatus}
+            onSortStatusChange={setSortStatus}
+            columns={[
+                { accessor: 'player_name', title: header('Player', 'Player name'), sortable: true, width: 190, cellsStyle: () => nameCellStyle },
+                {
+                    accessor: 'position', title: header('Pos', 'Listed position: G guard, F forward, C center'), sortable: true, width: 70,
+                    cellsStyle: () => ({ ...cellStyle, color: 'var(--paper-faint)' }),
+                    render: ({ position }) => position ?? '—',
+                },
+                ...statColumns<SeasonPlayerStats>(),
+            ]}
+        />
+    );
 }

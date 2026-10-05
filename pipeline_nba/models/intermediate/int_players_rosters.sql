@@ -9,9 +9,9 @@ select
     p.last_name,
     p.is_active,
     p.season,
-    r.run_timestamp
+    -- From the players spine, so it survives a roster row that does not match.
+    p.run_timestamp
 FROM {{ ref('stg_nba_players') }} p
 left join {{ ref('stg_nba_rosters') }} r
     on CAST(p.player_id AS VARCHAR) = r.player_id
-    and p.season_id = r.season_id
-    and p.run_timestamp = r.run_timestamp
+    and p.season = r.season
