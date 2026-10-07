@@ -1,4 +1,5 @@
 
+import math
 from typing import TypeVar, Optional
 from django.db.models import Model
 from app.models import (
@@ -11,6 +12,12 @@ from django.db.models.functions import NullIf, Round
 
 ROUND = 1
 M = TypeVar("M", bound=Model)
+
+
+def _no_nan(value):
+    """Postgres stores NaN for a rate with no attempts, and JSON has no NaN literal -
+    serialised raw it becomes a bare NaN that browsers refuse to parse."""
+    return None if isinstance(value, float) and math.isnan(value) else value
 
 
 def _shooting_pct(made: str, attempted: str):
@@ -109,8 +116,25 @@ class Service:
 
         return list(
             dim_games_model.objects.filter(season=season, season_type=season_type, game_date__in=latest_date)
-            .only("game_date", "season", "home_team_name", "away_team_name", "home_pts", "away_pts")
+            .only("game_id", "game_date", "season", "home_team_name", "away_team_name", "home_pts", "away_pts")
         )
+
+    def get_game_box_score(self, game_id: str) -> dict:
+        """Every player line from one game, plus the game header."""
+        game = DimGames.objects.filter(game_id=game_id).first()
+        if game is None:
+            return {}
+
+        lines = list(
+            FctPlayerStats.objects.filter(game_id=game_id)
+            .values(
+                "player_id", "player_name", "team_id", "min", "pts", "reb", "oreb", "dreb",
+                "ast", "stl", "blk", "tov", "pf", "fgm", "fga", "fg_pct", "fg3m", "fg3a",
+                "fg3_pct", "ftm", "fta", "ft_pct", "plus_minus",
+            )
+            .order_by("-pts")
+        )
+        return {"game": game, "lines": [{k: _no_nan(v) for k, v in line.items()} for line in lines]}
 
     def get_all_player_stats(self, season_id: Optional[int] = None) -> list:
         queryset = FctPlayerStats.objects.select_related("player").values("player_id", "season_id", "pts", "reb", "plus_minus", "ast", "player__player_name")

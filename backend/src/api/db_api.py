@@ -9,7 +9,7 @@ from app.models import (
     FctAdvancedTeamSeasonStats, DimSeasons, DimTeams, DimGames,
 )
 import asyncio
-from datetime import datetime
+from datetime import date, datetime
 from ninja_jwt.authentication import AsyncJWTAuth
 
 router = Router(auth=AsyncJWTAuth(), tags=["nba"])
@@ -111,12 +111,53 @@ class PlayerAggStats(Schema):
     average_assists: float
 
 class LatestGames(Schema):
+    game_id: str
     game_date: datetime
     season: str
     home_team_name: str
     away_team_name: str
     home_pts: int
     away_pts: int
+
+
+class BoxScoreLine(Schema):
+    player_id: int
+    player_name: Optional[str] = None
+    team_id: int
+    min: Optional[float] = None
+    pts: Optional[float] = None
+    reb: Optional[float] = None
+    oreb: Optional[float] = None
+    dreb: Optional[float] = None
+    ast: Optional[float] = None
+    stl: Optional[float] = None
+    blk: Optional[float] = None
+    tov: Optional[float] = None
+    pf: Optional[float] = None
+    fgm: Optional[float] = None
+    fga: Optional[float] = None
+    fg_pct: Optional[float] = None
+    fg3m: Optional[float] = None
+    fg3a: Optional[float] = None
+    fg3_pct: Optional[float] = None
+    ftm: Optional[float] = None
+    fta: Optional[float] = None
+    ft_pct: Optional[float] = None
+    plus_minus: Optional[float] = None
+
+
+class GameBoxScore(Schema):
+    game_id: str
+    game_date: Optional[date] = None
+    season: Optional[str] = None
+    season_type: Optional[str] = None
+    home_team_id: int
+    home_team_name: Optional[str] = None
+    home_pts: Optional[float] = None
+    away_team_id: int
+    away_team_name: Optional[str] = None
+    away_pts: Optional[float] = None
+    lines: List[BoxScoreLine]
 
 
 class NBADataResponseSchema(Schema):
@@ -247,6 +288,26 @@ async def latest_games(request, season_name: str, season_type: str):
     return await asyncio.to_thread(sync_latest_games)
 
 
+@router.get("/game/{game_id}/box_score", response=Optional[GameBoxScore])
+async def game_box_score(request, game_id: str):
+    """Every player line from one game, highest scorer first."""
+    def sync_get():
+        result = Service(DimGames).get_game_box_score(game_id=game_id)
+        if not result:
+            return None
+        game = result["game"]
+        return GameBoxScore(
+            game_id=game.game_id,
+            game_date=game.game_date,
+            season=game.season,
+            season_type=game.season_type,
+            home_team_id=game.home_team_id,
+            home_team_name=game.home_team_name,
+            home_pts=game.home_pts,
+            away_team_id=game.away_team_id,
+            away_team_name=game.away_team_name,
+            away_pts=game.away_pts,
+            lines=result["lines"],
+        )
 
-
-
+    return await asyncio.to_thread(sync_get)
