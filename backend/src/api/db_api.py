@@ -137,7 +137,7 @@ async def season_player_stats(
     season_name: str,
     team_id: Optional[int] = None,
     position: Optional[str] = None,
-    season_type: Literal["regular", "playoffs"] = "regular",
+    season_type: Literal["regular", "playoffs", "preseason"] = "regular",
 ):
     """Regular season or playoff averages for every player in a season.
 
@@ -158,7 +158,7 @@ async def season_team_stats(
     request,
     season_name: str,
     team_id: Optional[int] = None,
-    season_type: Literal["regular", "playoffs"] = "regular",
+    season_type: Literal["regular", "playoffs", "preseason"] = "regular",
 ):
     """Regular season or playoff averages and record for each team in a season."""
     def sync_get():
@@ -173,7 +173,7 @@ async def season_advanced_player_stats(
     season_name: str,
     team_id: Optional[int] = None,
     position: Optional[str] = None,
-    season_type: Literal["regular", "playoffs"] = "regular",
+    season_type: Literal["regular", "playoffs", "preseason"] = "regular",
 ):
     """Advanced season stats for every player in a season."""
     def sync_get():
@@ -187,7 +187,7 @@ async def season_advanced_team_stats(
     request,
     season_name: str,
     team_id: Optional[int] = None,
-    season_type: Literal["regular", "playoffs"] = "regular",
+    season_type: Literal["regular", "playoffs", "preseason"] = "regular",
 ):
     """Advanced season stats for every team in a season."""
     def sync_get():
@@ -212,7 +212,7 @@ async def list_teams(request):
 
 
 @router.get("/get_player/{player_id}", response= List[PlayerAggStats])
-async def get_player(request, player_id: int, season_type: Literal["regular", "playoffs"] = "regular"):
+async def get_player(request, player_id: int, season_type: Literal["regular", "playoffs", "preseason"] = "regular"):
     """One player's averages per season, for the given season type."""
     def sync_get_player(player_id: int):
         return Service(FctPlayerStats).get_player_stats(

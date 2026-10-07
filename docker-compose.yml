@@ -69,15 +69,25 @@ services:
     env_file:
       - .env
     environment:
+      # `environment` overrides `env_file`, which is what makes this safe: .env carries
+      # DAGSTER_HOME for the container, and it must stay the container path.
       DAGSTER_HOME: /nba_app/dagster_home
+      # profiles.yml target the dbt_marts asset builds against. `postgres-host` is the
+      # compose service name, so it only resolves from inside this network.
+      DBT_TARGET: container_postgres
     ports:
       - "3000:3000"
+    depends_on:
+      postgres-host:
+        condition: service_healthy
     volumes:
       - type: bind
         source: .
         target: /nba_app
     container_name: dagster_webserver
 
+  # Runs the schedules. Without this container the nightly cron never fires, however the
+  # schedule is defined - the webserver only shows it.
   dagster-daemon:
     build:
       context: .
@@ -87,6 +97,12 @@ services:
       - .env
     environment:
       DAGSTER_HOME: /nba_app/dagster_home
+      DBT_TARGET: container_postgres
+    depends_on:
+      postgres-host:
+        condition: service_healthy
+      redis:
+        condition: service_started
     volumes:
       - type: bind
         source: .

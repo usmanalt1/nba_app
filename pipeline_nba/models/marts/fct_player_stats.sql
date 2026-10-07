@@ -25,6 +25,6 @@ select
     pts,
     plus_minus,
     season,
-    case when season_id like '%420%' then 'playoffs' else 'regular' end as season_type,
+    {{ season_type_from_season_id('season_id') }} as season_type,
     run_timestamp
 FROM {{ ref('stg_nba_player_logs') }}

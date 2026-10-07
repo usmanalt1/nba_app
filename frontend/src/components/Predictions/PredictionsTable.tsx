@@ -16,7 +16,7 @@ export function PredictionsTable({ records }: { records: Prediction[]}) {
     });
     const [searchParams, setSearchParams] = useSearchParams();
     const [teamFilter, setTeamFilter] = useState([])
-    const resultFilter = searchParams.get('result_filter') as 'all' | 'correct' | 'incorrect' || 'all';
+    const resultFilter = searchParams.get('result_filter') as 'all' | 'correct' | 'incorrect' | 'pending' || 'all';
     const selectedTeamParam = searchParams.get('team');
 
     useEffect(() => {
@@ -37,6 +37,13 @@ export function PredictionsTable({ records }: { records: Prediction[]}) {
             }
             if (resultFilter === 'all') {
                 return true;
+            }
+            // unplayed: neither correct nor incorrect
+            if (typeof row.actual_home_win !== 'boolean') {
+                return resultFilter === 'pending';
+            }
+            if (resultFilter === 'pending') {
+                return false;
             }
             const correct = row.predicted_home_win === row.actual_home_win;
             return resultFilter === 'correct' ? correct : !correct;
@@ -64,6 +71,7 @@ export function PredictionsTable({ records }: { records: Prediction[]}) {
                         { value: 'all', label: 'All' },
                         { value: 'correct', label: 'Correct only' },
                         { value: 'incorrect', label: 'Incorrect only' },
+                        { value: 'pending', label: 'Not yet played' },
                     ]}
                     value={resultFilter}
                     onChange={(v) => handleSearchParamsChange('result_filter', v)}
@@ -99,6 +107,9 @@ export function PredictionsTable({ records }: { records: Prediction[]}) {
                     {
                         accessor: 'result', title: 'Result', width: '10%', textAlign: 'left',
                         render: (row) => {
+                            if (typeof row.actual_home_win !== 'boolean') {
+                                return <Text c="var(--paper-faint)" fw={600}>—</Text>;
+                            }
                             const correct = row.predicted_home_win === row.actual_home_win;
                             return (
                                 <Text c={correct ? 'var(--win)' : 'var(--lose)'} fw={600}>

@@ -11,7 +11,7 @@ from nba_api.stats.endpoints import leaguedashplayerstats, leaguedashteamstats
 from nba_api.stats.endpoints import scheduleleaguev2
 from http.client import RemoteDisconnected
 from services.data_collection.constants import Constants
-from nba_api.stats.library.parameters import SeasonTypePlayoffs, SeasonType
+from nba_api.stats.library.parameters import SeasonTypePlayoffs, SeasonType, SeasonTypeAllStar
 import time as t
 
 
@@ -76,14 +76,27 @@ class CollectRawNBAData(TransformHelper, Constants):
             df_season = self._get_season_record(season_id=season_id)
             df_teams = self._get_team_info()
             df_players = self._get_players_info()
-            df_team_logs = self._get_logs(season_year=season_year, pt_abbreviation="T")
-            df_team_logs_playoffs = self._get_logs(season_year=season_year, pt_abbreviation="T", season_type=SeasonTypePlayoffs.playoffs)
-            df_team_logs = pd.concat([df_team_logs, df_team_logs_playoffs], ignore_index=True)
+            # without preseason, those games sit in dim_games with no result forever -
+            # leaguegamelog returns nothing for them under "Regular Season"
+            log_season_types = [
+                SeasonType.default,
+                SeasonTypePlayoffs.playoffs,
+                SeasonTypeAllStar.preseason,
+            ]
+
+            team_log_frames = [
+                self._get_logs(season_year=season_year, pt_abbreviation="T", season_type=st)
+                for st in log_season_types
+            ]
+            df_team_logs = pd.concat(team_log_frames, ignore_index=True)
             df_team_logs = df_team_logs.drop_duplicates(subset=["game_id", "team_id"], keep="last")
             df_team_logs = df_team_logs.dropna()
-            df_player_logs = self._get_logs(season_year=season_year, pt_abbreviation="P")
-            df_player_logs_playoffs = self._get_logs(season_year=season_year, pt_abbreviation="P", season_type=SeasonTypePlayoffs.playoffs)
-            df_player_logs = pd.concat([df_player_logs, df_player_logs_playoffs], ignore_index=True)
+
+            player_log_frames = [
+                self._get_logs(season_year=season_year, pt_abbreviation="P", season_type=st)
+                for st in log_season_types
+            ]
+            df_player_logs = pd.concat(player_log_frames, ignore_index=True)
             df_player_logs = df_player_logs.drop_duplicates(subset=["game_id", "player_id"], keep="last")
             df_player_logs = df_player_logs.dropna()
             df_team_matchups = self._get_team_matchups(team_roster=df_teams, season_year=season_year)

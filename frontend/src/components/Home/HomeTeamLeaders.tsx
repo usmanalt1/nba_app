@@ -12,15 +12,24 @@ const STAT_CONFIG: Record<StatKey, { title: string; valueKey: keyof RankedTeamSt
     assists: { title: 'Team Assists', valueKey: 'average_assists', rankKey: 'rank_average_assists' },
 };
 
-export function HomeTeamLeaders() {
+interface HomeTeamLeadersProps {
+    /** null while the caller resolves it, which holds the fetch */
+    season?: string | null;
+}
+
+export function HomeTeamLeaders({ season }: HomeTeamLeadersProps = {}) {
     const [teams, setTeams] = useState<RankedTeamStats[]>([]);
 
+    const seasonName = season ?? env.VITE_DEFAULT_SEASON;
+
     useEffect(() => {
-        apiFetch(`/api/nba/analytics/average_team_stats/season=${env.VITE_DEFAULT_SEASON}/season_type=${env.VITE_DEFAULT_SEASON_TYPE}`)
+        if (!seasonName) return;
+        const seasonType = env.VITE_DEFAULT_SEASON_TYPE ?? 'regular';
+        apiFetch(`/api/nba/analytics/average_team_stats/season=${seasonName}/season_type=${seasonType}`)
             .then(r => r.json())
             .then(data => setTeams(data.records ?? []))
             .catch(() => setTeams([]));
-    }, []);
+    }, [seasonName]);
 
     const latestSeason = teams.reduce((latest, team) => (
         team.season > latest ? team.season : latest

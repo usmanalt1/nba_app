@@ -4,10 +4,8 @@ SELECT
     game_date,
     season_id,
     season,
-    case 
-        when season_id like '%420%' then 'playoffs'
-        else 'regular'
-    end as season_type,
+    -- game_id, not season_id: this model includes scheduled games
+    {{ season_type_from_game_id('game_id') }} as season_type,
     home_team_id,
     home_team_abbreviation,
     home_team_name,

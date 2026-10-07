@@ -3,6 +3,8 @@ import { env } from '../../env';
 
 interface HomeHeroProps {
     strategy: string | null;
+    season?: string | null;
+    seasonType?: string | null;
 }
 
 function Chip({ label, value }: { label: string; value: string }) {
@@ -23,7 +25,7 @@ function Chip({ label, value }: { label: string; value: string }) {
     );
 }
 
-export function HomeHero({ strategy }: HomeHeroProps) {
+export function HomeHero({ strategy, season, seasonType }: HomeHeroProps) {
     return (
         <section
             style={{
@@ -62,8 +64,8 @@ export function HomeHero({ strategy }: HomeHeroProps) {
                 </div>
 
                 <div style={{ display: 'flex', gap: 28, flexWrap: 'wrap' }}>
-                    <Chip label="Season" value={env.VITE_DEFAULT_SEASON} />
-                    <Chip label="Type" value={env.VITE_DEFAULT_SEASON_TYPE} />
+                    <Chip label="Season" value={season ?? env.VITE_DEFAULT_SEASON ?? '—'} />
+                    <Chip label="Type" value={seasonType ?? env.VITE_DEFAULT_SEASON_TYPE ?? 'regular'} />
                     <Chip label="Active model" value={strategy ? strategy.replace(/_/g, ' ') : '—'} />
                 </div>
             </div>

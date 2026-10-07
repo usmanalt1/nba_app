@@ -8,6 +8,7 @@ import type { ModelStats } from '../../utils/modelStats';
 interface HomeModelPulseProps {
     strategy: string | null;
     stats: ModelStats;
+    index: string;
 }
 
 function formatSigned(value: number, digits = 1): string {
@@ -24,7 +25,7 @@ function Readout({ label, value, note }: { label: string; value: string; note?: 
     );
 }
 
-export function HomeModelPulse({ strategy, stats }: HomeModelPulseProps) {
+export function HomeModelPulse({ strategy, stats, index }: HomeModelPulseProps) {
     if (stats.games === 0) return null;
 
     const { currentStreak } = stats;
@@ -36,7 +37,7 @@ export function HomeModelPulse({ strategy, stats }: HomeModelPulseProps) {
     return (
         <section style={{ marginBottom: 'var(--section-gap)' }}>
             <SectionHeader
-                index="01"
+                index={index}
                 title="Model Tape"
                 subtitle={`How ${strategy?.replace(/_/g, ' ') ?? 'the model'} has actually done, graded against results`}
                 meta={<span className="kicker">{stats.games} games graded</span>}

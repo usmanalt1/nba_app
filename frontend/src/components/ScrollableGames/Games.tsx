@@ -3,16 +3,23 @@ import { GamesInfo, type LatestGame } from './GamesInfo';
 import { apiFetch } from '../../lib/api';
 import { env } from '../../env';
 
-export function Games() {
+interface GamesProps {
+  /** null while the caller resolves it, which holds the fetch */
+  season?: string | null;
+}
+
+export function Games({ season }: GamesProps = {}) {
   const [games, setGames] = useState<LatestGame[]>([]);
+  const seasonName = season ?? env.VITE_DEFAULT_SEASON;
 
   useEffect(() => {
-    const { VITE_DEFAULT_SEASON: season, VITE_DEFAULT_SEASON_TYPE: season_type } = env;
-    apiFetch(`/api/nba/db/get_latest_games/season=${season}/season_type=${season_type}`)
+    if (!seasonName) return;
+    const seasonType = env.VITE_DEFAULT_SEASON_TYPE ?? 'regular';
+    apiFetch(`/api/nba/db/get_latest_games/season=${seasonName}/season_type=${seasonType}`)
       .then(r => r.json())
       .then(data => setGames(Array.isArray(data) ? data : []))
       .catch(() => setGames([]));
-  }, []);
+  }, [seasonName]);
 
   if (games.length === 0) {
     return <div style={{ fontSize: 13, color: 'var(--paper-faint)', padding: '8px 0' }}>No recent games.</div>;

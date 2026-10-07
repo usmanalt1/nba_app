@@ -60,7 +60,47 @@ class BuildDataService:
 
         return {"fetched": len(players_to_fetch), "saved": saved, "skipped": len(existing_player_ids)}
 
-    def build_advanced_season_stats(self, seasons: list, season_types: list = None) -> dict:
+    def build_latest_data(self, run_id: str = None, season_year: str = None) -> dict:
+        """Collect the current season into object storage under one run_id.
+
+        The nightly path, unlike the backfill endpoints: season comes from today (not
+        self.date, which defaults to 52 weeks ago), and the schedule is included so live
+        mode has unplayed games to predict.
+        """
+        today = datetime.today()
+        if season_year is None:
+            season_year = CollectRawNBAData(date_to_run=today).season_year
+        split_year = season_year.split("-")
+        season_id = f"{split_year[0][-2:]}0{split_year[1][-2:]}"
+
+        # resolved here: the storage backends name that attribute differently
+        run_id = run_id or pd.Timestamp.now().strftime("%Y%m%d%H%M%S")
+        storage = ObjectStorageService(generate_run_id=run_id).get_storage()
+        run_timestamp = pd.Timestamp.now()
+        logger.info(f"Collecting latest data for {season_year} (season_id={season_id}) under run {run_id}")
+
+        collector = BuildDataService(date=today)
+        saved = {}
+
+        def _save(tables: dict) -> None:
+            for table_name, df in tables.items():
+                if df is None or df.empty:
+                    logger.warning(f"No rows collected for {table_name} ({season_year})")
+                    continue
+                df["run_timestamp"] = run_timestamp
+                storage.save(df=df, file_name=table_name, season=season_year)
+                saved[table_name] = len(df)
+                logger.info(f"Saved {len(df)} rows for {table_name} ({season_year}) under run {run_id}")
+
+        _save(collector.build_nba_data(season_id=season_id, season_year=season_year, team_roster=True))
+        _save(collector.build_nba_data(season_id=season_id, season_year=season_year, game_schedule=True))
+        collector.build_advanced_season_stats(
+            seasons=[season_year], storage=storage, run_timestamp=run_timestamp,
+        )
+
+        return {"run_id": run_id, "season_year": season_year, "saved": saved}
+
+    def build_advanced_season_stats(self, seasons: list, season_types: list = None, storage=None, run_timestamp=None) -> dict:
         """Collect season-level advanced stats for the given seasons and save them
         to object storage - the usual collect -> object storage -> /load_to_postgres
         flow.
@@ -73,8 +113,10 @@ class BuildDataService:
             season_types = [SeasonType.default, SeasonTypePlayoffs.playoffs]
 
         collector = CollectRawNBAData(date_to_run=self.date)
-        object_storage_service = ObjectStorageService().get_storage()
-        run_timestamp = timezone.now()
+        # `storage`/`run_timestamp` let a caller fold this into a larger run (see
+        # build_latest_data) so every table shares one run_id; omitted, it starts its own.
+        object_storage_service = storage or ObjectStorageService().get_storage()
+        run_timestamp = run_timestamp or timezone.now()
         model_for = {
             collector.ADVANCED_PLAYER_SEASON_STATS: AdvancedPlayerSeasonStats,
             collector.ADVANCED_TEAM_SEASON_STATS: AdvancedTeamSeasonStats,

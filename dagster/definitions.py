@@ -1,15 +1,77 @@
-from dagster import Definitions, ScheduleDefinition, define_asset_job
-from assets import raw_nba_data, bigquery_tables
+import django_setup  # noqa: F401  # configure Django before assets import backend code
 
-nba_pipeline = define_asset_job("nba_pipeline", selection="*")
+from dagster import (
+    AssetSelection,
+    DefaultScheduleStatus,
+    Definitions,
+    ScheduleDefinition,
+    define_asset_job,
+    in_process_executor,
+)
 
-# Runs daily at 6am UTC — adjust cron as needed
+from assets import (
+    backtest_scorecard,
+    bigquery_tables,
+    dbt_marts,
+    latest_nba_data,
+    live_predictions,
+    postgres_raw_tables,
+)
+
+# in_process: the assets are strictly sequential, so forking buys no parallelism and
+# each child re-imported Django/pandas/sklearn. Also avoids a SIGBUS crash seen in this
+# container under the multiprocess executor.
+nightly_pipeline = define_asset_job(
+    "nightly_pipeline",
+    selection=AssetSelection.assets(
+        latest_nba_data, postgres_raw_tables, dbt_marts, live_predictions,
+    ),
+    executor_def=in_process_executor,
+    description="Collect the live season, load it, rebuild the marts, re-predict the upcoming slate.",
+)
+
+backtest_pipeline = define_asset_job(
+    "backtest_pipeline",
+    selection=AssetSelection.assets(backtest_scorecard),
+    executor_def=in_process_executor,
+    description="Score every strategy against the last completed season.",
+)
+
+bigquery_mirror = define_asset_job(
+    "bigquery_mirror",
+    selection=AssetSelection.assets(latest_nba_data, bigquery_tables),
+    executor_def=in_process_executor,
+    description="Collect the live season and mirror it into BigQuery.",
+)
+
+# 09:00 London = 04:00 ET, after the last west-coast game is final. Timezone is explicit
+# because Dagster otherwise schedules in UTC and drifts against the games twice a year.
 nightly_schedule = ScheduleDefinition(
-    job=nba_pipeline,
-    cron_schedule="0 6 * * *",
+    name="nightly_pipeline_schedule",
+    job=nightly_pipeline,
+    cron_schedule="0 9 * * *",
+    execution_timezone="Europe/London",
+    default_status=DefaultScheduleStatus.RUNNING,
+)
+
+# Stopped by default; mainly useful out of season or after a model change.
+backtest_schedule = ScheduleDefinition(
+    name="backtest_pipeline_schedule",
+    job=backtest_pipeline,
+    cron_schedule="0 11 * * 1",
+    execution_timezone="Europe/London",
+    default_status=DefaultScheduleStatus.STOPPED,
 )
 
 defs = Definitions(
-    assets=[raw_nba_data, bigquery_tables],
-    schedules=[nightly_schedule],
+    assets=[
+        latest_nba_data,
+        postgres_raw_tables,
+        dbt_marts,
+        live_predictions,
+        backtest_scorecard,
+        bigquery_tables,
+    ],
+    jobs=[nightly_pipeline, backtest_pipeline, bigquery_mirror],
+    schedules=[nightly_schedule, backtest_schedule],
 )

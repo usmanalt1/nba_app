@@ -1,5 +1,5 @@
 SELECT
-    id AS player_id,
+    player_id,
     full_name AS player_name,
     first_name,
     last_name,
@@ -7,4 +7,4 @@ SELECT
     CAST(season_id AS VARCHAR) AS season_id,
     season,
     run_timestamp
-FROM {{ get_latest_by_run_timestamp('players_info', 'season_id, id') }}
+FROM {{ get_latest_by_run_timestamp('players_info', 'season_id, player_id') }}
