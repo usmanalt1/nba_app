@@ -1,6 +1,6 @@
 
 from services.data_collection.collect import CollectRawNBAData
-from nba_api.stats.library.parameters import SeasonTypePlayoffs, SeasonType
+from nba_api.stats.library.parameters import SeasonTypePlayoffs, SeasonType, SeasonTypeAllStar
 from services.object_storage.service import ObjectStorageService
 from datetime import datetime, timedelta
 from django.utils import timezone
@@ -99,6 +99,36 @@ class BuildDataService:
         )
 
         return {"run_id": run_id, "season_year": season_year, "saved": saved}
+
+    def build_preseason_backfill(self, seasons: list, run_id: str = None) -> dict:
+        """Collect preseason box scores for past seasons.
+
+        Preseason-only: the full backfill would also rewrite teams_info and players_info,
+        which hold one row per (entity, season).
+        """
+        run_id = run_id or pd.Timestamp.now().strftime("%Y%m%d%H%M%S")
+        storage = ObjectStorageService(generate_run_id=run_id).get_storage()
+        run_timestamp = pd.Timestamp.now()
+        collector = CollectRawNBAData(date_to_run=datetime.today())
+        saved = {}
+
+        for season_year in seasons:
+            for table_name, pt in ((collector.TEAM_STATS, "T"), (collector.PLAYER_STATS, "P")):
+                df = collector._get_logs(
+                    season_year=season_year,
+                    pt_abbreviation=pt,
+                    season_type=SeasonTypeAllStar.preseason,
+                )
+                df = df.dropna()
+                if df.empty:
+                    logger.warning(f"No preseason {table_name} for {season_year}")
+                    continue
+                df["run_timestamp"] = run_timestamp
+                storage.save(df=df, file_name=table_name, season=season_year)
+                saved[f"{season_year}/{table_name}"] = len(df)
+                logger.info(f"Saved {len(df)} preseason {table_name} rows for {season_year}")
+
+        return {"run_id": run_id, "seasons": seasons, "saved": saved}
 
     def build_advanced_season_stats(self, seasons: list, season_types: list = None, storage=None, run_timestamp=None) -> dict:
         """Collect season-level advanced stats for the given seasons and save them

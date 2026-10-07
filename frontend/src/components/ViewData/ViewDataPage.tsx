@@ -7,7 +7,13 @@ import { useState, useEffect, type CSSProperties } from "react";
 import type { SeasonOption, SeasonPlayerStats } from "../../types/player";
 import type { SeasonTeamStats } from "../../types/team";
 import type { SeasonAdvancedPlayerStats, SeasonAdvancedTeamStats } from "../../types/stats";
-import { useViewDataFilters } from "./ViewDataFiltersContext";
+import { useViewDataFilters, type Stage } from "./ViewDataFiltersContext";
+
+const STAGE_TO_SEASON_TYPE: Record<Stage, string> = {
+    Regular: "regular",
+    Playoffs: "playoffs",
+    Preseason: "preseason",
+};
 
 // Mirrors the Mantine "pills" tabs below: worm accent when active, dim paper when not.
 const stageButtonStyle: CSSProperties = {
@@ -63,20 +69,23 @@ export function ViewDataPage() {
     const [advTeamRows, setAdvTeamRows] = useState<SeasonAdvancedTeamStats[]>([]);
     const [loading, setLoading] = useState(false);
 
-    // Default to the newest season so the table has data on first paint.
+    // Season options track the stage: a season that has preseason games may have no
+    // regular-season ones yet, and vice versa.
     useEffect(() => {
-        apiFetch("/api/nba/db/list_all_seasons?has_stats=true")
+        const seasonType = STAGE_TO_SEASON_TYPE[selectedStage];
+        apiFetch(`/api/nba/db/list_all_seasons?has_stats=true&season_type=${seasonType}`)
             .then(r => r.json())
             .then((data: SeasonOption[]) => {
                 setSeasons(data);
-                const latest = [...data]
-                    .sort((a, b) => String(a.season_name).localeCompare(String(b.season_name)))
-                    .at(-1);
-                // Only a default: the updater form reads the live value, so coming
-                // back to this page keeps whatever season the user had picked.
-                if (latest) setSelectedSeason(current => current ?? String(latest.season_name));
+                const names = data.map(s => String(s.season_name));
+                const latest = [...names].sort((a, b) => a.localeCompare(b)).at(-1);
+                // Keep the user's season when the new stage still has it; otherwise fall
+                // back to the newest, so switching stage never leaves an empty table.
+                setSelectedSeason(current =>
+                    current && names.includes(current) ? current : latest ?? null
+                );
             });
-    }, []);
+    }, [selectedStage]);
 
     useEffect(() => {
         apiFetch("/api/nba/db/list_all_teams")
@@ -94,7 +103,7 @@ export function ViewDataPage() {
         }
         const params = new URLSearchParams({
             season_name: selectedSeason,
-            season_type: selectedStage === "Playoffs" ? "playoffs" : "regular",
+            season_type: STAGE_TO_SEASON_TYPE[selectedStage],
         });
         if (selectedTeam !== null) params.set("team_id", selectedTeam);
 
@@ -215,7 +224,7 @@ export function ViewDataPage() {
                     searchable
                 />
                 <div style={toggleGroupStyle}>
-                    {(["Regular", "Playoffs"] as const).map(stage => (
+                    {(["Regular", "Playoffs", "Preseason"] as const).map(stage => (
                         <button
                             key={stage}
                             style={{ ...stageButtonStyle, ...(selectedStage === stage ? stageButtonActiveStyle : null) }}

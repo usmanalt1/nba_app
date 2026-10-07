@@ -1,6 +1,8 @@
 select 
     season_id,
     player_id,
+    -- denormalised: dim_players covers only the latest season
+    player_name,
     team_id,
     game_id,
     wl,

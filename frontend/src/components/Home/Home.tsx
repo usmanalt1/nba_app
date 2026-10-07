@@ -61,7 +61,7 @@ export function Home() {
 
     return (
         <div style={{ width: '100%', maxWidth: 1400, margin: '0 auto', paddingBottom: 60 }}>
-            <HomeHero strategy={strategy} season={season} seasonType={seasonType} />
+            <HomeHero strategy={strategy} season={season} seasonType={seasonType} statsSeason={statsSeason} />
 
             {hasTrackRecord && (
                 <HomeModelPulse strategy={strategy} stats={stats} index={nextIndex()} />
@@ -83,7 +83,7 @@ export function Home() {
                 <SectionHeader
                     index={nextIndex()}
                     title="Around the League"
-                    subtitle="Most recent final scores"
+                    subtitle={statsSeason ? `Final scores from the end of ${statsSeason}` : 'Most recent final scores'}
                 />
                 <Games season={statsSeason} />
             </section>
@@ -123,7 +123,7 @@ export function Home() {
                 <SectionHeader
                     index={nextIndex()}
                     title="Most Improved"
-                    subtitle="Biggest jumps against last season"
+                    subtitle={statsSeason ? `Biggest jumps in ${statsSeason} against the season before` : 'Biggest jumps against last season'}
                 />
                 <HomeMostImproved />
             </section>

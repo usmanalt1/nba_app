@@ -197,11 +197,15 @@ async def season_advanced_team_stats(
     return await asyncio.to_thread(sync_get)
 
 @router.get("/list_all_seasons", response=List[SeasonOption])
-async def list_seasons(request, has_stats: bool = False):
-    """Every season, or with has_stats=true only those with recorded games."""
+async def list_seasons(
+    request,
+    has_stats: bool = False,
+    season_type: Literal["regular", "playoffs", "preseason"] = "regular",
+):
+    """Every season, or with has_stats=true only those with games of `season_type`."""
     def sync_get():
         service = Service(DimSeasons)
-        return service.get_seasons_with_stats() if has_stats else service.get_all_seasons()
+        return service.get_seasons_with_stats(season_type=season_type) if has_stats else service.get_all_seasons()
     return await asyncio.to_thread(sync_get)
 
 @router.get("/list_all_teams", response=List[TeamOption])

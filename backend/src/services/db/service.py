@@ -73,13 +73,16 @@ class Service:
         
         return list(self.model.objects.only("player_id", "player_name"))
     
-    def get_seasons_with_stats(self) -> list:
-        """Seasons that have recorded games, newest last.
+    def get_seasons_with_stats(self, season_type: str = "regular") -> list:
+        """Seasons with recorded games of this type, newest last.
 
-        dim_seasons carries upcoming seasons too (e.g. 2026-27 before tip-off),
-        which would otherwise offer the user a season with an empty table.
+        Defaults to regular: one preseason game shouldn't make a season current.
         """
-        played = set(FctPlayerStats.objects.values_list("season", flat=True).distinct())
+        played = set(
+            FctPlayerStats.objects.filter(season_type=season_type)
+            .values_list("season", flat=True)
+            .distinct()
+        )
         seasons = [s for s in DimSeasons.objects.all() if s.season_name in played]
         return sorted(seasons, key=lambda s: s.season_name or "")
 
