@@ -87,7 +87,11 @@ class Service:
         return list(self.model.objects.only("season_id", "season_name"))
     
     def get_all_teams(self) -> list:
-        return list(self.model.objects.only("team_id", "team_name"))
+        """One entry per team, for pickers."""
+        latest_by_team = {}
+        for team in self.model.objects.only("team_id", "team_name", "season").order_by("season"):
+            latest_by_team[team.team_id] = team
+        return sorted(latest_by_team.values(), key=lambda t: t.team_name or "")
     
     def get_latest_games(self, season: str, season_type: str) -> list:
         dim_games_model: DimGames = self.model
