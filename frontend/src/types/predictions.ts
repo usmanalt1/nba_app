@@ -6,8 +6,12 @@ export type Prediction = {
     matchup: string;
     home_win_probability: number;
     predicted_home_win: boolean;
-    actual_home_win: boolean;
-    home_team_name: string
+    // null until played - gradePredictions drops these rather than scoring a miss
+    actual_home_win: boolean | null;
+    home_team_name: string;
+    away_team_name?: string | null;
+    season?: string;
+    season_type?: string;
 };
 export type TrainResponse = {
     success: boolean;

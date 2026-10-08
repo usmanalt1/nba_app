@@ -11,6 +11,9 @@ class SeasonRecord(models.Model):
 
 
 class TeamInfo(models.Model):
+    # NBA's own team id. Can't live in `id`: that's the surrogate pk and this table holds
+    # one row per (team, season), so the id must repeat. stg_nba_teams reads this.
+    team_id = models.IntegerField(null=True, blank=True, db_index=True)
     season_id = models.IntegerField()
     abbreviation = models.CharField(max_length=10)
     nickname = models.CharField(max_length=50)
@@ -29,6 +32,8 @@ class TeamInfo(models.Model):
 
 
 class PlayerInfo(models.Model):
+    # see TeamInfo.team_id
+    player_id = models.IntegerField(null=True, blank=True, db_index=True)
     season_id = models.IntegerField()
     full_name = models.CharField(max_length=100)
     first_name = models.CharField(max_length=50)
@@ -556,3 +561,32 @@ class FctAdvancedTeamSeasonStats(models.Model):
     class Meta:
         managed = False
         db_table = '"nba_marts"."fct_advanced_team_season_stats"'
+
+
+# One row per unplayed game per nightly run; the row that survives is the last call made
+# before tip-off. No actual_home_win column - it's joined from dim_games at read time.
+
+class ModelPredictionHistory(models.Model):
+    strategy = models.CharField(max_length=50)
+    season = models.CharField(max_length=20)
+    season_type = models.CharField(max_length=20)
+    game_id = models.CharField(max_length=20)
+    game_date = models.DateField(null=True, blank=True)
+    home_team_id = models.IntegerField(null=True, blank=True)
+    home_team_name = models.CharField(max_length=50, null=True, blank=True)
+    away_team_name = models.CharField(max_length=50, null=True, blank=True)
+    home_win_probability = models.FloatField()
+    predicted_home_win = models.BooleanField()
+    predicted_at = models.DateTimeField()
+
+    class Meta:
+        db_table = "model_prediction_history"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["strategy", "season", "season_type", "game_id"],
+                name="prediction_history_unique_strategy_season_game",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["strategy", "season", "season_type"], name="pred_hist_strategy_season_idx"),
+        ]

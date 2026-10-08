@@ -37,18 +37,25 @@ class DBService(StorageBase):
         self.engine = create_engine(f"postgresql://{self.user}:{self.password}@{self.postgres_host}:5432/{self.db_name}")
         self.file_path_parent_name = os.getenv("FILE_PATH_PARENT_NAME")
 
-    def _get_latest_files_using_path(self) -> dict:
+    def _get_latest_files_using_path(self, run_id: str = None) -> dict:
         # If path is nba_data/run_id/season=season_id/table_name.parquet, we want to get the latest run_id and read all files for that run_id
         parent_path = Path(self.file_path_parent_name)
         if not parent_path.exists():
             logger.warning(f"Parent path {self.file_path_parent_name} does not exist. No data loaded into DuckDB.")
             return {}
-        run_ids = [d.name for d in parent_path.iterdir() if d.is_dir()]
-        if not run_ids:
-            logger.warning(f"No run_id directories found in {self.file_path_parent_name}. No data loaded into DuckDB.")
-            return {}
-        latest_run_id = max(run_ids)
-        logger.info(f"Latest run_id found: {latest_run_id}")
+        if run_id is not None:
+            # name the run explicitly so a concurrent backfill isn't loaded instead
+            latest_run_id = run_id
+            if not (parent_path / latest_run_id).is_dir():
+                raise FileNotFoundError(f"Run {latest_run_id} not found under {self.file_path_parent_name}")
+            logger.info(f"Loading explicitly requested run_id: {latest_run_id}")
+        else:
+            run_ids = [d.name for d in parent_path.iterdir() if d.is_dir()]
+            if not run_ids:
+                logger.warning(f"No run_id directories found in {self.file_path_parent_name}. No data loaded into DuckDB.")
+                return {}
+            latest_run_id = max(run_ids)
+            logger.info(f"Latest run_id found: {latest_run_id}")
         latest_run_path = parent_path / latest_run_id
         table_dict = {}
         for season_dir in latest_run_path.iterdir():
@@ -69,9 +76,10 @@ class DBService(StorageBase):
                             logger.exception(f"Failed to read parquet file: {file}")
         return table_dict
     
-    def save(self) -> None:
+    def save(self, run_id: str = None) -> dict:
         logger.info("Starting upsert of NBA data into the database")
-        dfs = self._get_latest_files_using_path()
+        dfs = self._get_latest_files_using_path(run_id=run_id)
+        loaded = {}
         try:
             for table_name, model in self.table_model_map.items():
                 df: dict = dfs.get(table_name)
@@ -87,9 +95,13 @@ class DBService(StorageBase):
                     records = df.to_dict(orient="records")
                     table_model = TableModelFactory.get_table_model(table_name)
                     table_model.upsert_many(model, records)
+                    loaded[table_name] = len(records)
         except Exception as e:
             logger.error(f"Error during upsert operation: {e}")
             raise
+
+        logger.info(f"Upsert complete: {loaded}")
+        return loaded
     
     def read(self, table_name: str, df: bool = True):
         model = self.table_model_map[table_name]

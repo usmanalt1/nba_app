@@ -7,7 +7,7 @@ interface PredictionBarProps {
     homePts?: number;
     awayPts?: number;
     predictedHomeWin?: boolean;
-    actualHomeWin?: boolean;
+    actualHomeWin?: boolean | null;
     gameDate?: string;
 }
 

@@ -9,7 +9,6 @@ import { ViewDataPage } from './components/ViewData/ViewDataPage';
 import { theme } from './theme';
 import { NbaAi } from './components/NbaAi/NbaAi';
 import { AuthPage } from './components/Auth/AuthPage';
-import { CollectData } from './components/CollectData/CollectData';
 import { clearSession, isAccessTokenExpired } from './lib/api';
 import { ViewDataFiltersProvider } from './components/ViewData/ViewDataFiltersContext';
 

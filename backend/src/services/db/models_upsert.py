@@ -6,6 +6,10 @@ logger = getLogger(__name__)
 
 class TableModel:
     unique_fields: list = []
+    # Column to receive the source's own "id", for tables whose entity id the marts join
+    # on (teams_info, players_info). Dropping it there produced fictional teams in
+    # dim_teams; it cannot stay as `id` because that is the pk and must not repeat.
+    source_id_field: str = None
 
     def upsert_many(self, model, records: list) -> None:
         if not records:
@@ -13,10 +17,15 @@ class TableModel:
         if not self.unique_fields:
             raise NotImplementedError(f"{type(self).__name__} has no unique_fields to upsert on")
 
-        # some raw sources (e.g. teams_info/players_info) carry their own "id" column
-        # from the NBA API - that's unrelated to Django's auto-assigned primary key and
-        # must never be set from incoming data, so strip it before building instances
-        records = [{k: v for k, v in record.items() if k != "id"} for record in records]
+        # source "id" is never Django's pk - carried to a named column or dropped
+        records = [
+            {
+                **({self.source_id_field: record["id"]}
+                   if self.source_id_field and "id" in record else {}),
+                **{k: v for k, v in record.items() if k != "id"},
+            }
+            for record in records
+        ]
 
         # Postgres' ON CONFLICT can't apply two updates to the same row within one
         # statement, so a batch with two records sharing the same unique_fields raises
@@ -48,6 +57,7 @@ class SeasonRecord(TableModel):
 
 class TeamInfo(TableModel):
     unique_fields = ["season_id", "abbreviation"]
+    source_id_field = "team_id"
 
 class TeamStats(TableModel):
     unique_fields = ["game_id", "team_id", "season_id"]
@@ -57,6 +67,7 @@ class PlayerStats(TableModel):
 
 class PlayersInfo(TableModel):
     unique_fields = ["season_id", "full_name"]
+    source_id_field = "player_id"
 
 class TeamsRoster(TableModel):
     unique_fields = ["team_id", "player_id", "season_id"]

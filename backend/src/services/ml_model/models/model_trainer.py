@@ -21,6 +21,11 @@ MODE_LIVE = "live"
 
 SEASON_TYPE_PLAYOFFS = "playoffs"
 SEASON_TYPE_REGULAR = "regular"
+SEASON_TYPE_PRESEASON = "preseason"
+
+# Season types predicted from a different type's games. Preseason has no history to
+# train on, so it is predicted off regular-season form.
+TRAIN_SEASON_TYPE = {SEASON_TYPE_PRESEASON: SEASON_TYPE_REGULAR}
 
 
 def _report(name, y_true, pred, proba) -> dict[str, float]:
@@ -66,9 +71,9 @@ class ModelTraner(ModelBase):
         self.mode = mode
         all_games, all_team_stats, all_player_stats, self.df_teams = self.load_data()
 
-        self.df_games = all_games[all_games["season_type"] == self.season_type].copy()
-        self.df_team_stats = all_team_stats[all_team_stats["season_type"] == self.season_type].copy()
-        self.df_player_stats = all_player_stats[all_player_stats["season_type"] == self.season_type].copy()
+        self.train_season_type = TRAIN_SEASON_TYPE.get(season_type, season_type)
+        self._select_frames(all_games, all_team_stats, all_player_stats)
+        self.predicted_game_ids = self._select_predicted_games()
 
         if self.season_type == SEASON_TYPE_PLAYOFFS:
             transformers = self._build_playoff_transformers(all_games, all_team_stats, all_player_stats)
@@ -84,6 +89,27 @@ class ModelTraner(ModelBase):
             model=STRATEGY_REGISTRY[strategy](),
         )
         self.scaler = StandardScaler()
+
+    def _select_frames(self, all_games, all_team_stats, all_player_stats) -> None:
+        """Narrow the source frames to the season types this run needs."""
+        frame_types = {self.season_type, self.train_season_type}
+        if self.train_season_type != self.season_type:
+            logger.info(
+                f"Training on {self.train_season_type} games to predict {self.season_type} games"
+            )
+
+        self.df_games = all_games[all_games["season_type"].isin(frame_types)].copy()
+        self.df_team_stats = all_team_stats[all_team_stats["season_type"].isin(frame_types)].copy()
+        self.df_player_stats = all_player_stats[all_player_stats["season_type"].isin(frame_types)].copy()
+
+    def _select_predicted_games(self) -> set:
+        """Game ids this run predicts, pinned here because GamesTransformer drops
+        season_type - downstream, season alone no longer identifies them."""
+        predicted = self.df_games[
+            (self.df_games["season"] == self.season)
+            & (self.df_games["season_type"] == self.season_type)
+        ]
+        return set(predicted["game_id"])
 
     def load_data(self):
         df_games = self.db_service.read("dim_games")
@@ -160,7 +186,10 @@ class ModelTraner(ModelBase):
         masquerade as a home-team loss (GamesTransformer's wl == "W" check turns a null
         result into False, i.e. a "loss", same as it would for a real one)."""
         warnings = []
-        season_games = self.df_games[self.df_games["season"] == self.season]
+        season_games = self.df_games[
+            (self.df_games["season"] == self.season)
+            & (self.df_games["season_type"] == self.season_type)
+        ]
         # a schedule slot with no real teams assigned yet (e.g. an in-season-tournament
         # knockout round not yet resolved) isn't a data gap - exclude it from both checks
         real_games = season_games[(season_games["home_team_id"] != 0) & (season_games["away_team_id"] != 0)]
@@ -194,7 +223,6 @@ class ModelTraner(ModelBase):
         for t in self.config.transformers:
             model_df = t.transform()
 
-        test_season = self.config.test_filter
         # diff_ columns are home-vs-away differentials; round/game_in_series (playoffs
         # only) are shared context, not team-relative, so they're picked up separately
         diff_cols = [c for c in model_df.columns if c.startswith("diff_")]
@@ -202,21 +230,19 @@ class ModelTraner(ModelBase):
         feature_cols = diff_cols + context_cols
         target_col = self.config.target_col
 
-        is_test_season = model_df["season"] == test_season
+        is_predicted = model_df["game_id"].isin(self.predicted_game_ids)
 
         is_played = model_df["game_id"].isin(self._played_game_ids())
 
+        # is_played guards both sides: GamesTransformer's `wl == "W"` turns a null result
+        # into False, so an unplayed game would train and score as a home defeat.
         if self.mode == MODE_BACKTEST:
-            # backtest assumes test_season is fully played - but if it isn't (see
-            # _validate_season_completeness), never let an unplayed game slip into
-            # eval_df: GamesTransformer has no way to represent "unknown" for wl, so it
-            # would silently score as a home-team loss instead of being left out.
-            train_df = model_df[~is_test_season].reset_index(drop=True)
-            eval_df = model_df[is_test_season & is_played].reset_index(drop=True)
+            train_df = model_df[~is_predicted & is_played].reset_index(drop=True)
+            eval_df = model_df[is_predicted & is_played].reset_index(drop=True)
             y_eval = eval_df[target_col]
         else:
-            train_df = model_df[~is_test_season | (is_test_season & is_played)].reset_index(drop=True)
-            eval_df = model_df[is_test_season & ~is_played].reset_index(drop=True)
+            train_df = model_df[is_played].reset_index(drop=True)
+            eval_df = model_df[is_predicted & ~is_played].reset_index(drop=True)
             y_eval = None
 
         X_train, y_train = train_df[feature_cols], train_df[target_col]

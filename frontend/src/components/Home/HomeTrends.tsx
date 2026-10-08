@@ -13,15 +13,24 @@ const STAT_CONFIG: Record<StatKey, { title: string; valueKey: keyof RankedPlayer
     assists: { title: 'Assists Per Game', valueKey: 'average_assists', rankKey: 'rank_average_assists' },
 };
 
-export function HomeTrends() {
+interface HomeTrendsProps {
+    /** null while the caller resolves it, which holds the fetch */
+    season?: string | null;
+}
+
+export function HomeTrends({ season }: HomeTrendsProps = {}) {
     const [players, setPlayers] = useState<RankedPlayerStats[]>([]);
 
+    const seasonName = season ?? env.VITE_DEFAULT_SEASON;
+
     useEffect(() => {
-        apiFetch(`/api/nba/analytics/average_stats/season=${env.VITE_DEFAULT_SEASON}/season_type=${env.VITE_DEFAULT_SEASON_TYPE}`)
+        if (!seasonName) return;
+        const seasonType = env.VITE_DEFAULT_SEASON_TYPE ?? 'regular';
+        apiFetch(`/api/nba/analytics/average_stats/season=${seasonName}/season_type=${seasonType}`)
             .then(r => r.json())
             .then(data => setPlayers(data.records ?? []))
             .catch(() => setPlayers([]));
-    }, []);
+    }, [seasonName]);
 
     const buildLeaderboardRows = (stat: StatKey): LeaderboardRow[] => {
         const { valueKey, rankKey } = STAT_CONFIG[stat];

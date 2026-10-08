@@ -18,6 +18,28 @@ class NBADataResponseSchema(Schema):
     error: Optional[str] = None
     records: Optional[List[Dict[str, Any]]] = None
 
+def _player_name_lookup() -> pd.DataFrame:
+    """One row per player. dim_players has a row per (player, season) but the callers
+    merge on player_id alone, which fans out every stat row."""
+    df = pd.DataFrame(list(
+        DimPlayers.objects.values("player_id", "player_name", "season").order_by("season")
+    ))
+    if df.empty:
+        return pd.DataFrame(columns=["player_id", "player_name"])
+    return df.drop_duplicates(subset=["player_id"], keep="last")[["player_id", "player_name"]]
+
+
+def _team_name_lookup() -> pd.DataFrame:
+    """One row per team. dim_teams has a row per (team, season) but the callers merge on
+    team_id alone, which fans out every stat row. Newest row wins, so renames show current."""
+    df = pd.DataFrame(list(
+        DimTeams.objects.values("team_id", "team_name", "season").order_by("season")
+    ))
+    if df.empty:
+        return pd.DataFrame(columns=["team_id", "team_name"])
+    return df.drop_duplicates(subset=["team_id"], keep="last")[["team_id", "team_name"]]
+
+
 @router.get("/average_stats/season={season_name}/season_type={season_type}", response=NBADataResponseSchema)
 async def get_average_player_stats(request, season_name: str, season_type: str):
 
@@ -31,13 +53,8 @@ async def get_average_player_stats(request, season_name: str, season_type: str):
                     "season_id", "player_id", "pts", "reb", "plus_minus", "ast", "dreb", "oreb", "team_id", "season", "season_type",
                 )
             ))
-            players_info_df = pd.DataFrame(list(
-                DimPlayers.objects
-                    .values("player_id", "season_id", "player_name")
-            ))
-            teams_info_df = pd.DataFrame(list(
-                DimTeams.objects.values("team_id", "team_name")
-            ))
+            players_info_df = _player_name_lookup()
+            teams_info_df = _team_name_lookup()
             average_player_stats_df = PlayerStats(player_stats_df, players_info_df, teams_info_df).transform()
             average_player_stats_df = average_player_stats_df.where(pd.notnull(average_player_stats_df), None)
             average_players_stats_dict = average_player_stats_df.to_dict(orient="records")
@@ -61,9 +78,7 @@ async def get_average_team_stats(request, season_name: str, season_type: str):
                     "season_id", "team_id", "pts", "reb", "plus_minus", "ast", "season", "wl", "season_type"
                 )
             ))
-            teams_info_df = pd.DataFrame(list(
-                DimTeams.objects.values("team_id", "team_name")
-            ))
+            teams_info_df = _team_name_lookup()
             average_team_stats_df = TeamStats(team_stats_df, teams_info_df).transform()
             average_team_stats_df = average_team_stats_df.where(pd.notnull(average_team_stats_df), None)
             average_team_stats_dict = average_team_stats_df.to_dict(orient="records")
@@ -87,12 +102,8 @@ async def get_most_improved_players(request, season_type: str):
             player_stats_df = pd.DataFrame(list(
                 FctPlayerStats.objects.filter(season_type=season_type).values("season_id", "player_id", "team_id", "pts", "season", "season_type")
             ))
-            players_info_df = pd.DataFrame(list(
-                DimPlayers.objects.values("player_id", "season_id", "player_name")
-            ))
-            teams_info_df = pd.DataFrame(list(
-                DimTeams.objects.values("team_id", "team_name")
-            ))
+            players_info_df = _player_name_lookup()
+            teams_info_df = _team_name_lookup()
             most_improved_df = MostImprovedPlayers(player_stats_df, players_info_df, teams_info_df).transform()
             most_improved_df = most_improved_df.where(pd.notnull(most_improved_df), None)
             return NBADataResponseSchema(success=True, records=most_improved_df.to_dict(orient="records"))
@@ -113,9 +124,7 @@ async def get_most_improved_teams(request, season_type: str):
             team_stats_df = pd.DataFrame(list(
                 FctTeamStats.objects.filter(season_type=season_type).values("season_id", "team_id", "season", "wl", "season_type")
             ))
-            teams_info_df = pd.DataFrame(list(
-                DimTeams.objects.values("team_id", "team_name")
-            ))
+            teams_info_df = _team_name_lookup()
             most_improved_df = MostImprovedTeams(team_stats_df, teams_info_df).transform()
             most_improved_df = most_improved_df.where(pd.notnull(most_improved_df), None)
             return NBADataResponseSchema(success=True, records=most_improved_df.to_dict(orient="records"))

@@ -62,6 +62,23 @@ async def collect_all(request):
     
     return NBADataResponseSchema(success=True)
 
+# must stay registered BEFORE "/collect/{table_name}", which would otherwise match "latest"
+@router.get("/collect/latest", response=NBADataResponseSchema)
+async def collect_latest(request, season_year: str = None):
+    """Collect the in-progress season under one run_id. Returns the run_id to pass to
+    /load_to_postgres?run_id=..."""
+    try:
+        def sync_collect():
+            return BuildDataService().build_latest_data(season_year=season_year)
+
+        result = await asyncio.to_thread(sync_collect)
+        logger.info(f"Latest data collection finished: {result}")
+    except Exception as e:
+        logger.error(f"Error collecting latest data: {e}")
+        return NBADataResponseSchema(success=False, error=str(e))
+
+    return NBADataResponseSchema(success=True, records=[result])
+
 @router.get("/collect/player_awards", response=NBADataResponseSchema)
 async def collect_player_awards_data(request):
 
@@ -202,19 +219,19 @@ async def collect_advanced_season_stats(request, seasons: str, season_types: str
     return NBADataResponseSchema(success=True, records=[result])
 
 @router.get("/load_to_postgres", response=NBADataResponseSchema)
-async def load_data_to_postgres(request):
-    # seasons is a comma separated string of number of seasons to load, e.g. "1,2,3"
+async def load_data_to_postgres(request, run_id: str = None):
+    """Load a run's parquet into the raw Postgres tables. Defaults to the newest run."""
     try:
         def sync_load_data():
             db_operations = DBService()
-            db_operations.save()
-        
-        await asyncio.to_thread(sync_load_data)
+            return db_operations.save(run_id=run_id)
+
+        loaded = await asyncio.to_thread(sync_load_data)
     except Exception as e:
         logger.error(f"Error loading data from object storage to Postgres: {e}")
         return NBADataResponseSchema(success=False, error=str(e))
 
-    return NBADataResponseSchema(success=True)
+    return NBADataResponseSchema(success=True, records=[loaded])
 
 @router.get("/load_to_bigquery/{seasons}", response=NBADataResponseSchema)
 async def load_data_from_gcs_to_bigquery(request, seasons: str):

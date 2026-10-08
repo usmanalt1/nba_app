@@ -115,6 +115,7 @@ export function Predictions() {
                 data={[
                     { value: "regular", label: "Regular" },
                     { value: "playoffs", label: "Playoffs" },
+                    { value: "preseason", label: "Preseason" },
                 ]}
                 value={selectedSeasonType}
                 onChange={(value) => handleSearchParamsChange('season_type', value)}

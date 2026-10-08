@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, type Dispatch, type ReactNode, type SetStateAction } from 'react';
 
-export type Stage = "Regular" | "Playoffs";
+export type Stage = "Regular" | "Playoffs" | "Preseason";
 export type ViewMode = "Players" | "Teams";
 export type StatSet = "Basic" | "Advanced";
 

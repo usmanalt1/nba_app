@@ -3,6 +3,9 @@ import { env } from '../../env';
 
 interface HomeHeroProps {
     strategy: string | null;
+    season?: string | null;
+    seasonType?: string | null;
+    statsSeason?: string | null;
 }
 
 function Chip({ label, value }: { label: string; value: string }) {
@@ -23,7 +26,11 @@ function Chip({ label, value }: { label: string; value: string }) {
     );
 }
 
-export function HomeHero({ strategy }: HomeHeroProps) {
+export function HomeHero({ strategy, season, seasonType, statsSeason }: HomeHeroProps) {
+    const predicting = [season ?? env.VITE_DEFAULT_SEASON, seasonType ?? env.VITE_DEFAULT_SEASON_TYPE]
+        .filter(Boolean)
+        .join(' ') || '—';
+
     return (
         <section
             style={{
@@ -62,9 +69,11 @@ export function HomeHero({ strategy }: HomeHeroProps) {
                 </div>
 
                 <div style={{ display: 'flex', gap: 28, flexWrap: 'wrap' }}>
-                    <Chip label="Season" value={env.VITE_DEFAULT_SEASON} />
-                    <Chip label="Type" value={env.VITE_DEFAULT_SEASON_TYPE} />
-                    <Chip label="Active model" value={strategy ? strategy.replace(/_/g, ' ') : '—'} />
+                    {/* Two seasons on purpose: the model predicts the live one, the
+                        leaderboards show the last with a full record. */}
+                    <Chip label="Predicting" value={predicting} />
+                    <Chip label="Stats from" value={statsSeason ?? env.VITE_DEFAULT_SEASON ?? '—'} />
+                    <Chip label="Model" value={strategy ? strategy.replace(/_/g, ' ') : '—'} />
                 </div>
             </div>
 

@@ -1,12 +1,13 @@
 import asyncio
-from datetime import datetime
+from datetime import date, datetime
 from typing import Dict, List, Optional
 
 from ninja import Router, Schema
 
 from app.models import MlModels
 from config.logger import get_logger
-from services.ml_model.models.model_trainer import ModelTraner, MODE_BACKTEST
+from services.ml_model.models.model_trainer import ModelTraner, MODE_BACKTEST, MODE_LIVE
+from services.ml_model.prediction_history import persist_predictions, read_graded
 from services.redis.redis_client import RedisClient
 from services.redis.redis_key_constants import model_run_cache_key, LAST_RUN
 from ninja_jwt.authentication import AsyncJWTAuth
@@ -70,6 +71,12 @@ async def train_model(request, strategy: str, season: str, season_type: str, mod
             result = trainer.train()
             redis_client.set(model_run_cache_key(strategy, season), result, ex=MODEL_CACHE_TTL_SECONDS)
             redis_client.set(LAST_RUN, {"strategy": strategy, "season": season, "season_type": season_type, "mode": mode})
+            # the cache expires; this is what survives to be graded later
+            if mode == MODE_LIVE:
+                persist_predictions(
+                    strategy=strategy, season=season, season_type=season_type,
+                    predictions=result.predictions,
+                )
             return result
 
         result = await asyncio.to_thread(sync_train)
@@ -123,6 +130,44 @@ def get_last_run(request):
         season_type=last_run.get("season_type"),
         mode=last_run.get("mode"),
     )
+
+class PredictionHistoryOutput(Schema):
+    game_id: str
+    game_date: Optional[date] = None
+    season: str
+    season_type: str
+    home_team_name: Optional[str] = None
+    away_team_name: Optional[str] = None
+    matchup: str
+    home_win_probability: float
+    predicted_home_win: bool
+    # null until played
+    actual_home_win: Optional[bool] = None
+
+
+class PredictionHistoryResponseSchema(Schema):
+    success: bool
+    error: Optional[str] = None
+    predictions: Optional[List[PredictionHistoryOutput]] = None
+
+
+@router.get("/prediction_history/{strategy}/{season}/{season_type}", response=PredictionHistoryResponseSchema)
+async def prediction_history(request, strategy: str, season: str, season_type: str, graded_only: bool = False):
+    """Stored predictions with results joined on; unplayed games have actual_home_win null."""
+    try:
+        def sync_get():
+            return read_graded(
+                strategy=strategy, season=season, season_type=season_type,
+                graded_only=graded_only,
+            )
+
+        records = await asyncio.to_thread(sync_get)
+    except Exception as e:
+        logger.error(f"Error fetching prediction history: {e}")
+        return PredictionHistoryResponseSchema(success=False, error=str(e))
+
+    return PredictionHistoryResponseSchema(success=True, predictions=records)
+
 
 class MlModelOutput(Schema):
     model_name: str
