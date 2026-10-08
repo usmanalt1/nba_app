@@ -3,6 +3,7 @@ import { Games } from '../ScrollableGames/Games';
 import { HomeHero } from './HomeHero';
 import { HomeHotCold } from './HomeHotCold';
 import { HomePostseason } from './HomePostseason';
+import { HomeSeasonLeaders } from './HomeSeasonLeaders';
 import { HomeModelPulse } from './HomeModelPulse';
 import { HomePredictionRail } from './HomePredictionRail';
 import { SectionHeader } from '../ui/SectionHeader';
@@ -85,6 +86,8 @@ export function Home() {
                 />
                 <Games season={statsSeason} />
             </section>
+
+            <HomeSeasonLeaders index={nextIndex()} season={statsSeason} />
 
             <HomeHotCold index={nextIndex()} />
 

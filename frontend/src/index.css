@@ -148,3 +148,25 @@ code {
 .rail:hover::-webkit-scrollbar-thumb {
   background: var(--line);
 }
+
+/* Vertical equivalent of .rail: scrolls a panel's body so a row of panels stays level,
+   with the scrollbar hidden until hover. */
+.scroll-y {
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+.scroll-y:hover {
+  scrollbar-color: var(--line) transparent;
+}
+.scroll-y::-webkit-scrollbar {
+  width: 6px;
+}
+.scroll-y::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 3px;
+}
+.scroll-y:hover::-webkit-scrollbar-thumb {
+  background: var(--line);
+}

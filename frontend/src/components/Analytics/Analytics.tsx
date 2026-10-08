@@ -3,6 +3,7 @@ import { HomeMostImproved } from '../Home/HomeMostImproved';
 import { HomeTeamLeaders } from '../Home/HomeTeamLeaders';
 import { HomeModelComparison } from '../Home/HomeModelComparison';
 import { SegmentedControl } from '@mantine/core';
+import { SeasonStandings } from './SeasonStandings';
 import { SectionHeader } from '../ui/SectionHeader';
 import { HeroStat, PageHero } from '../ui/PageHero';
 import { useViewDataFilters } from '../ViewData/ViewDataFiltersContext';
@@ -76,9 +77,23 @@ export function Analytics() {
                 <HomeTeamLeaders season={statsSeason} seasonType={seasonType} minGames={minGames} />
             </section>
 
-            <section>
+            <section style={{ marginBottom: 'var(--section-gap)' }}>
                 <SectionHeader
                     index="04"
+                    title="Standings"
+                    subtitle={
+                        selectedStage === 'Playoffs'
+                            ? `Every team that made the ${statsSeason ?? ''} postseason, by how far they went`
+                            : `The ${label} table, sortable on any column`
+                    }
+                    meta={stage}
+                />
+                <SeasonStandings season={statsSeason} seasonType={seasonType} stageLabel={selectedStage} />
+            </section>
+
+            <section>
+                <SectionHeader
+                    index="05"
                     title="Model Bench"
                     subtitle="Every run held against the same four metrics"
                 />
