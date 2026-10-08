@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { Games } from '../ScrollableGames/Games';
 import { HomeHero } from './HomeHero';
 import { HomeHotCold } from './HomeHotCold';
+import { HomeLastNight } from './HomeLastNight';
 import { HomePostseason } from './HomePostseason';
 import { HomeSeasonLeaders } from './HomeSeasonLeaders';
 import { HomeModelPulse } from './HomeModelPulse';
@@ -18,21 +19,21 @@ function startOfToday(): number {
 }
 
 export function Home() {
-    const { strategy, season, seasonType, predictions, loading } = usePredictionHistory();
-    const stats = useMemo(() => computeModelStats(predictions), [predictions]);
+    const {
+        strategy, season, upcomingSeasonType, gradedSeasonType, upcoming, graded, loading,
+    } = usePredictionHistory();
+    const stats = useMemo(() => computeModelStats(graded), [graded]);
 
     // not necessarily the season being predicted - see useStatsSeason
     const statsSeason = useStatsSeason();
 
-    // unplayed, soonest first
+    // already unplayed and soonest first, across both season types
     const nextSlate = useMemo(() => {
         const today = startOfToday();
-        return predictions
-            .filter((prediction) => prediction.actual_home_win === null)
+        return upcoming
             .filter((prediction) => new Date(prediction.game_date).getTime() >= today)
-            .sort((a, b) => new Date(a.game_date).getTime() - new Date(b.game_date).getTime())
             .slice(0, 10);
-    }, [predictions]);
+    }, [upcoming]);
 
     const latest = useMemo(
         () => [...stats.graded]
@@ -50,7 +51,7 @@ export function Home() {
     );
 
     const modelName = strategy?.replace(/_/g, ' ');
-    const typeLabel = seasonType === 'preseason' ? 'preseason' : 'season';
+    const typeLabel = upcomingSeasonType === 'preseason' ? 'preseason' : 'season';
 
     // numbered in render order: the track record section hides itself early in a season
     let section = 0;
@@ -60,10 +61,15 @@ export function Home() {
 
     return (
         <div style={{ width: '100%', maxWidth: 1400, margin: '0 auto', paddingBottom: 60 }}>
-            <HomeHero strategy={strategy} season={season} seasonType={seasonType} statsSeason={statsSeason} />
+            <HomeHero strategy={strategy} season={season} seasonType={upcomingSeasonType} statsSeason={statsSeason} />
 
             {hasTrackRecord && (
-                <HomeModelPulse strategy={strategy} stats={stats} index={nextIndex()} />
+                <HomeModelPulse
+                    strategy={strategy}
+                    stats={stats}
+                    index={nextIndex()}
+                    seasonType={gradedSeasonType}
+                />
             )}
 
             <section style={{ marginBottom: 'var(--section-gap)' }}>
@@ -77,6 +83,14 @@ export function Home() {
                     empty={loading ? 'Loading predictions…' : 'No upcoming games predicted yet.'}
                 />
             </section>
+
+            <HomeLastNight
+                index={nextIndex()}
+                strategy={strategy}
+                stats={stats}
+                loading={loading}
+                seasonType={gradedSeasonType}
+            />
 
             <section style={{ marginBottom: 'var(--section-gap)' }}>
                 <SectionHeader
