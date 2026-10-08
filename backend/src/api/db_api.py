@@ -11,6 +11,8 @@ from app.models import (
 import asyncio
 from datetime import date, datetime
 from ninja_jwt.authentication import AsyncJWTAuth
+from services.redis.redis_client import RedisClient
+from services.redis.redis_key_constants import TEAM_COLOURS
 
 router = Router(auth=AsyncJWTAuth(), tags=["nba"])
 
@@ -25,6 +27,13 @@ class SeasonOption(Schema):
 class TeamOption(Schema):
     team_id: int
     team_name: str
+
+class TeamColour(Schema):
+    team_id: int
+    abbreviation: str
+    team_name: str
+    display_hex: Optional[str] = None
+    alt_display_hex: Optional[str] = None
 
 class BoxScoreAverages(Schema):
     """Per-game averages shared by the player and team stat responses."""
@@ -253,6 +262,35 @@ async def list_seasons(
 async def list_teams(request):
     def sync_get():
         return Service(DimTeams).get_all_teams()
+    return await asyncio.to_thread(sync_get)
+
+
+# Colours change when a team rebrands, about once a year, so this caches far longer than
+# anything else here. refresh=true is the way back after a reseed.
+TEAM_COLOURS_CACHE_TTL_SECONDS = 7 * 24 * 60 * 60
+
+
+@router.get("/team_colours", response=List[TeamColour])
+async def team_colours(request, refresh: bool = False):
+    """Display colours for every current team, for the frontend to join client-side."""
+    def sync_get():
+        cache = RedisClient()
+        if not refresh:
+            try:
+                cached = cache.get(TEAM_COLOURS)
+                if cached:
+                    return cached
+            except Exception:
+                # A cheap query, so a cache outage degrades rather than 500s.
+                logger.exception("team_colours cache read failed, reading from the DB")
+
+        rows = Service(DimTeams).get_team_colours()
+        try:
+            cache.set(TEAM_COLOURS, rows, ex=TEAM_COLOURS_CACHE_TTL_SECONDS)
+        except Exception:
+            logger.exception("team_colours cache write failed")
+        return rows
+
     return await asyncio.to_thread(sync_get)
 
 

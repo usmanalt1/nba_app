@@ -18,6 +18,12 @@
   --lose: #c1554a;
   --gold: #d8b24c;
 
+  /* Ends of the data scales: hot is good/above, cold is bad/below, middle is
+     transparent. Team colours are deliberately absent - they're per-team and come
+     from /api/nba/db/team_colours, not from a token. */
+  --hot: #e8622c;
+  --cold: #3e8ede;
+
   --text: var(--paper-dim);
   --text-h: var(--paper);
   --bg: var(--ink);

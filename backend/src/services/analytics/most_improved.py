@@ -3,10 +3,11 @@ import pandas as pd
 MIN_GAMES = 20
 
 class MostImprovedPlayers:
-    def __init__(self, player_stats_df: pd.DataFrame, players_info_df: pd.DataFrame, teams_info_df: pd.DataFrame):
-        self.player_stats_df = player_stats_df[["season_id", "player_id", "team_id", "pts", "season"]]
+    def __init__(self, player_stats_df: pd.DataFrame, players_info_df: pd.DataFrame, teams_info_df: pd.DataFrame, player_teams_df: pd.DataFrame):
+        self.player_stats_df = player_stats_df[["season_id", "player_id", "pts", "season"]]
         self.players_info_df = players_info_df[["player_id", "player_name"]]
         self.teams_info_df = teams_info_df[["team_id", "team_name"]]
+        self.player_teams_df = player_teams_df[["player_id", "season", "team_id"]]
 
     def transform(self) -> pd.DataFrame:
         season_stats = self._build_season_stats()
@@ -35,10 +36,14 @@ class MostImprovedPlayers:
         return merged.sort_values("points_improvement", ascending=False).head(10).reset_index(drop=True)
 
     def _build_season_stats(self) -> pd.DataFrame:
-        stats = self.player_stats_df.groupby(["season_id", "player_id", "team_id", "season"]).agg(
+        # One row per player per season, whatever shirts they wore: grouping by team as
+        # well split a traded player into partial rows that each missed MIN_GAMES, and
+        # made the current-to-previous merge below fan out instead of pairing 1:1.
+        stats = self.player_stats_df.groupby(["season_id", "player_id", "season"]).agg(
             average_points=pd.NamedAgg(column="pts", aggfunc="mean"),
             games_played=pd.NamedAgg(column="pts", aggfunc="count"),
         ).reset_index()
+        stats = stats.merge(self.player_teams_df, on=["player_id", "season"], how="left")
         stats = stats.merge(self.players_info_df, on="player_id", how="left")
         stats = stats.merge(self.teams_info_df, on="team_id", how="left")
         return stats

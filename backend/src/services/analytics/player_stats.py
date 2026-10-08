@@ -1,9 +1,10 @@
 import pandas as pd
 class PlayerStats:
-    def __init__(self, player_stats_df: pd.DataFrame, players_info_df: pd.DataFrame, teams_info_df: pd.DataFrame):
-        self.player_stats_df = player_stats_df[["season_id", "player_id", "team_id", "pts", "reb", "plus_minus", "ast", "dreb", "oreb", "season", "season_type"]]
+    def __init__(self, player_stats_df: pd.DataFrame, players_info_df: pd.DataFrame, teams_info_df: pd.DataFrame, player_teams_df: pd.DataFrame):
+        self.player_stats_df = player_stats_df[["season_id", "player_id", "pts", "reb", "plus_minus", "ast", "dreb", "oreb", "season", "season_type"]]
         self.players_info_df = players_info_df[["player_id", "player_name"]]
         self.teams_info_df = teams_info_df[["team_id", "team_name"]]
+        self.player_teams_df = player_teams_df[["player_id", "season", "team_id"]]
         self.ALLOWED_STAT_COLS = ["average_points", "average_rebounds", "average_plus_minus", "average_assists", "average_defensive_rebounds", "average_offensive_rebounds"]
 
     def transform(self) -> pd.DataFrame:
@@ -20,7 +21,10 @@ class PlayerStats:
 
 
     def _build_player_games(self) -> pd.DataFrame:
-        average_stats = self.player_stats_df.groupby(["season_id", "player_id", "team_id", "season", "season_type"]).agg(
+        # Grouped by player, not player+team: a mid-season trade would otherwise split
+        # one season into a partial row per team, each averaged over its own games and
+        # each able to fall under a minimum-games rule the full season clears.
+        average_stats = self.player_stats_df.groupby(["season_id", "player_id", "season", "season_type"]).agg(
             average_points=pd.NamedAgg(column="pts", aggfunc="mean"),
             average_rebounds=pd.NamedAgg(column="reb", aggfunc="mean"),
             average_plus_minus=pd.NamedAgg(column="plus_minus", aggfunc="mean"),
@@ -30,6 +34,7 @@ class PlayerStats:
             games_played=pd.NamedAgg(column="player_id", aggfunc="count")
         ).reset_index()
 
+        average_stats = average_stats.merge(self.player_teams_df, on=["player_id", "season"], how="left")
         average_stats = average_stats.merge(self.players_info_df, on=["player_id"], how="left")
         average_stats = average_stats.merge(self.teams_info_df, on=["team_id"], how="left")
         return average_stats.sort_values(["player_name", "season_id"], ascending=[True, False]).reset_index(drop=True)

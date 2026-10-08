@@ -1,11 +1,14 @@
+import { TeamChip } from '../ui/TeamChip';
+import { useTeamPair, type TeamColours } from '../../context/TeamColoursProvider';
+
 interface TeamRowProps {
     name: string;
     pts: number;
-    dotColor: string;
+    colours: TeamColours;
     won: boolean;
 }
 
-function TeamRow({ name, pts, dotColor, won }: TeamRowProps) {
+function TeamRow({ name, pts, colours, won }: TeamRowProps) {
     return (
         <div
             style={{
@@ -21,13 +24,13 @@ function TeamRow({ name, pts, dotColor, won }: TeamRowProps) {
                 style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 8,
+                    gap: 10,
                     minWidth: 0,
                     fontWeight: won ? 600 : 400,
                     color: won ? 'var(--paper)' : 'var(--paper-dim)',
                 }}
             >
-                <span style={{ width: 7, height: 7, borderRadius: '50%', backgroundColor: dotColor, flexShrink: 0 }} />
+                <TeamChip team={colours} />
                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={name}>
                     {name}
                 </span>
@@ -58,12 +61,13 @@ export interface LatestGame {
 export function GamesInfo({ game_date, home_team_name, away_team_name, home_pts, away_pts }: LatestGame) {
     const homeWon = home_pts > away_pts;
     const date = new Date(game_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    const { away, home } = useTeamPair(away_team_name, home_team_name);
 
     return (
         <div>
             <div className="kicker" style={{ marginBottom: 10 }}>{date} · Final</div>
-            <TeamRow name={away_team_name} pts={away_pts} dotColor="var(--away)" won={!homeWon} />
-            <TeamRow name={home_team_name} pts={home_pts} dotColor="var(--home)" won={homeWon} />
+            <TeamRow name={away_team_name} pts={away_pts} colours={away} won={!homeWon} />
+            <TeamRow name={home_team_name} pts={home_pts} colours={home} won={homeWon} />
         </div>
     );
 }

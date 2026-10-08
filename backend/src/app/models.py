@@ -289,6 +289,8 @@ class DimTeams(models.Model):
     year_founded = models.IntegerField(null=True, blank=True)
     season = models.CharField(max_length=20, null=True, blank=True)
     run_timestamp = models.DateTimeField(null=True, blank=True)
+    display_hex = models.CharField(max_length=7, null=True, blank=True)
+    alt_display_hex = models.CharField(max_length=7, null=True, blank=True)
 
     class Meta:
         managed = False
@@ -590,3 +592,64 @@ class ModelPredictionHistory(models.Model):
         indexes = [
             models.Index(fields=["strategy", "season", "season_type"], name="pred_hist_strategy_season_idx"),
         ]
+
+
+class MartPlayerGameForm(models.Model):
+    """Rolling player form per game. form_* is the last 10 games, base_* everything
+    earlier excluding those 10, delta_* the difference."""
+    season_id = models.CharField(max_length=20)
+    season = models.CharField(max_length=20, null=True, blank=True)
+    season_type = models.CharField(max_length=20, null=True, blank=True)
+    player_id = models.IntegerField()
+    player_name = models.CharField(max_length=100, null=True, blank=True)
+    team_id = models.IntegerField()
+    # Not actually unique, matching FctPlayerStats: these marts have a composite grain
+    # and Django needs a single pk to read through the ORM.
+    game_id = models.CharField(max_length=20, primary_key=True)
+    game_date = models.DateField(null=True, blank=True)
+    game_number = models.IntegerField(null=True, blank=True)
+    games_in_season = models.IntegerField(null=True, blank=True)
+    is_latest = models.BooleanField(null=True, blank=True)
+    pts = models.FloatField(null=True, blank=True)
+    reb = models.FloatField(null=True, blank=True)
+    ast = models.FloatField(null=True, blank=True)
+    form_pts = models.FloatField(null=True, blank=True)
+    form_reb = models.FloatField(null=True, blank=True)
+    form_ast = models.FloatField(null=True, blank=True)
+    form_ts_pct = models.FloatField(null=True, blank=True)
+    base_pts = models.FloatField(null=True, blank=True)
+    base_ts_pct = models.FloatField(null=True, blank=True)
+    delta_pts = models.FloatField(null=True, blank=True)
+    delta_ts_pct = models.FloatField(null=True, blank=True)
+
+    class Meta:
+        managed = False
+        db_table = '"nba_marts"."mart_player_game_form"'
+
+
+class MartTeamGameForm(models.Model):
+    """Rolling team form per game, same windows as MartPlayerGameForm. margin is the
+    team log's plus_minus; win percentages are 0-100."""
+    season_id = models.CharField(max_length=20)
+    season = models.CharField(max_length=20, null=True, blank=True)
+    season_type = models.CharField(max_length=20, null=True, blank=True)
+    team_id = models.IntegerField()
+    game_id = models.CharField(max_length=20, primary_key=True)
+    game_date = models.DateField(null=True, blank=True)
+    game_number = models.IntegerField(null=True, blank=True)
+    games_in_season = models.IntegerField(null=True, blank=True)
+    is_latest = models.BooleanField(null=True, blank=True)
+    margin = models.FloatField(null=True, blank=True)
+    win = models.IntegerField(null=True, blank=True)
+    form_margin = models.FloatField(null=True, blank=True)
+    form_win_pct = models.FloatField(null=True, blank=True)
+    form_wins = models.IntegerField(null=True, blank=True)
+    form_games = models.IntegerField(null=True, blank=True)
+    base_margin = models.FloatField(null=True, blank=True)
+    base_win_pct = models.FloatField(null=True, blank=True)
+    delta_margin = models.FloatField(null=True, blank=True)
+    delta_win_pct = models.FloatField(null=True, blank=True)
+
+    class Meta:
+        managed = False
+        db_table = '"nba_marts"."mart_team_game_form"'

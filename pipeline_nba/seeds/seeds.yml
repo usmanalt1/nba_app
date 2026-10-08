@@ -1,0 +1,24 @@
+version: 2
+
+seeds:
+  - name: team_colours
+    description: "Per-team brand colours. display_hex and alt_display_hex are lightened for
+      Worm's dark panels, where primaries like Nuggets navy vanish. Re-run
+      .claude/skills/worm-colour/scripts/check_contrast.py after any change."
+    config:
+      column_types:
+        team_id: integer
+        abbreviation: varchar(3)
+        primary_hex: varchar(7)
+        secondary_hex: varchar(7)
+        display_hex: varchar(7)
+        alt_display_hex: varchar(7)
+    columns:
+      - name: team_id
+        data_tests: [unique, not_null]
+      - name: abbreviation
+        data_tests: [unique, not_null]
+      - name: display_hex
+        data_tests: [not_null]
+      - name: alt_display_hex
+        data_tests: [not_null]

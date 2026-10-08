@@ -12,6 +12,7 @@ import { NbaAi } from './components/NbaAi/NbaAi';
 import { AuthPage } from './components/Auth/AuthPage';
 import { clearSession, isAccessTokenExpired } from './lib/api';
 import { ViewDataFiltersProvider } from './components/ViewData/ViewDataFiltersContext';
+import { TeamColoursProvider } from './context/TeamColoursProvider';
 
 
 function AppContent() {
@@ -48,12 +49,16 @@ function AppContent() {
   }
 
   return (
-    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
-      <Navbar />
-      <div style={{ flex: 1, padding: '20px', minWidth: 0, height: '100vh', overflowY: 'auto', boxSizing: 'border-box' }}>
-        {routes}
+    /* Inside the authenticated branch: /api/nba/db/team_colours needs a token, so
+       fetching it around the login page would only 401. */
+    <TeamColoursProvider>
+      <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+        <Navbar />
+        <div style={{ flex: 1, padding: '20px', minWidth: 0, height: '100vh', overflowY: 'auto', boxSizing: 'border-box' }}>
+          {routes}
+        </div>
       </div>
-    </div>
+    </TeamColoursProvider>
   );
 }
 

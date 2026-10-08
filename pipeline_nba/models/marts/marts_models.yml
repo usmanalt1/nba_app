@@ -48,3 +48,39 @@ models:
       on_schema_change: append_new_columns
     alias: fct_team_stats
     description: "This table contains fact data for NBA team statistics, including performance metrics for each team in each game."
+  - name: mart_player_game_form
+    config:
+      materialized: table
+      on_schema_change: append_new_columns
+    alias: mart_player_game_form
+    description: >
+      Per player-game rolling form. form_* is the last 10 games up to and including this
+      one; base_* is every earlier game, stopping 10 short so the two never overlap.
+      delta_* is form minus baseline - the hot/cold measure. Rows before game 11 have a
+      null baseline. Partitioned on player alone, so a traded player keeps one season.
+    columns:
+      - name: player_id
+        data_tests: [not_null]
+      - name: game_id
+        data_tests: [not_null]
+      - name: game_date
+        data_tests: [not_null]
+      - name: games_in_season
+        data_tests: [not_null]
+  - name: mart_team_game_form
+    config:
+      materialized: table
+      on_schema_change: append_new_columns
+    alias: mart_team_game_form
+    description: >
+      Per team-game rolling form, same windows as mart_player_game_form. margin is the
+      team log's plus_minus. form_win_pct and base_win_pct are 0-100.
+    columns:
+      - name: team_id
+        data_tests: [not_null]
+      - name: game_id
+        data_tests: [not_null]
+      - name: game_date
+        data_tests: [not_null]
+      - name: margin
+        data_tests: [not_null]
