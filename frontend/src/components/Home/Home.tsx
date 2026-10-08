@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { Games } from '../ScrollableGames/Games';
 import { HomeHero } from './HomeHero';
 import { HomeHotCold } from './HomeHotCold';
+import { HomePostseason } from './HomePostseason';
 import { HomeModelPulse } from './HomeModelPulse';
 import { HomePredictionRail } from './HomePredictionRail';
 import { SectionHeader } from '../ui/SectionHeader';
@@ -86,6 +87,8 @@ export function Home() {
             </section>
 
             <HomeHotCold index={nextIndex()} />
+
+            <HomePostseason index={nextIndex()} />
 
             {hasTrackRecord && (
                 <>

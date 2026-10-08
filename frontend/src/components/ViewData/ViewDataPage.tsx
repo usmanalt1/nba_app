@@ -8,13 +8,8 @@ import { useState, useEffect, type CSSProperties } from "react";
 import type { SeasonOption, SeasonPlayerStats } from "../../types/player";
 import type { SeasonTeamStats } from "../../types/team";
 import type { SeasonAdvancedPlayerStats, SeasonAdvancedTeamStats } from "../../types/stats";
-import { useViewDataFilters, type Stage } from "./ViewDataFiltersContext";
-
-const STAGE_TO_SEASON_TYPE: Record<Stage, string> = {
-    Regular: "regular",
-    Playoffs: "playoffs",
-    Preseason: "preseason",
-};
+import { useViewDataFilters } from "./ViewDataFiltersContext";
+import { STAGE_TO_SEASON_TYPE } from "./stages";
 
 // Mirrors the Mantine "pills" tabs below: worm accent when active, dim paper when not.
 const stageButtonStyle: CSSProperties = {

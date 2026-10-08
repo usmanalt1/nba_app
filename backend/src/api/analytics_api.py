@@ -67,7 +67,7 @@ def _team_name_lookup() -> pd.DataFrame:
 
 
 @router.get("/average_stats/season={season_name}/season_type={season_type}", response=NBADataResponseSchema)
-async def get_average_player_stats(request, season_name: str, season_type: str):
+async def get_average_player_stats(request, season_name: str, season_type: str, min_games: int = 0):
 
     try:
         def sync_get():
@@ -83,6 +83,7 @@ async def get_average_player_stats(request, season_name: str, season_type: str):
             teams_info_df = _team_name_lookup()
             average_player_stats_df = PlayerStats(
                 player_stats_df, players_info_df, teams_info_df, _player_team_lookup(),
+                min_games=min_games,
             ).transform()
             average_player_stats_df = average_player_stats_df.where(pd.notnull(average_player_stats_df), None)
             average_players_stats_dict = average_player_stats_df.to_dict(orient="records")
@@ -95,7 +96,7 @@ async def get_average_player_stats(request, season_name: str, season_type: str):
 
 
 @router.get("/average_team_stats/season={season_name}/season_type={season_type}", response=NBADataResponseSchema)
-async def get_average_team_stats(request, season_name: str, season_type: str):
+async def get_average_team_stats(request, season_name: str, season_type: str, min_games: int = 0):
 
     try:
         def sync_get():
@@ -107,7 +108,7 @@ async def get_average_team_stats(request, season_name: str, season_type: str):
                 )
             ))
             teams_info_df = _team_name_lookup()
-            average_team_stats_df = TeamStats(team_stats_df, teams_info_df).transform()
+            average_team_stats_df = TeamStats(team_stats_df, teams_info_df, min_games=min_games).transform()
             average_team_stats_df = average_team_stats_df.where(pd.notnull(average_team_stats_df), None)
             average_team_stats_dict = average_team_stats_df.to_dict(orient="records")
             return NBADataResponseSchema(success=True, records=average_team_stats_dict)

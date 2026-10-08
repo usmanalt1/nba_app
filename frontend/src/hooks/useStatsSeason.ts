@@ -12,7 +12,7 @@ interface SeasonOption {
  * follows the live season, which has no box scores until opening night, so pointing the
  * leaderboards at it would empty them every autumn. VITE_DEFAULT_SEASON overrides.
  */
-export function useStatsSeason(): string | null {
+export function useStatsSeason(seasonType = 'regular'): string | null {
     const override = env.VITE_DEFAULT_SEASON;
     const [season, setSeason] = useState<string | null>(override || null);
 
@@ -20,7 +20,9 @@ export function useStatsSeason(): string | null {
         if (override) return;
 
         let cancelled = false;
-        apiFetch('/api/nba/db/list_all_seasons?has_stats=true')
+        // Per season type: the newest season with playoff games is not necessarily the
+        // newest with regular-season ones.
+        apiFetch(`/api/nba/db/list_all_seasons?has_stats=true&season_type=${seasonType}`)
             .then(r => r.json())
             .then((seasons: SeasonOption[]) => {
                 if (cancelled || !Array.isArray(seasons) || seasons.length === 0) return;
@@ -30,7 +32,7 @@ export function useStatsSeason(): string | null {
             .catch(() => { /* callers render their empty state */ });
 
         return () => { cancelled = true; };
-    }, [override]);
+    }, [override, seasonType]);
 
     return season;
 }

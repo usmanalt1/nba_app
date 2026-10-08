@@ -15,33 +15,34 @@ const STAT_CONFIG: Record<StatKey, { title: string; valueKey: keyof RankedTeamSt
 interface HomeTeamLeadersProps {
     /** null while the caller resolves it, which holds the fetch */
     season?: string | null;
+    seasonType?: string;
+    minGames?: number;
 }
 
-export function HomeTeamLeaders({ season }: HomeTeamLeadersProps = {}) {
+export function HomeTeamLeaders({ season, seasonType = 'regular', minGames = 0 }: HomeTeamLeadersProps = {}) {
     const [teams, setTeams] = useState<RankedTeamStats[]>([]);
 
     const seasonName = season ?? env.VITE_DEFAULT_SEASON;
 
     useEffect(() => {
         if (!seasonName) return;
-        const seasonType = env.VITE_DEFAULT_SEASON_TYPE ?? 'regular';
-        apiFetch(`/api/nba/analytics/average_team_stats/season=${seasonName}/season_type=${seasonType}`)
+        apiFetch(`/api/nba/analytics/average_team_stats/season=${seasonName}/season_type=${seasonType}?min_games=${minGames}`)
             .then(r => r.json())
             .then(data => setTeams(data.records ?? []))
             .catch(() => setTeams([]));
-    }, [seasonName]);
+    }, [seasonName, seasonType, minGames]);
 
     const latestSeason = teams.reduce((latest, team) => (
         team.season > latest ? team.season : latest
     ), "");
 
-    const regularSeasonTeams = teams.filter(
-        (team) => team.season === latestSeason && !team.season_id.startsWith("42")
-    );
+    // Season type is the request's job now. The old `season_id.startsWith("42")` filter
+    // re-derived it here and silently dropped every playoff row.
+    const seasonTeams = teams.filter((team) => team.season === latestSeason);
 
     const buildLeaderboardRows = (stat: StatKey): LeaderboardRow[] => {
         const { valueKey, rankKey } = STAT_CONFIG[stat];
-        return [...regularSeasonTeams]
+        return [...seasonTeams]
             .sort((a, b) => (a[rankKey] as number) - (b[rankKey] as number))
             .slice(0, 10)
             .map((team) => ({
