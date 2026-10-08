@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { BrowserRouter as Router, Navigate, Routes, Route, useLocation } from 'react-router-dom';
+import { Analytics } from './components/Analytics/Analytics';
 import { MantineProvider } from '@mantine/core';
 import '@mantine/core/styles.css'; // don't forget this, classic gotcha
 import { Navbar } from './components/Navbar/MatineNavbar';
@@ -29,6 +30,7 @@ function AppContent() {
       <Route path="/" element={<Home />} />
       <Route path="/view" element={<ViewDataPage />}/>
       <Route path="/predictions" element={<Predictions />} />
+      <Route path="/analytics" element={<Analytics />} />
       <Route path="/nbai" element={<NbaAi />} />
     </Routes>
   );

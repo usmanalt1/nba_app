@@ -3,10 +3,6 @@ import { Games } from '../ScrollableGames/Games';
 import { HomeHero } from './HomeHero';
 import { HomeModelPulse } from './HomeModelPulse';
 import { HomePredictionRail } from './HomePredictionRail';
-import { HomeTrends } from './HomeTrends';
-import { HomeTeamLeaders } from './HomeTeamLeaders';
-import { HomeMostImproved } from './HomeMostImproved';
-import { HomeModelComparison } from './HomeModelComparison';
 import { SectionHeader } from '../ui/SectionHeader';
 import { usePredictionHistory } from '../../hooks/usePredictionHistory';
 import { useStatsSeason } from '../../hooks/useStatsSeason';
@@ -109,42 +105,6 @@ export function Home() {
                     </section>
                 </>
             )}
-
-            <section style={{ marginBottom: 'var(--section-gap)' }}>
-                <SectionHeader
-                    index={nextIndex()}
-                    title="Player Leaders"
-                    subtitle={statsSeason ? `${statsSeason} season averages, ranked` : 'Season averages, ranked'}
-                />
-                <HomeTrends season={statsSeason} />
-            </section>
-
-            <section style={{ marginBottom: 'var(--section-gap)' }}>
-                <SectionHeader
-                    index={nextIndex()}
-                    title="Most Improved"
-                    subtitle={statsSeason ? `Biggest jumps in ${statsSeason} against the season before` : 'Biggest jumps against last season'}
-                />
-                <HomeMostImproved />
-            </section>
-
-            <section style={{ marginBottom: 'var(--section-gap)' }}>
-                <SectionHeader
-                    index={nextIndex()}
-                    title="Team Leaders"
-                    subtitle={statsSeason ? `${statsSeason} season averages, ranked` : 'Season averages, ranked'}
-                />
-                <HomeTeamLeaders season={statsSeason} />
-            </section>
-
-            <section>
-                <SectionHeader
-                    index={nextIndex()}
-                    title="Model Bench"
-                    subtitle="Every run held against the same four metrics"
-                />
-                <HomeModelComparison />
-            </section>
         </div>
     );
 }

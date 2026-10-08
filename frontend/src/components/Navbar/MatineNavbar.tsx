@@ -1,5 +1,6 @@
 import {
   IconAdjustments,
+  IconChartHistogram,
   IconLogout,
   IconReportAnalytics,
   IconSmartHome,
@@ -13,6 +14,7 @@ import classes from './NavbarNested.module.css';
 const pages = [
   { label: 'Home', icon: IconSmartHome, link: '/' },
   { label: 'View Data', icon: IconReportAnalytics, link: '/view' },
+  { label: 'Wormalytics', icon: IconChartHistogram, link: '/analytics' },
   { label: 'Predictions', icon: IconAdjustments, link: '/predictions' },
   { label: 'NBAI', icon: IconAdjustments, link: '/nbai' },
 ];
