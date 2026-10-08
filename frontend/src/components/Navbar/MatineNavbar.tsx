@@ -13,10 +13,10 @@ import classes from './NavbarNested.module.css';
 
 const pages = [
   { label: 'Home', icon: IconSmartHome, link: '/' },
-  { label: 'View Data', icon: IconReportAnalytics, link: '/view' },
+  { label: 'Can of Worms', icon: IconReportAnalytics, link: '/view' },
   { label: 'Wormalytics', icon: IconChartHistogram, link: '/analytics' },
-  { label: 'Predictions', icon: IconAdjustments, link: '/predictions' },
-  { label: 'NBAI', icon: IconAdjustments, link: '/nbai' },
+  { label: 'Wormhole', icon: IconAdjustments, link: '/predictions' },
+  { label: 'Ask Worm', icon: IconAdjustments, link: '/nbai' },
 ];
 
 export function Navbar() {

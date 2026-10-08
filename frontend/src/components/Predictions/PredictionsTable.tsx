@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from 'react';
-import { Text } from "@mantine/core";
 import { DataTable, type DataTableSortStatus } from 'mantine-datatable';
+import { cellStyle, header, nameCellStyle, tableProps } from '../DataTable/tableTheme';
 import sortBy from 'lodash/sortBy';
 import type { Prediction } from '../../types/predictions';
 import { Select } from "@mantine/core";
@@ -86,35 +86,38 @@ export function PredictionsTable({ records }: { records: Prediction[]}) {
                     searchable
                 />
             </div>
-            <div style={{ width: '100%', border: '1px solid var(--line)', borderRadius: 4, padding: '1px', marginBottom: '30px', fontFamily: "'IBM Plex Mono', monospace", height: '500px' }}>
+            <div style={{ width: '100%', height: 500 }}>
             <DataTable<Prediction>
+                {...tableProps}
                 idAccessor="game_id"
-                withTableBorder
-                withColumnBorders
                 records={sorted}
                 emptyState={null}
                 columns={[
                     {
-                        accessor: 'game_date', title: 'Date', width: '15%', sortable: true,
-                        render: (row) => new Date(row.game_date).toLocaleDateString(),
+                        accessor: 'game_date', title: header('Date', 'Date the game was played'), width: '15%', sortable: true,
+                        cellsStyle: () => cellStyle,
+                        render: (row) => new Date(row.game_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
                     },
-                    { accessor: 'matchup', width: '35%', sortable: true },
-                    { accessor: 'home_team_name', width: '10%', sortable: true },
+                    { accessor: 'matchup', title: header('Matchup', 'Home team vs away team'), width: '35%', sortable: true, cellsStyle: () => nameCellStyle },
+                    { accessor: 'home_team_name', title: header('Home', 'Home team'), width: '10%', sortable: true, cellsStyle: () => cellStyle },
                     {
-                        accessor: 'home_win_probability', title: 'Home win probability', width: '10%', sortable: true, textAlign: 'left',
+                        accessor: 'home_win_probability', title: header('Home win', 'Probability the model gave the home team'), width: '10%', sortable: true, textAlign: 'right',
+                        cellsStyle: () => cellStyle,
                         render: (row) => `${(row.home_win_probability * 100).toFixed(1)}%`,
                     },
                     {
-                        accessor: 'result', title: 'Result', width: '10%', textAlign: 'left',
+                        accessor: 'result', title: header('Result', 'Whether the call turned out right'), width: '10%', textAlign: 'right',
+                        cellsStyle: () => cellStyle,
                         render: (row) => {
+                            // Unplayed games are neither hit nor miss.
                             if (typeof row.actual_home_win !== 'boolean') {
-                                return <Text c="var(--paper-faint)" fw={600}>—</Text>;
+                                return <span style={{ color: 'var(--paper-faint)' }}>—</span>;
                             }
                             const correct = row.predicted_home_win === row.actual_home_win;
                             return (
-                                <Text c={correct ? 'var(--win)' : 'var(--lose)'} fw={600}>
-                                    {correct ? 'Correct' : 'Incorrect'}
-                                </Text>
+                                <span style={{ color: correct ? 'var(--win)' : 'var(--lose)', fontWeight: 700 }}>
+                                    {correct ? 'Hit' : 'Miss'}
+                                </span>
                             );
                         },
                     },

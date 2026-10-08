@@ -3,58 +3,19 @@ import { HomeMostImproved } from '../Home/HomeMostImproved';
 import { HomeTeamLeaders } from '../Home/HomeTeamLeaders';
 import { HomeModelComparison } from '../Home/HomeModelComparison';
 import { SectionHeader } from '../ui/SectionHeader';
-import { WormPortrait } from '../ui/WormMark';
+import { HeroStat, PageHero } from '../ui/PageHero';
 import { useStatsSeason } from '../../hooks/useStatsSeason';
 import { env } from '../../env';
 
 function AnalyticsHero({ statsSeason }: { statsSeason: string | null }) {
     return (
-        <section
-            style={{
-                position: 'relative',
-                display: 'flex',
-                alignItems: 'stretch',
-                justifyContent: 'space-between',
-                gap: 24,
-                overflow: 'hidden',
-                borderBottom: '1px solid var(--line)',
-                marginBottom: 'var(--section-gap)',
-                minHeight: 200,
-            }}
+        <PageHero
+            eyebrow="Season Breakdown"
+            title="Wormalytics"
+            blurb="Who led, who climbed, and which model actually held up over a full season of box scores."
         >
-            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 18, padding: '24px 0', zIndex: 1 }}>
-                <div>
-                    <div className="kicker" style={{ color: 'var(--worm)', marginBottom: 10 }}>
-                        Season Breakdown
-                    </div>
-                    <h1
-                        style={{
-                            margin: 0,
-                            fontSize: 'clamp(44px, 7vw, 80px)',
-                            lineHeight: 0.85,
-                            letterSpacing: '0.02em',
-                            fontWeight: 700,
-                            color: 'var(--paper)',
-                        }}
-                    >
-                        Wormalytics
-                    </h1>
-                    <p style={{ marginTop: 14, fontSize: 15, color: 'var(--paper-dim)', maxWidth: 440 }}>
-                        Who led, who climbed, and which model actually held up over a
-                        full season of box scores.
-                    </p>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    <span className="kicker" style={{ color: 'var(--paper-faint)' }}>Stats from</span>
-                    <span style={{ fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--paper)' }}>
-                        {statsSeason ?? env.VITE_DEFAULT_SEASON ?? '—'}
-                    </span>
-                </div>
-            </div>
-
-            <WormPortrait height={260} style={{ alignSelf: 'flex-end', marginRight: -12 }} />
-        </section>
+            <HeroStat label="Stats from" value={statsSeason ?? env.VITE_DEFAULT_SEASON ?? '—'} />
+        </PageHero>
     );
 }
 

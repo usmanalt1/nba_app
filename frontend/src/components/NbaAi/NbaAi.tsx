@@ -1,6 +1,7 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { Button, Textarea } from '@mantine/core';
 import { Markdown } from '../ui/Markdown';
+import { HeroStat, PageHero } from '../ui/PageHero';
 import { Panel } from '../ui/Panel';
 import { SectionHeader } from '../ui/SectionHeader';
 import { apiFetch } from '../../lib/api';
@@ -88,11 +89,19 @@ export function NbaAi() {
 
     return (
         <div style={{ width: '100%', maxWidth: 1400, margin: '0 auto', paddingBottom: 60 }}>
+            <PageHero
+                eyebrow="Natural Language Stats"
+                title="Ask Worm"
+                blurb="Put a question in plain English. Worm answers off the warehouse it already has, not from memory, and shows the numbers it leaned on."
+            >
+                <HeroStat label="Questions this session" value={loading ? '—' : String(exchanges.length)} />
+            </PageHero>
+
             <section style={{ marginBottom: 'var(--section-gap)' }}>
                 <SectionHeader
                     index="01"
-                    title="Ask Worm"
-                    subtitle="Questions about players, teams and seasons, answered off the warehouse rather than a guess"
+                    title="Your Question"
+                    subtitle="Players, teams, seasons — anything the box scores can settle"
                 />
 
                 <Panel>
