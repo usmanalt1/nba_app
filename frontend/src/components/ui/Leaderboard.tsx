@@ -17,17 +17,17 @@ interface LeaderboardProps {
     /** Marks this board as the section's lead. */
     accent?: boolean;
     empty?: string;
+    /** Caps the body in px and scrolls inside it, so boards sharing a row stay level. */
+    maxHeight?: number;
 }
 
-export function Leaderboard({ title, titleMeta, unit = '', rows, accent, empty = 'No data yet.' }: LeaderboardProps) {
+export function Leaderboard({ title, titleMeta, unit = '', rows, accent, empty = 'No data yet.', maxHeight }: LeaderboardProps) {
     const peak = Math.max(...rows.map((row) => row.magnitude ?? 0), 0);
 
-    return (
-        <Panel title={title} titleMeta={titleMeta} accent={accent} style={{ width: '100%' }}>
-            {rows.length === 0 ? (
-                <div style={{ fontSize: 13, color: 'var(--paper-faint)' }}>{empty}</div>
-            ) : (
-                rows.map((row, index) => {
+    const body = rows.length === 0 ? (
+        <div style={{ fontSize: 13, color: 'var(--paper-faint)' }}>{empty}</div>
+    ) : (
+        rows.map((row, index) => {
                     const isLeader = index === 0;
                     // Zero-based: a floor would exaggerate gaps between players who are
                     // in reality a tenth of a rebound apart.
@@ -122,7 +122,17 @@ export function Leaderboard({ title, titleMeta, unit = '', rows, accent, empty =
                             </div>
                         </div>
                     );
-                })
+        })
+    );
+
+    return (
+        <Panel title={title} titleMeta={titleMeta} accent={accent} style={{ width: '100%' }}>
+            {maxHeight === undefined ? body : (
+                // The negative margin plus matching padding keeps the rows' -18px
+                // magnitude track inside the scrollport, which would otherwise clip it.
+                <div className="scroll-y" style={{ maxHeight, marginLeft: -18, paddingLeft: 18 }}>
+                    {body}
+                </div>
             )}
         </Panel>
     );

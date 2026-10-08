@@ -18,6 +18,12 @@
   --lose: #c1554a;
   --gold: #d8b24c;
 
+  /* Ends of the data scales: hot is good/above, cold is bad/below, middle is
+     transparent. Team colours are deliberately absent - they're per-team and come
+     from /api/nba/db/team_colours, not from a token. */
+  --hot: #e8622c;
+  --cold: #3e8ede;
+
   --text: var(--paper-dim);
   --text-h: var(--paper);
   --bg: var(--ink);
@@ -140,5 +146,27 @@ code {
   border-radius: 3px;
 }
 .rail:hover::-webkit-scrollbar-thumb {
+  background: var(--line);
+}
+
+/* Vertical equivalent of .rail: scrolls a panel's body so a row of panels stays level,
+   with the scrollbar hidden until hover. */
+.scroll-y {
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+.scroll-y:hover {
+  scrollbar-color: var(--line) transparent;
+}
+.scroll-y::-webkit-scrollbar {
+  width: 6px;
+}
+.scroll-y::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 3px;
+}
+.scroll-y:hover::-webkit-scrollbar-thumb {
   background: var(--line);
 }

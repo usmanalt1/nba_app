@@ -2,13 +2,20 @@ import pandas as pd
 
 
 class TeamStats:
-    def __init__(self, team_stats_df: pd.DataFrame, teams_info_df: pd.DataFrame):
+    def __init__(self, team_stats_df: pd.DataFrame, teams_info_df: pd.DataFrame, min_games: int = 0):
         self.team_stats_df = team_stats_df[["season_id", "team_id", "pts", "reb", "plus_minus", "ast", "season", "wl", "season_type"]]
         self.teams_info_df = teams_info_df[["team_id", "team_name"]]
+        self.min_games = min_games
         self.ALLOWED_STAT_COLS = ["average_points", "average_rebounds", "average_plus_minus", "average_assists"]
 
     def transform(self) -> pd.DataFrame:
         build_team_games_df = self._build_team_games()
+        # See PlayerStats.transform: filtered before ranking, not after.
+        if self.min_games > 0:
+            build_team_games_df = build_team_games_df[
+                build_team_games_df["games_played"] >= self.min_games
+            ].reset_index(drop=True)
+
         rank_cols = []
         for stat in self.ALLOWED_STAT_COLS:
             build_team_games_df = self._rank_teams(build_team_games_df, stat_col=stat)

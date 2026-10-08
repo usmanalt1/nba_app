@@ -2,29 +2,31 @@ import { useEffect, useState } from "react";
 import type { MostImprovedPlayer, MostImprovedTeam } from '../../types/mostImproved';
 import { Leaderboard, type LeaderboardRow } from '../ui/Leaderboard';
 import { apiFetch } from '../../lib/api';
-import { env } from '../../env';
 
-export function HomeMostImproved() {
+/** Both sides of the comparison need 20 games, which no postseason run reaches. */
+const SUPPORTED_SEASON_TYPES = ['regular'];
+
+export function HomeMostImproved({ seasonType = 'regular' }: { seasonType?: string } = {}) {
     const [players, setPlayers] = useState<MostImprovedPlayer[]>([]);
     const [teams, setTeams] = useState<MostImprovedTeam[]>([]);
 
-    // These endpoints take season_type only: the comparison needs both the current
-    // and previous season, so there is no season segment in the path.
-    const seasonType = env.VITE_DEFAULT_SEASON_TYPE;
+    const supported = SUPPORTED_SEASON_TYPES.includes(seasonType);
 
     useEffect(() => {
+        if (!supported) return;
         apiFetch(`/api/nba/analytics/most_improved_players/season_type=${seasonType}`)
             .then(r => r.json())
             .then(data => setPlayers(data.records ?? []))
             .catch(() => setPlayers([]));
-    }, [seasonType]);
+    }, [seasonType, supported]);
 
     useEffect(() => {
+        if (!supported) return;
         apiFetch(`/api/nba/analytics/most_improved_teams/season_type=${seasonType}`)
             .then(r => r.json())
             .then(data => setTeams(data.records ?? []))
             .catch(() => setTeams([]));
-    }, [seasonType]);
+    }, [seasonType, supported]);
 
     const playerRows: LeaderboardRow[] = players.slice(0, 10).map((player, index) => ({
         rank: index + 1,
@@ -41,6 +43,15 @@ export function HomeMostImproved() {
         value: `+${(team.win_pct_improvement * 100).toFixed(1)}%`,
         magnitude: team.win_pct_improvement,
     }));
+
+    if (!supported) {
+        return (
+            <div style={{ fontSize: 13, color: 'var(--paper-faint)', padding: '8px 0' }}>
+                Regular season only — the comparison needs 20 games either side, and a
+                postseason run never gets there.
+            </div>
+        );
+    }
 
     return (
         <div style={{ width: '100%', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>

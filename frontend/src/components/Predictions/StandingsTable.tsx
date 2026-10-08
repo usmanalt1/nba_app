@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { DataTable, type DataTableSortStatus } from 'mantine-datatable';
 import sortBy from 'lodash/sortBy';
 import type { SeasonRecord } from '../../types/predictions';
+import { cellStyle, header, nameCellStyle, tableProps } from '../DataTable/tableTheme';
 
 export function StandingsTable({ records }: { records: SeasonRecord[] }) {
     const [sortStatus, setSortStatus] = useState<DataTableSortStatus<SeasonRecord>>({
@@ -15,17 +16,16 @@ export function StandingsTable({ records }: { records: SeasonRecord[] }) {
     }, [records, sortStatus]);
 
     return (
-        <div style={{ marginTop: '10px', width: '100%', border: '1px solid var(--line)', borderRadius: 4, padding: '1px', fontFamily: "'IBM Plex Mono', monospace", height: '600px' }}>
+        <div style={{ width: '100%', height: 600 }}>
             <DataTable<SeasonRecord>
+                {...tableProps}
                 idAccessor="team"
-                withTableBorder
-                withColumnBorders
                 records={sorted}
                 emptyState={null}
                 columns={[
-                    { accessor: 'team', width: '40%', sortable: true },
-                    { accessor: 'wins', width: '30%', sortable: true, textAlign: 'right' },
-                    { accessor: 'loss', width: '30%', sortable: true, textAlign: 'right' },
+                    { accessor: 'team', title: header('Team', 'Team name'), width: '40%', sortable: true, cellsStyle: () => nameCellStyle },
+                    { accessor: 'wins', title: header('W', 'Wins'), width: '30%', sortable: true, textAlign: 'right', cellsStyle: () => cellStyle },
+                    { accessor: 'loss', title: header('L', 'Losses'), width: '30%', sortable: true, textAlign: 'right', cellsStyle: () => cellStyle },
                 ]}
                 sortStatus={sortStatus}
                 onSortStatusChange={setSortStatus}

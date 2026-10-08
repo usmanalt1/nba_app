@@ -9,6 +9,8 @@ interface HomeModelPulseProps {
     strategy: string | null;
     stats: ModelStats;
     index: string;
+    /** Which games this record is over - a preseason one must not read as a season one. */
+    seasonType?: string | null;
 }
 
 function formatSigned(value: number, digits = 1): string {
@@ -25,7 +27,7 @@ function Readout({ label, value, note }: { label: string; value: string; note?: 
     );
 }
 
-export function HomeModelPulse({ strategy, stats, index }: HomeModelPulseProps) {
+export function HomeModelPulse({ strategy, stats, index, seasonType }: HomeModelPulseProps) {
     if (stats.games === 0) return null;
 
     const { currentStreak } = stats;
@@ -40,7 +42,11 @@ export function HomeModelPulse({ strategy, stats, index }: HomeModelPulseProps) 
                 index={index}
                 title="Model Tape"
                 subtitle={`How ${strategy?.replace(/_/g, ' ') ?? 'the model'} has actually done, graded against results`}
-                meta={<span className="kicker">{stats.games} games graded</span>}
+                meta={
+                    <span className="kicker">
+                        {stats.games} {seasonType ? `${seasonType} ` : ''}games graded
+                    </span>
+                }
             />
 
             <div

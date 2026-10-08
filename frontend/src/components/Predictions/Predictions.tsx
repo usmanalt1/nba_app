@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Select, Button, SimpleGrid, Text, Tabs } from "@mantine/core";
+import { Select, Button, Tabs } from "@mantine/core";
 import 'mantine-datatable/styles.layer.css';
-import { StatTile } from './StatTile';
 import { StandingsTable } from './StandingsTable';
 import { PredictionsTable } from './PredictionsTable';
+import { PageHero } from '../ui/PageHero';
+import { Panel } from '../ui/Panel';
+import { SectionHeader } from '../ui/SectionHeader';
+import { StatCard } from '../ui/StatCard';
 import type { TrainResponse } from '../../types/predictions';
 import { useSearchParams } from 'react-router-dom';
 import { handleSearchParams } from '../Helper/HandleSearchParams';
@@ -97,99 +100,145 @@ export function Predictions() {
         { value: 'predictions', label: 'Predictions' },
     ];
 
-    return <>
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: "16px", width: "100%", padding: "10px", marginBottom: '30px' }}>
-            <Select
-                style={{ flex: 1 }}
-                label="Season"
-                placeholder="Pick a Season"
-                data={seasonOptions}
-                value={selectedSeason}
-                onChange={(value) => handleSearchParamsChange('season', value)}
-                searchable
-            />
-            <Select
-                style={{ flex: 1 }}
-                label="Season Type"
-                placeholder="Pick a Season Type"
-                data={[
-                    { value: "regular", label: "Regular" },
-                    { value: "playoffs", label: "Playoffs" },
-                    { value: "preseason", label: "Preseason" },
-                ]}
-                value={selectedSeasonType}
-                onChange={(value) => handleSearchParamsChange('season_type', value)}
-                searchable
-            />
-            <Select
-                style={{ flex: 1 }}
-                label="ML Model"
-                placeholder="Pick a Model"
-                data={modelOptions}
-                value={selectedModel}
-                onChange={(value) => handleSearchParamsChange('model', value)}
-                searchable
-            />
-            <Select
-                style={{ flex: 1 }}
-                label="Mode"
-                data={[
-                    { value: "backtest", label: "Backtest" },
-                    { value: "live", label: "Live (in-season)" },
-                ]}
-                value={selectedMode}
-                onChange={(value) => handleSearchParamsChange('mode', value)}
-            />
-            <Button
-                variant="filled"
-                onClick={handleRunModel}
-                loading={buttonActive}
-                disabled={!selectedModel || !selectedSeason || !selectedSeasonType}
-            >
-                Run Model
-            </Button>
-        </div>
+    return <div style={{ width: '100%', maxWidth: 1400, margin: '0 auto', paddingBottom: 60 }}>
+        <PageHero
+            eyebrow="Backtests & Calls"
+            title="Wormhole"
+            blurb="Run a model over a season and see what it would have called, graded against what actually happened."
+        />
 
-        {result && !result.success && (
-            <Text c="var(--lose)">{result.error}</Text> // change message
+        <section style={{ marginBottom: 'var(--section-gap)' }}>
+            <SectionHeader
+                index="01"
+                title="Set Up a Run"
+                subtitle="Pick a model and a season, then run it over those games"
+            />
+            <Panel accent>
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16, flexWrap: 'wrap' }}>
+                    <Select
+                        style={{ flex: 1, minWidth: 150 }}
+                        label="Season"
+                        placeholder="Pick a Season"
+                        data={seasonOptions}
+                        value={selectedSeason}
+                        onChange={(value) => handleSearchParamsChange('season', value)}
+                        searchable
+                    />
+                    <Select
+                        style={{ flex: 1, minWidth: 150 }}
+                        label="Season Type"
+                        placeholder="Pick a Season Type"
+                        data={[
+                            { value: "regular", label: "Regular" },
+                            { value: "playoffs", label: "Playoffs" },
+                            { value: "preseason", label: "Preseason" },
+                        ]}
+                        value={selectedSeasonType}
+                        onChange={(value) => handleSearchParamsChange('season_type', value)}
+                        searchable
+                    />
+                    <Select
+                        style={{ flex: 1, minWidth: 150 }}
+                        label="ML Model"
+                        placeholder="Pick a Model"
+                        data={modelOptions}
+                        value={selectedModel}
+                        onChange={(value) => handleSearchParamsChange('model', value)}
+                        searchable
+                    />
+                    <Select
+                        style={{ flex: 1, minWidth: 150 }}
+                        label="Mode"
+                        data={[
+                            { value: "backtest", label: "Backtest" },
+                            { value: "live", label: "Live (in-season)" },
+                        ]}
+                        value={selectedMode}
+                        onChange={(value) => handleSearchParamsChange('mode', value)}
+                    />
+                    <Button
+                        variant="filled"
+                        onClick={handleRunModel}
+                        loading={buttonActive}
+                        disabled={!selectedModel || !selectedSeason || !selectedSeasonType}
+                    >
+                        Run Model
+                    </Button>
+                </div>
+
+                {result && !result.success && (
+                    <div style={{ fontSize: 13, color: 'var(--lose)', paddingTop: 14 }}>
+                        {result.error ?? 'That run did not come back.'}
+                    </div>
+                )}
+            </Panel>
+        </section>
+
+        {result && result.success && result.metrics && (
+            <section style={{ marginBottom: 'var(--section-gap)' }}>
+                <SectionHeader
+                    index="02"
+                    title="Scorecard"
+                    subtitle="How the run scored against the games it had not seen"
+                />
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 14 }}>
+                    <StatCard
+                        hero
+                        tone="brand"
+                        label="Accuracy"
+                        value={`${(result.metrics.accuracy * 100).toFixed(1)}%`}
+                        note="Share of games called right"
+                    />
+                    <StatCard hero label="AUC" value={result.metrics.auc.toFixed(3)} note="1.0 is perfect, 0.5 is a coin flip" />
+                    <StatCard hero label="Log loss" value={result.metrics.log_loss.toFixed(3)} note="Lower is better; punishes confident misses" />
+                    <StatCard hero label="Brier" value={result.metrics.brier.toFixed(3)} note="Lower is better; squared error on the probabilities" />
+                </div>
+            </section>
         )}
 
-        {result && result.success && (
-            <>
-                {result.metrics && (
-                    <SimpleGrid cols={4} mb="30px">
-                        <StatTile label="Accuracy" value={`${(result.metrics.accuracy * 100).toFixed(1)}%`} />
-                        <StatTile label="AUC" value={result.metrics.auc.toFixed(3)} />
-                        <StatTile label="Log loss" value={result.metrics.log_loss.toFixed(3)} />
-                        <StatTile label="Brier" value={result.metrics.brier.toFixed(3)} />
-                    </SimpleGrid>
-                )}
+        <section style={{ marginBottom: 'var(--section-gap)' }}>
+            <SectionHeader
+                index={result && result.success && result.metrics ? '03' : '02'}
+                title="Standings & Calls"
+                subtitle="The season the run produced, and every game it called"
+            />
 
-                <Tabs variant="pills" style={{ width: "100%", marginBottom: '30px' }} value={predictionsTab}>
-                    <Tabs.List grow={true} style={{ width: "100%", display: 'flex', justifyContent: 'space-between' }}>
-                        {tabTypes.map(type =>
-                            <Tabs.Tab
-                                key={type.value}
-                                onClick={() => handleSearchParamsChange('predictions_tab', type.value)}
-                                value={type.value}
-                                style={{ fontWeight: 700, fontSize: '16px' }}
-                            >
-                                {type.label}
-                            </Tabs.Tab>
-                        )}
-                    </Tabs.List>
-                </Tabs>
+            {!result && (
+                <div style={{ fontSize: 13, color: 'var(--paper-faint)', padding: '8px 0' }}>
+                    Nothing run yet. Pick a model and a season above.
+                </div>
+            )}
 
-                {predictionsTab === 'standings' && result.season_records && result.season_records.length > 0 && (
-                    <StandingsTable records={result.season_records} />
-                )}
+            {result && result.success && (
+                <>
+                    {/* Default variant: theme.ts already gives tabs the mono uppercase register. */}
+                    <Tabs
+                        value={predictionsTab}
+                        onChange={(value) => handleSearchParamsChange('predictions_tab', value)}
+                        style={{ marginBottom: 18 }}
+                    >
+                        <Tabs.List>
+                            {tabTypes.map(type => (
+                                <Tabs.Tab key={type.value} value={type.value}>{type.label}</Tabs.Tab>
+                            ))}
+                        </Tabs.List>
+                    </Tabs>
 
-                {predictionsTab !== 'standings' && result.predictions && result.predictions.length > 0 && (
-                    <PredictionsTable records={result.predictions} />
-                )}
-            </>
-        )}
-    </>
+                    {predictionsTab === 'standings' && (
+                        result.season_records && result.season_records.length > 0
+                            ? <StandingsTable records={result.season_records} />
+                            : <div style={{ fontSize: 13, color: 'var(--paper-faint)', padding: '8px 0' }}>No season record came back from this run.</div>
+                    )}
+
+                    {predictionsTab !== 'standings' && (
+                        result.predictions && result.predictions.length > 0
+                            ? <PredictionsTable records={result.predictions} />
+                            : <div style={{ fontSize: 13, color: 'var(--paper-faint)', padding: '8px 0' }}>No calls came back from this run.</div>
+                    )}
+                </>
+            )}
+        </section>
+    </div>
 
 
 }

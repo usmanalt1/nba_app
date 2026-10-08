@@ -16,21 +16,23 @@ const STAT_CONFIG: Record<StatKey, { title: string; valueKey: keyof RankedPlayer
 interface HomeTrendsProps {
     /** null while the caller resolves it, which holds the fetch */
     season?: string | null;
+    seasonType?: string;
+    /** Keeps a two-game cameo out of a ranked list. */
+    minGames?: number;
 }
 
-export function HomeTrends({ season }: HomeTrendsProps = {}) {
+export function HomeTrends({ season, seasonType = 'regular', minGames = 0 }: HomeTrendsProps = {}) {
     const [players, setPlayers] = useState<RankedPlayerStats[]>([]);
 
     const seasonName = season ?? env.VITE_DEFAULT_SEASON;
 
     useEffect(() => {
         if (!seasonName) return;
-        const seasonType = env.VITE_DEFAULT_SEASON_TYPE ?? 'regular';
-        apiFetch(`/api/nba/analytics/average_stats/season=${seasonName}/season_type=${seasonType}`)
+        apiFetch(`/api/nba/analytics/average_stats/season=${seasonName}/season_type=${seasonType}?min_games=${minGames}`)
             .then(r => r.json())
             .then(data => setPlayers(data.records ?? []))
             .catch(() => setPlayers([]));
-    }, [seasonName]);
+    }, [seasonName, seasonType, minGames]);
 
     const buildLeaderboardRows = (stat: StatKey): LeaderboardRow[] => {
         const { valueKey, rankKey } = STAT_CONFIG[stat];

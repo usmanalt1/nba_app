@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { BrowserRouter as Router, Navigate, Routes, Route, useLocation } from 'react-router-dom';
+import { Analytics } from './components/Analytics/Analytics';
 import { MantineProvider } from '@mantine/core';
 import '@mantine/core/styles.css'; // don't forget this, classic gotcha
 import { Navbar } from './components/Navbar/MatineNavbar';
@@ -11,6 +12,7 @@ import { NbaAi } from './components/NbaAi/NbaAi';
 import { AuthPage } from './components/Auth/AuthPage';
 import { clearSession, isAccessTokenExpired } from './lib/api';
 import { ViewDataFiltersProvider } from './components/ViewData/ViewDataFiltersContext';
+import { TeamColoursProvider } from './context/TeamColoursProvider';
 
 
 function AppContent() {
@@ -29,6 +31,7 @@ function AppContent() {
       <Route path="/" element={<Home />} />
       <Route path="/view" element={<ViewDataPage />}/>
       <Route path="/predictions" element={<Predictions />} />
+      <Route path="/analytics" element={<Analytics />} />
       <Route path="/nbai" element={<NbaAi />} />
     </Routes>
   );
@@ -46,12 +49,16 @@ function AppContent() {
   }
 
   return (
-    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
-      <Navbar />
-      <div style={{ flex: 1, padding: '20px', minWidth: 0, height: '100vh', overflowY: 'auto', boxSizing: 'border-box' }}>
-        {routes}
+    /* Inside the authenticated branch: /api/nba/db/team_colours needs a token, so
+       fetching it around the login page would only 401. */
+    <TeamColoursProvider>
+      <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+        <Navbar />
+        <div style={{ flex: 1, padding: '20px', minWidth: 0, height: '100vh', overflowY: 'auto', boxSizing: 'border-box' }}>
+          {routes}
+        </div>
       </div>
-    </div>
+    </TeamColoursProvider>
   );
 }
 

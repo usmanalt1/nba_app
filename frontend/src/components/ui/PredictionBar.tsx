@@ -1,4 +1,6 @@
 import { Panel } from './Panel';
+import { TeamChip } from './TeamChip';
+import { useTeamPair, type TeamColours } from '../../context/TeamColoursProvider';
 
 interface PredictionBarProps {
     homeTeam: string;
@@ -15,14 +17,14 @@ interface SideProps {
     team: string;
     pct: number;
     pts?: number;
-    color: string;
+    colours: TeamColours;
     picked: boolean;
 }
 
-function Side({ team, pct, pts, color, picked }: SideProps) {
+function Side({ team, pct, pts, colours, picked }: SideProps) {
     return (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '3px 0' }}>
-            <span style={{ width: 7, height: 7, borderRadius: '50%', background: color, flexShrink: 0 }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '3px 0' }}>
+            <TeamChip team={colours} />
             <span
                 title={team}
                 style={{
@@ -73,6 +75,7 @@ export function PredictionBar({
     const awayPct = 100 - homePct;
     const hasResult = typeof actualHomeWin === 'boolean';
     const correct = hasResult && predictedHomeWin === actualHomeWin;
+    const { away, home } = useTeamPair(awayTeam, homeTeam);
 
     return (
         <Panel style={{ width: 284, flexShrink: 0 }}>
@@ -92,13 +95,13 @@ export function PredictionBar({
 
             {/* Stacked rather than side-by-side: full-length NBA team names need the
                 whole card width or they all truncate to "Golden State ...". */}
-            <Side team={awayTeam} pct={awayPct} pts={awayPts} color="var(--away)" picked={predictedHomeWin === false} />
-            <Side team={homeTeam} pct={homePct} pts={homePts} color="var(--home)" picked={predictedHomeWin === true} />
+            <Side team={awayTeam} pct={awayPct} pts={awayPts} colours={away} picked={predictedHomeWin === false} />
+            <Side team={homeTeam} pct={homePct} pts={homePts} colours={home} picked={predictedHomeWin === true} />
 
             {/* 2px surface gap between the two fills rather than a stroke around them. */}
             <div style={{ display: 'flex', gap: 2, height: 6, marginTop: 10 }}>
-                <div style={{ width: `${awayPct}%`, background: 'var(--away)', borderRadius: '3px 0 0 3px' }} />
-                <div style={{ flex: 1, background: 'var(--home)', borderRadius: '0 3px 3px 0' }} />
+                <div style={{ width: `${awayPct}%`, background: away.colour, borderRadius: '3px 0 0 3px' }} />
+                <div style={{ flex: 1, background: home.colour, borderRadius: '0 3px 3px 0' }} />
             </div>
         </Panel>
     );

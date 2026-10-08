@@ -3,17 +3,13 @@ import NBADataTable from "../DataTable/NBADataTable";
 import TeamDataTable from "../DataTable/TeamDataTable";
 import { AdvancedPlayerTable, AdvancedTeamTable } from "../DataTable/AdvancedDataTable";
 import { Select, TextInput } from "@mantine/core";
+import { HeroStat, PageHero } from "../ui/PageHero";
 import { useState, useEffect, type CSSProperties } from "react";
 import type { SeasonOption, SeasonPlayerStats } from "../../types/player";
 import type { SeasonTeamStats } from "../../types/team";
 import type { SeasonAdvancedPlayerStats, SeasonAdvancedTeamStats } from "../../types/stats";
-import { useViewDataFilters, type Stage } from "./ViewDataFiltersContext";
-
-const STAGE_TO_SEASON_TYPE: Record<Stage, string> = {
-    Regular: "regular",
-    Playoffs: "playoffs",
-    Preseason: "preseason",
-};
+import { useViewDataFilters } from "./ViewDataFiltersContext";
+import { STAGE_TO_SEASON_TYPE } from "./stages";
 
 // Mirrors the Mantine "pills" tabs below: worm accent when active, dim paper when not.
 const stageButtonStyle: CSSProperties = {
@@ -178,20 +174,16 @@ export function ViewDataPage() {
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, height: '100%', minHeight: 0 }}>
-            <div
-                style={{
-                    fontFamily: 'var(--heading)',
-                    fontSize: 90,
-                    fontWeight: 700,
-                    color: 'var(--paper)',
-                    textTransform: 'uppercase',
-                }}
+            {/* compact: this page is a full-height table, so the hero gives the rows
+                back the vertical room. */}
+            <PageHero
+                compact
+                eyebrow="Every Box Score"
+                title="Can of Worms"
+                blurb="Every player and team season the warehouse holds, basic or advanced, filtered down to the stage, the team and the position."
             >
-                Can of Worms
-                <div className="kicker" style={{ fontSize: 12, margin: 0 }}>
-                    <p>Detailed statisics allowing you insights into everything NBA</p>
-                </div>
-            </div>
+                <HeroStat label="Seasons loaded" value={seasons.length ? String(seasons.length) : '—'} />
+            </PageHero>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '20px' }}>
                 <div style={toggleGroupStyle}>

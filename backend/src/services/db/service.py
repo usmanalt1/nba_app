@@ -7,7 +7,7 @@ from app.models import (
     FctAdvancedPlayerSeasonStats, FctAdvancedTeamSeasonStats,
     DimPlayers, DimRosters, DimSeasons, DimGames, DimTeams,
 )
-from django.db.models import Avg, Count, ExpressionWrapper, FloatField, Max, Q, Sum, Value
+from django.db.models import Avg, Count, ExpressionWrapper, F, FloatField, Max, Q, Sum, Value
 from django.db.models.functions import NullIf, Round
 
 ROUND = 1
@@ -103,6 +103,16 @@ class Service:
             latest_by_team[team.team_id] = team
         return sorted(latest_by_team.values(), key=lambda t: t.team_name or "")
     
+    def get_team_colours(self) -> list:
+        """One row per team, newest season winning, so a rebrand shows current."""
+        latest_by_team = {}
+        for row in self.model.objects.values(
+            "team_id", "team_name", "display_hex", "alt_display_hex", "season",
+            abbreviation=F("team_abbreviation"),
+        ).order_by("season"):
+            latest_by_team[row["team_id"]] = row
+        return sorted(latest_by_team.values(), key=lambda r: r["abbreviation"] or "")
+
     def get_latest_games(self, season: str, season_type: str) -> list:
         dim_games_model: DimGames = self.model
         latest_date = (

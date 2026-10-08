@@ -1,12 +1,12 @@
 import { useMemo } from 'react';
 import { Games } from '../ScrollableGames/Games';
 import { HomeHero } from './HomeHero';
+import { HomeHotCold } from './HomeHotCold';
+import { HomeLastNight } from './HomeLastNight';
+import { HomePostseason } from './HomePostseason';
+import { HomeSeasonLeaders } from './HomeSeasonLeaders';
 import { HomeModelPulse } from './HomeModelPulse';
 import { HomePredictionRail } from './HomePredictionRail';
-import { HomeTrends } from './HomeTrends';
-import { HomeTeamLeaders } from './HomeTeamLeaders';
-import { HomeMostImproved } from './HomeMostImproved';
-import { HomeModelComparison } from './HomeModelComparison';
 import { SectionHeader } from '../ui/SectionHeader';
 import { usePredictionHistory } from '../../hooks/usePredictionHistory';
 import { useStatsSeason } from '../../hooks/useStatsSeason';
@@ -19,21 +19,21 @@ function startOfToday(): number {
 }
 
 export function Home() {
-    const { strategy, season, seasonType, predictions, loading } = usePredictionHistory();
-    const stats = useMemo(() => computeModelStats(predictions), [predictions]);
+    const {
+        strategy, season, upcomingSeasonType, gradedSeasonType, upcoming, graded, loading,
+    } = usePredictionHistory();
+    const stats = useMemo(() => computeModelStats(graded), [graded]);
 
     // not necessarily the season being predicted - see useStatsSeason
     const statsSeason = useStatsSeason();
 
-    // unplayed, soonest first
+    // already unplayed and soonest first, across both season types
     const nextSlate = useMemo(() => {
         const today = startOfToday();
-        return predictions
-            .filter((prediction) => prediction.actual_home_win === null)
+        return upcoming
             .filter((prediction) => new Date(prediction.game_date).getTime() >= today)
-            .sort((a, b) => new Date(a.game_date).getTime() - new Date(b.game_date).getTime())
             .slice(0, 10);
-    }, [predictions]);
+    }, [upcoming]);
 
     const latest = useMemo(
         () => [...stats.graded]
@@ -51,7 +51,7 @@ export function Home() {
     );
 
     const modelName = strategy?.replace(/_/g, ' ');
-    const typeLabel = seasonType === 'preseason' ? 'preseason' : 'season';
+    const typeLabel = upcomingSeasonType === 'preseason' ? 'preseason' : 'season';
 
     // numbered in render order: the track record section hides itself early in a season
     let section = 0;
@@ -61,10 +61,15 @@ export function Home() {
 
     return (
         <div style={{ width: '100%', maxWidth: 1400, margin: '0 auto', paddingBottom: 60 }}>
-            <HomeHero strategy={strategy} season={season} seasonType={seasonType} statsSeason={statsSeason} />
+            <HomeHero strategy={strategy} season={season} seasonType={upcomingSeasonType} statsSeason={statsSeason} />
 
             {hasTrackRecord && (
-                <HomeModelPulse strategy={strategy} stats={stats} index={nextIndex()} />
+                <HomeModelPulse
+                    strategy={strategy}
+                    stats={stats}
+                    index={nextIndex()}
+                    seasonType={gradedSeasonType}
+                />
             )}
 
             <section style={{ marginBottom: 'var(--section-gap)' }}>
@@ -79,6 +84,14 @@ export function Home() {
                 />
             </section>
 
+            <HomeLastNight
+                index={nextIndex()}
+                strategy={strategy}
+                stats={stats}
+                loading={loading}
+                seasonType={gradedSeasonType}
+            />
+
             <section style={{ marginBottom: 'var(--section-gap)' }}>
                 <SectionHeader
                     index={nextIndex()}
@@ -87,6 +100,12 @@ export function Home() {
                 />
                 <Games season={statsSeason} />
             </section>
+
+            <HomeSeasonLeaders index={nextIndex()} season={statsSeason} />
+
+            <HomeHotCold index={nextIndex()} />
+
+            <HomePostseason index={nextIndex()} />
 
             {hasTrackRecord && (
                 <>
@@ -109,42 +128,6 @@ export function Home() {
                     </section>
                 </>
             )}
-
-            <section style={{ marginBottom: 'var(--section-gap)' }}>
-                <SectionHeader
-                    index={nextIndex()}
-                    title="Player Leaders"
-                    subtitle={statsSeason ? `${statsSeason} season averages, ranked` : 'Season averages, ranked'}
-                />
-                <HomeTrends season={statsSeason} />
-            </section>
-
-            <section style={{ marginBottom: 'var(--section-gap)' }}>
-                <SectionHeader
-                    index={nextIndex()}
-                    title="Most Improved"
-                    subtitle={statsSeason ? `Biggest jumps in ${statsSeason} against the season before` : 'Biggest jumps against last season'}
-                />
-                <HomeMostImproved />
-            </section>
-
-            <section style={{ marginBottom: 'var(--section-gap)' }}>
-                <SectionHeader
-                    index={nextIndex()}
-                    title="Team Leaders"
-                    subtitle={statsSeason ? `${statsSeason} season averages, ranked` : 'Season averages, ranked'}
-                />
-                <HomeTeamLeaders season={statsSeason} />
-            </section>
-
-            <section>
-                <SectionHeader
-                    index={nextIndex()}
-                    title="Model Bench"
-                    subtitle="Every run held against the same four metrics"
-                />
-                <HomeModelComparison />
-            </section>
         </div>
     );
 }

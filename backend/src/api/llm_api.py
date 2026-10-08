@@ -2,6 +2,7 @@ from ninja import Router, Schema
 from typing import List, Optional
 import asyncio
 import logging
+import time
 
 from services.llm.llm_query_engine import LLMQueryEngine
 from services.redis.redis_client import RedisClient
@@ -30,7 +31,9 @@ async def ask(request, payload: AskRequest):
         def sync_ask():
             return LLMQueryEngine().ask(payload.question)
         session = 1
-        time_requested = asyncio.get_event_loop().time()
+        # Wall clock, not loop.time(): that is monotonic (seconds since boot), so the
+        # stored value could not be turned back into a date for the transcript.
+        time_requested = time.time()
         cache_client = RedisClient()
         answer = await asyncio.to_thread(sync_ask)
         cache_key = f"llm_query:{session}:{payload.question}:{time_requested}"

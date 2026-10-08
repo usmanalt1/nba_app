@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Worm · colour study</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600;700&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink:#0b1013; --court:#141c21; --panel:#1b252b; --panel-2:#212b31; --line:#2b383f;
+  --paper:#edeae1; --paper-dim:#a9a69c; --paper-faint:#6e7680;
+  --worm:#e8622c; --worm-deep:#b04618; --home:#e8622c; --away:#3e8ede;
+  --win:#4fae7a; --lose:#c1554a; --gold:#d8b24c;
+  /* New: data scale ends. Hot reuses the brand, cold reuses away-blue. */
+  --hot:#e8622c; --cold:#3e8ede;
+  --mono:'IBM Plex Mono', ui-monospace, monospace;
+  --head:'Oswald', system-ui, sans-serif;
+}
+* { box-sizing:border-box; }
+body { margin:0; background:var(--ink); color:var(--paper); font:15px/1.45 'Inter', system-ui, sans-serif; -webkit-font-smoothing:antialiased; }
+.wrap { max-width:1180px; margin:0 auto; padding:18px 18px 64px; }
+.kicker { font-family:var(--mono); font-size:10px; font-weight:500; letter-spacing:.08em; text-transform:uppercase; color:var(--paper-dim); }
+.num { font-family:var(--mono); font-variant-numeric:tabular-nums; }
+
+/* ---------- toggle ---------- */
+.bar-top { display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap; margin-bottom:22px; }
+.bar-top p { margin:0; font-size:13px; color:var(--paper-dim); max-width:46ch; }
+.seg { display:inline-flex; border:1px solid var(--line); border-radius:4px; padding:3px; background:var(--panel); }
+.seg button { font:600 11px var(--mono); letter-spacing:.06em; text-transform:uppercase; color:var(--paper-dim); background:none; border:0; padding:8px 14px; border-radius:3px; cursor:pointer; }
+.seg button[aria-pressed="true"] { background:var(--worm); color:var(--ink); }
+.seg button:focus-visible { outline:2px solid var(--paper); outline-offset:2px; }
+
+/* ---------- section header ---------- */
+section { margin-bottom:42px; }
+.sh { display:flex; align-items:baseline; gap:12px; padding-bottom:10px; margin-bottom:16px; border-bottom:1px solid var(--line); }
+.sh .idx { font:500 11px var(--mono); color:var(--worm); }
+.sh h2 { margin:0; font:600 20px var(--head); text-transform:uppercase; letter-spacing:.01em; }
+.sh .sub { font-size:13px; color:var(--paper-dim); margin-top:2px; }
+
+.panel { background:var(--panel); border:1px solid var(--line); border-radius:4px; padding:16px 18px; }
+.grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:16px; }
+.rail { display:flex; gap:14px; overflow-x:auto; padding-bottom:6px; scrollbar-width:thin; scrollbar-color:var(--line) transparent; }
+
+/* ---------- team chip ---------- */
+.chip { display:inline-grid; place-items:center; width:30px; height:20px; border-radius:2px; font:700 10px var(--mono); letter-spacing:.03em; flex-shrink:0;
+  background:var(--panel-2); color:var(--paper-dim); transition:background .25s, color .25s; }
+.colour .chip { background:var(--tc); color:var(--tt); }
+
+/* ---------- hero ---------- */
+.hero { position:relative; overflow:hidden; border:1px solid var(--line); border-radius:4px; padding:22px 24px 24px; margin-bottom:42px; background:var(--panel); border-left:2px solid var(--worm); transition:background .35s; }
+.colour .hero { border-left-color:var(--line);
+  background:
+    linear-gradient(100deg, color-mix(in srgb, var(--a) 42%, var(--ink)) 0%, color-mix(in srgb, var(--a) 10%, var(--ink)) 40%,
+                    color-mix(in srgb, var(--b) 10%, var(--ink)) 60%, color-mix(in srgb, var(--b) 42%, var(--ink)) 100%); }
+.hero svg.court { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+.hero-in { position:relative; }
+.matchup { display:grid; grid-template-columns:1fr auto 1fr; align-items:end; gap:18px; margin:14px 0 18px; }
+.side .abbr { display:block; font:700 clamp(54px, 11vw, 112px)/.85 var(--head); letter-spacing:-.02em; color:var(--paper); }
+.side .full { display:block; margin-top:8px; font-size:13px; color:var(--paper-dim); }
+.side.home { text-align:right; }
+.colour .side.away .abbr { color:color-mix(in srgb, var(--a) 35%, var(--paper)); }
+.colour .side.home .abbr { color:color-mix(in srgb, var(--b) 35%, var(--paper)); }
+.at { font:500 22px var(--head); color:var(--paper-faint); padding-bottom:14px; }
+.hbar { display:flex; gap:2px; height:10px; }
+.hbar div { border-radius:2px; transition:background .3s; }
+.hbar .fa { background:var(--away); } .hbar .fb { flex:1; background:var(--home); }
+.colour .hbar .fa { background:var(--a); } .colour .hbar .fb { background:var(--b); }
+.hpct { display:flex; justify-content:space-between; margin-top:8px; font:600 14px var(--mono); }
+.pick { margin-top:14px; font-size:15px; }
+.pick b { font-weight:600; }
+
+/* ---------- slate cards ---------- */
+.game { width:272px; flex-shrink:0; }
+.trow { display:flex; align-items:center; gap:10px; padding:4px 0; font-size:13px; color:var(--paper-dim); }
+.trow.picked { color:var(--paper); font-weight:600; }
+.trow .nm { flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.pbar { display:flex; gap:2px; height:6px; margin-top:10px; }
+.pbar div { transition:background .3s; }
+.pbar .fa { background:var(--away); border-radius:3px 0 0 3px; } .pbar .fb { flex:1; background:var(--home); border-radius:0 3px 3px 0; }
+.colour .pbar .fa, .colour .pbar .fb { background:var(--tc); }
+
+/* ---------- hot & cold ---------- */
+.hc-row { display:grid; grid-template-columns:minmax(0, 1.1fr) minmax(0, 1.4fr) 52px; align-items:center; gap:12px; padding:8px 0; border-bottom:1px solid var(--line); }
+.hc-row:last-child { border-bottom:0; }
+.who { display:flex; align-items:center; gap:9px; min-width:0; font-size:13px; }
+.who span.n { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.track { position:relative; height:12px; background:var(--panel-2); border-radius:2px; }
+.track::after { content:""; position:absolute; left:50%; top:-3px; bottom:-3px; width:1px; background:var(--paper-faint); }
+.track .f { position:absolute; top:0; bottom:0; background:var(--paper-faint); transition:background .3s; }
+.colour .track .f.up { background:linear-gradient(90deg, color-mix(in srgb, var(--hot) 35%, transparent), var(--hot)); border-radius:0 2px 2px 0; }
+.colour .track .f.down { background:linear-gradient(270deg, color-mix(in srgb, var(--cold) 35%, transparent), var(--cold)); border-radius:2px 0 0 2px; }
+.delta { text-align:right; font:700 13px var(--mono); }
+.colour .delta.up { color:var(--hot); } .colour .delta.down { color:var(--cold); }
+
+/* ---------- standouts ---------- */
+.stand { position:relative; border-left:3px solid var(--line); transition:border-color .3s; }
+.colour .stand { border-left-color:var(--tc); }
+.statline { font:600 28px/1 var(--head); margin:10px 0 6px; letter-spacing:-.01em; }
+.statline small { font:500 12px var(--mono); color:var(--paper-dim); margin:0 10px 0 3px; letter-spacing:0; }
+.badge { display:inline-block; margin-top:8px; font:600 10px var(--mono); letter-spacing:.06em; text-transform:uppercase; padding:3px 7px; border-radius:2px; border:1px solid var(--line); color:var(--paper-dim); }
+.colour .badge.gold { color:var(--ink); background:var(--gold); border-color:var(--gold); }
+
+/* ---------- leaderboard ---------- */
+.lb-row { position:relative; display:flex; align-items:center; gap:12px; padding:7px 8px 7px 0; border-bottom:1px solid var(--line); font-family:var(--mono); font-size:13px; }
+.lb-row:last-child { border-bottom:0; }
+.lb-row .trk { position:absolute; left:-18px; top:2px; bottom:2px; background:rgba(232,98,44,.05); pointer-events:none; transition:background .3s; }
+.lb-row.lead .trk { background:rgba(232,98,44,.14); border-right:2px solid var(--worm); }
+.colour .lb-row .trk { background:color-mix(in srgb, var(--tc) 12%, transparent); border-right:2px solid color-mix(in srgb, var(--tc) 70%, transparent); }
+.colour .lb-row.lead .trk { background:color-mix(in srgb, var(--tc) 26%, transparent); border-right-color:var(--tc); }
+.lb-row .rk { position:relative; width:16px; font-weight:700; color:var(--paper-faint); }
+.lb-row.lead .rk, .lb-row.lead .val { color:var(--worm); }
+.colour .lb-row.lead .rk, .colour .lb-row.lead .val { color:var(--paper); }
+.lb-row .nm { position:relative; flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--paper); }
+.lb-row .val { position:relative; font-weight:700; }
+
+/* ---------- percentile table ---------- */
+.tbl-wrap { overflow-x:auto; border:1px solid var(--line); border-radius:4px; }
+table { width:100%; border-collapse:collapse; min-width:560px; font-size:13px; }
+th { text-align:right; padding:10px 12px; background:var(--panel); border-bottom:1px solid var(--line); }
+th:first-child, td:first-child { text-align:left; }
+td { padding:9px 12px; border-bottom:1px solid var(--line); text-align:right; font-family:var(--mono); font-variant-numeric:tabular-nums; transition:background .3s; }
+tr:last-child td { border-bottom:0; }
+td.p { background:transparent; }
+.colour td.p { background:var(--bg); }
+td.who-cell { font-family:'Inter', sans-serif; }
+.legend { display:flex; align-items:center; gap:10px; margin-top:12px; }
+.legend .ramp { width:160px; height:8px; border-radius:2px; background:linear-gradient(90deg, var(--cold), var(--panel-2) 50%, var(--hot)); }
+.vanilla .legend { opacity:.35; }
+
+.foot { font-size:12px; color:var(--paper-faint); margin-top:8px; }
+
+@media (max-width:640px) {
+  .matchup { gap:10px; }
+  .at { font-size:16px; padding-bottom:10px; }
+  .hc-row { grid-template-columns:minmax(0, 1fr) minmax(0, 1fr) 46px; }
+}
+@media (prefers-reduced-motion:reduce) { * { transition:none !important; } }
+</style>
+</head>
+<body class="colour">
+<div class="wrap">
+
+  <div class="bar-top">
+    <p>Same layout and type as the current home page. Flip between them to see what team and data colour adds.</p>
+    <div class="seg" role="group" aria-label="Colour mode">
+      <button type="button" data-mode="vanilla" aria-pressed="false">Current</button>
+      <button type="button" data-mode="colour" aria-pressed="true">With colour</button>
+    </div>
+  </div>
+
+  <!-- Hero: the closest call on tonight's slate, washed in both teams' colours -->
+  <div class="hero" id="hero">
+    <svg class="court" viewBox="0 0 1000 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <g fill="none" stroke="rgba(237,234,225,.07)" stroke-width="2">
+        <line x1="500" y1="0" x2="500" y2="300"/>
+        <circle cx="500" cy="150" r="70"/>
+        <circle cx="500" cy="150" r="22"/>
+        <rect x="-1" y="85" width="190" height="130"/>
+        <path d="M-1 20 H60 A230 230 0 0 1 60 280 H-1"/>
+        <rect x="811" y="85" width="190" height="130"/>
+        <path d="M1001 20 H940 A230 230 0 0 0 940 280 H1001"/>
+      </g>
+    </svg>
+    <div class="hero-in">
+      <div class="kicker">Game of the night · closest call on the slate</div>
+      <div class="matchup">
+        <div class="side away"><span class="abbr" id="hA"></span><span class="full" id="hAn"></span></div>
+        <div class="at">@</div>
+        <div class="side home"><span class="abbr" id="hB"></span><span class="full" id="hBn"></span></div>
+      </div>
+      <div class="hbar"><div class="fa" id="hFa"></div><div class="fb"></div></div>
+      <div class="hpct"><span id="hPa"></span><span id="hPb"></span></div>
+      <p class="pick" id="hPick"></p>
+    </div>
+  </div>
+
+  <section>
+    <div class="sh"><span class="idx">01</span><div><h2>Tonight</h2><div class="sub">Every game on the slate and who Worm likes</div></div></div>
+    <div class="rail" id="slate"></div>
+  </section>
+
+  <section>
+    <div class="sh"><span class="idx">02</span><div><h2>Hot &amp; Cold</h2><div class="sub">Last 10 games against the rest of the season, points per game</div></div></div>
+    <div class="panel" id="hotcold"></div>
+  </section>
+
+  <section>
+    <div class="sh"><span class="idx">03</span><div><h2>Last Night</h2><div class="sub">The lines worth knowing about</div></div></div>
+    <div class="grid" id="standouts"></div>
+  </section>
+
+  <section>
+    <div class="sh"><span class="idx">04</span><div><h2>Scoring Leaders</h2><div class="sub">Rows carry the team's colour, the leader carries it loudest</div></div></div>
+    <div class="grid">
+      <div class="panel"><div class="kicker" style="margin-bottom:14px">Points · per game</div><div id="lb"></div></div>
+      <div class="panel"><div class="kicker" style="margin-bottom:14px">True shooting · %</div><div id="lb2"></div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sh"><span class="idx">05</span><div><h2>Star Table</h2><div class="sub">Each cell shaded by where it ranks, so the table reads before you read it</div></div></div>
+    <div class="tbl-wrap"><table id="tbl"></table></div>
+    <div class="legend"><span class="kicker">Bottom</span><span class="ramp"></span><span class="kicker">Top</span></div>
+  </section>
+
+  <p class="foot">Sample numbers for illustration. Team colours are real, lightened where needed to read on the dark surface.</p>
+</div>
+
+<script>
+// Display-safe team colours: dark primaries (navy, wine, forest) are lifted or swapped
+// for the secondary so they stay legible on --panel. This is what the dbt seed would hold.
+const T = {
+  NYK:{n:'New York Knicks', c:'#1F7FD1'}, BOS:{n:'Boston Celtics', c:'#1E9E55'},
+  HOU:{n:'Houston Rockets', c:'#E0284F'}, OKC:{n:'Oklahoma City Thunder', c:'#1E8FD6'},
+  GSW:{n:'Golden State Warriors', c:'#FFC72C'}, LAL:{n:'Los Angeles Lakers', c:'#8A5BC4'},
+  MIN:{n:'Minnesota Timberwolves', c:'#78BE20'}, DEN:{n:'Denver Nuggets', c:'#FEC524'},
+  MIL:{n:'Milwaukee Bucks', c:'#2E8B4E'}, CLE:{n:'Cleveland Cavaliers', c:'#B5285A'},
+  DAL:{n:'Dallas Mavericks', c:'#2A7DC4'}, SAS:{n:'San Antonio Spurs', c:'#C4CED4'},
+};
+const lum = hex => { const [r,g,b] = [1,3,5].map(i => parseInt(hex.slice(i,i+2),16)/255); return .2126*r + .7152*g + .0722*b; };
+const ink = hex => lum(hex) > .5 ? '#0b1013' : '#ffffff';
+const chip = a => `<span class="chip" style="--tc:${T[a].c};--tt:${ink(T[a].c)}">${a}</span>`;
+
+const slate = [
+  ['NYK','BOS',.58], ['HOU','OKC',.73], ['GSW','LAL',.52],
+  ['MIN','DEN',.55], ['MIL','CLE',.69], ['DAL','SAS',.56],
+];
+
+// Hero = closest call
+const [ha, hb, hp] = slate.reduce((best, g) => Math.abs(g[2]-.5) < Math.abs(best[2]-.5) ? g : best);
+const hero = document.getElementById('hero');
+hero.style.setProperty('--a', T[ha].c); hero.style.setProperty('--b', T[hb].c);
+hA.textContent = ha; hB.textContent = hb; hAn.textContent = T[ha].n; hBn.textContent = T[hb].n;
+hFa.style.width = `${(1-hp)*100}%`;
+hPa.textContent = `${Math.round((1-hp)*100)}%`; hPb.textContent = `${Math.round(hp*100)}%`;
+const fav = hp >= .5 ? hb : ha;
+hPick.innerHTML = `Worm leans <b>${T[fav].n.split(' ').slice(-1)[0]}</b> at ${Math.round(Math.max(hp,1-hp)*100)}%. Barely more than a coin flip.`;
+
+document.getElementById('slate').innerHTML = slate.map(([a,h,p]) => {
+  const ap = Math.round((1-p)*100), hp2 = 100-ap, pickHome = p >= .5;
+  const row = (t, pct, picked) => `<div class="trow ${picked?'picked':''}">${chip(t)}<span class="nm">${T[t].n}</span><span class="num">${pct}%</span></div>`;
+  return `<div class="panel game">
+    <div class="kicker" style="margin-bottom:10px">Tonight · ${T[h].n.split(' ').slice(0,-1).join(' ')}</div>
+    ${row(a, ap, !pickHome)}${row(h, hp2, pickHome)}
+    <div class="pbar"><div class="fa" style="width:${ap}%;--tc:${T[a].c}"></div><div class="fb" style="--tc:${T[h].c}"></div></div>
+  </div>`;
+}).join('');
+
+const hc = [
+  ['Jalen Brunson','NYK',6.4], ['Victor Wembanyama','SAS',5.1], ['Alperen Şengün','HOU',3.8],
+  ['Donovan Mitchell','CLE',-2.6], ['Stephen Curry','GSW',-3.1], ['Jayson Tatum','BOS',-4.2],
+];
+const maxD = Math.max(...hc.map(r => Math.abs(r[2])));
+document.getElementById('hotcold').innerHTML = hc.map(([n,t,d]) => {
+  const w = Math.abs(d)/maxD*50, up = d > 0;
+  return `<div class="hc-row">
+    <div class="who">${chip(t)}<span class="n">${n}</span></div>
+    <div class="track"><div class="f ${up?'up':'down'}" style="${up?'left:50%':'right:50%'};width:${w}%"></div></div>
+    <div class="delta ${up?'up':'down'}">${up?'+':''}${d.toFixed(1)}</div>
+  </div>`;
+}).join('');
+
+const so = [
+  ['Nikola Jokić','DEN',[[31,'pts'],[14,'reb'],[12,'ast']],'Triple-double',true],
+  ['Shai Gilgeous-Alexander','OKC',[[41,'pts'],[7,'ast']],'Season high',true],
+  ['Victor Wembanyama','SAS',[[27,'pts'],[15,'reb'],[7,'blk']],'7 blocks',false],
+  ['Anthony Edwards','MIN',[[36,'pts'],[8,'3pm']],'8 threes',false],
+];
+document.getElementById('standouts').innerHTML = so.map(([n,t,line,tag,gold]) => `
+  <div class="panel stand" style="--tc:${T[t].c}">
+    <div class="who">${chip(t)}<span class="n" style="font-weight:600">${n}</span></div>
+    <div class="statline">${line.map(([v,l]) => `${v}<small>${l}</small>`).join('')}</div>
+    <span class="badge ${gold?'gold':''}">${tag}</span>
+  </div>`).join('');
+
+const lbRows = (rows, id) => {
+  const peak = Math.max(...rows.map(r => r[2]));
+  document.getElementById(id).innerHTML = rows.map(([n,t,v],i) => `
+    <div class="lb-row ${i===0?'lead':''}" style="--tc:${T[t].c}">
+      <span class="trk" style="width:calc(${v/peak*100}% + 18px)"></span>
+      <span class="rk">${i+1}</span><span class="nm">${n}</span><span class="val">${v.toFixed(1)}</span>
+    </div>`).join('');
+};
+lbRows([['Shai Gilgeous-Alexander','OKC',31.8],['Nikola Jokić','DEN',28.4],['Luka Dončić','LAL',28.2],['Anthony Edwards','MIN',27.1],['Jayson Tatum','BOS',26.9]], 'lb');
+lbRows([['Nikola Jokić','DEN',66.1],['Shai Gilgeous-Alexander','OKC',63.5],['Stephen Curry','GSW',61.8],['Victor Wembanyama','SAS',60.2],['Jalen Brunson','NYK',59.4]], 'lb2');
+
+const players = [
+  ['Shai Gilgeous-Alexander','OKC',31.8,63.5,6.3,5.1,14.2],
+  ['Nikola Jokić','DEN',28.4,66.1,10.1,12.6,11.0],
+  ['Luka Dončić','LAL',28.2,59.0,8.1,8.0,6.3],
+  ['Anthony Edwards','MIN',27.1,57.6,4.5,5.8,5.2],
+  ['Jayson Tatum','BOS',26.9,58.2,5.5,8.7,8.4],
+  ['Jalen Brunson','NYK',26.0,59.4,7.2,3.3,4.1],
+  ['Stephen Curry','GSW',24.6,61.8,6.0,4.4,3.9],
+  ['Donovan Mitchell','CLE',24.3,57.9,4.9,4.4,9.6],
+  ['Victor Wembanyama','SAS',24.0,60.2,3.7,11.1,7.5],
+  ['Alperen Şengün','HOU',20.9,55.7,5.0,10.4,4.8],
+];
+const cols = ['PTS','TS%','AST','REB','NET'];
+const pct = (ci, v) => { const vals = players.map(p => p[ci+2]); return vals.filter(x => x < v).length / (vals.length - 1); };
+// Diverging: neutral in the middle, cold blue below, brand orange above.
+const shade = p => { const t = (p - .5) * 2; if (Math.abs(t) < .15) return 'transparent';
+  return t > 0 ? `rgba(232,98,44,${(.08 + .42*t).toFixed(2)})` : `rgba(62,142,222,${(.08 + .42*-t).toFixed(2)})`; };
+document.getElementById('tbl').innerHTML =
+  `<thead><tr><th class="kicker">Player</th>${cols.map(c => `<th class="kicker">${c}</th>`).join('')}</tr></thead><tbody>` +
+  players.map(p => `<tr><td class="who-cell"><div class="who">${chip(p[1])}<span class="n">${p[0]}</span></div></td>${
+    cols.map((_,ci) => `<td class="p" style="--bg:${shade(pct(ci, p[ci+2]))}">${p[ci+2].toFixed(1)}</td>`).join('')}</tr>`).join('') + '</tbody>';
+
+document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => {
+  document.body.className = b.dataset.mode;
+  document.querySelectorAll('.seg button').forEach(x => x.setAttribute('aria-pressed', x === b));
+}));
+</script>
+</body>
+</html>
