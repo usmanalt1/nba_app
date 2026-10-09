@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
-      DAGSTER_HOME: ${{ runner.temp }}/dagster_home
+      DAGSTER_HOME: ${{ github.workspace }}/dagster_home
       DBT_TARGET: neon
       DBT_PROFILES_DIR: ${{ github.workspace }}/pipeline_nba/ci
       STORAGE: local
