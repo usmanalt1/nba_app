@@ -80,6 +80,7 @@ static/
 /dbt_packages/
 profiles.yml
 !pipeline_nba/ci/profiles.yml
+.user.yml
 
 # Environment variables
 .env
