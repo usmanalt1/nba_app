@@ -20,7 +20,6 @@ export default function NBADataTable({ nbaData = [] }: { nbaData: SeasonPlayerSt
         <DataTable<SeasonPlayerStats>
             {...tableProps}
             idAccessor="player_id"
-            // The name stays put while the stat columns scroll sideways.
             pinFirstColumn
             records={records}
             emptyState={null}

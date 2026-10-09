@@ -8,9 +8,8 @@ interface SeasonOption {
 }
 
 /**
- * Newest season with recorded games - not the season the model predicts. The pipeline
- * follows the live season, which has no box scores until opening night, so pointing the
- * leaderboards at it would empty them every autumn. VITE_DEFAULT_SEASON overrides.
+ * Newest season with recorded games, not the one the model predicts: the live season has
+ * no box scores until opening night. VITE_DEFAULT_SEASON overrides.
  */
 export function useStatsSeason(seasonType = 'regular'): string | null {
     const override = env.VITE_DEFAULT_SEASON;
@@ -20,13 +19,11 @@ export function useStatsSeason(seasonType = 'regular'): string | null {
         if (override) return;
 
         let cancelled = false;
-        // Per season type: the newest season with playoff games is not necessarily the
-        // newest with regular-season ones.
+        // Per season type: the newest playoff season isn't always the newest regular one.
         apiFetch(`/api/nba/db/list_all_seasons?has_stats=true&season_type=${seasonType}`)
             .then(r => r.json())
             .then((seasons: SeasonOption[]) => {
                 if (cancelled || !Array.isArray(seasons) || seasons.length === 0) return;
-                // returned in season order
                 setSeason(seasons[seasons.length - 1].season_name);
             })
             .catch(() => { /* callers render their empty state */ });

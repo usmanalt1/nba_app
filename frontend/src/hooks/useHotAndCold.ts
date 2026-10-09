@@ -12,8 +12,7 @@ const PENDING: FormState = { data: null, error: null, loading: true };
 
 /** The endpoint picks the season itself, so there is nothing to pass but the type. */
 export function useHotAndCold(seasonType = 'regular', limit = 5) {
-    // One piece of state, written only from the fetch callbacks: setting it in the
-    // effect body instead would re-render before the request is even made.
+    // Written only from the fetch callbacks; the effect body would re-render too early.
     const [state, setState] = useState<FormState>(PENDING);
 
     useEffect(() => {

@@ -190,7 +190,7 @@ class PlayerStatsSchema(Schema):
     date: str
 
 
-# ── Mart schemas ──────────────────────────────────────────────────────────────
+# Mart schemas
 
 class DimPlayers(Schema):
     player_id: int

@@ -49,8 +49,7 @@ function AppContent() {
   }
 
   return (
-    /* Inside the authenticated branch: /api/nba/db/team_colours needs a token, so
-       fetching it around the login page would only 401. */
+    /* Inside the authenticated branch: team_colours needs a token. */
     <TeamColoursProvider>
       <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
         <Navbar />

@@ -1,4 +1,3 @@
--- scd1 dim players - rewritten everytime
 SELECT
     player_id,
     season_id,

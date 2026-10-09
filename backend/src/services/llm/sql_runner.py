@@ -11,8 +11,7 @@ from config.settings import settings
 
 logger = logging.getLogger(__name__)
 
-# the only tables the LLM is allowed to query - kept in sync with the views
-# described in services/llm/context_schemas.py
+# Kept in sync with the views described in services/llm/context_schemas.py.
 ALLOWED_TABLES = {"view_player_stats", "view_team_stats"}
 
 MAX_ROWS = 200
@@ -46,13 +45,10 @@ def validate_select_only(query: str) -> None:
 
 
 class SqlRunner:
-    # relies on the llm_readonly Postgres role (see backend/src/app/migrations/0014_llm_roles.py)
-    # for the real enforcement - SELECT-only, no access outside the nba_analytics schema. The
-    # validation above is a second layer so bad queries fail fast with a message the model can act on.
+    # Real enforcement is the llm_readonly Postgres role (migration 0014); the validation
+    # above just fails fast with a message the model can act on.
     def __init__(self):
-        # host/port/dbname come from Django's own connection settings rather than config.settings -
-        # DB_HOST there defaults to a value nothing ever actually sets, since this stack's real
-        # Postgres hostname is configured directly in app/settings.py's DATABASES.
+        # From Django's own connection settings: config.settings.DB_HOST is never set.
         db = connection.settings_dict
         self.dsn = (
             f"host={db['HOST']} port={db['PORT']} dbname={db['NAME']} "

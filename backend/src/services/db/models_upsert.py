@@ -6,9 +6,7 @@ logger = getLogger(__name__)
 
 class TableModel:
     unique_fields: list = []
-    # Column to receive the source's own "id", for tables whose entity id the marts join
-    # on (teams_info, players_info). Dropping it there produced fictional teams in
-    # dim_teams; it cannot stay as `id` because that is the pk and must not repeat.
+    # Where the source's own "id" lands; it cannot stay as `id`, which is the pk.
     source_id_field: str = None
 
     def upsert_many(self, model, records: list) -> None:
@@ -27,12 +25,8 @@ class TableModel:
             for record in records
         ]
 
-        # Postgres' ON CONFLICT can't apply two updates to the same row within one
-        # statement, so a batch with two records sharing the same unique_fields raises
-        # "cannot affect row a second time" - keep the last occurrence of each key.
-        # NOTE: this is a safety net, not a fix for the underlying cause - if this fires,
-        # it usually means the upstream collector produced genuinely duplicate/mislabeled
-        # rows (seen with teams_info/players_info tagging multiple seasons identically).
+        # ON CONFLICT can't update one row twice in a statement, so keep the last of each
+        # key. If this fires, the collector upstream is producing duplicate rows.
         before = len(records)
         deduped = {tuple(record[f] for f in self.unique_fields): record for record in records}
         records = list(deduped.values())
@@ -79,10 +73,7 @@ class GameSchedule(TableModel):
     unique_fields = ["game_id"]
 
 class PlayerAwards(TableModel):
-    # month/week are included since a player can hold the same award description
-    # more than once in a season (e.g. multiple "NBA Player of the Month"); for
-    # season-level awards these are None on every row, so they still collapse
-    # to one row per (player, season, description) as expected.
+    # month/week because an award can repeat within a season; None for season-level awards.
     unique_fields = ["player_id", "season", "description", "all_nba_team_number", "month", "week"]
 
 class AdvancedPlayerSeasonStats(TableModel):

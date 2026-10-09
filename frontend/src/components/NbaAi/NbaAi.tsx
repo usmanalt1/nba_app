@@ -8,8 +8,7 @@ import { apiFetch } from '../../lib/api';
 import { useConversation } from '../../hooks/useConversation';
 import type { ConversationExchange } from '../../types/conversation';
 
-// Older entries carry asyncio's monotonic clock rather than a wall clock, which would
-// render as 1970. Anything below this is from that format and gets no time.
+// Older entries stored a monotonic clock, which would render as 1970; those get no time.
 const EPOCH_FLOOR_SECONDS = 1e9;
 
 function askedAt(raw: string): string | null {

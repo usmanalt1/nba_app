@@ -27,8 +27,7 @@ function AnalyticsHero({ statsSeason }: { statsSeason: string | null }) {
 const MIN_GAMES: Record<Stage, number> = { Regular: 0, Playoffs: 5, Preseason: 3 };
 
 export function Analytics() {
-    // Shared with View Data rather than local state, so the stage follows you across
-    // the app instead of each page holding its own idea of it.
+    // Shared with View Data, so the stage follows you across the app.
     const { selectedStage, setSelectedStage } = useViewDataFilters();
     const seasonType = STAGE_TO_SEASON_TYPE[selectedStage];
     const statsSeason = useStatsSeason(seasonType);

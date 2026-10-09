@@ -2,8 +2,6 @@ import { Tooltip } from '@mantine/core';
 import type { DataTableColumn } from 'mantine-datatable';
 import type { AdvancedAverages, BoxScoreAverages } from '../../types/stats';
 
-// Shared look for the data tables: mono/uppercase headers in the same register as
-// the filter pills, tabular digits so decimals line up, and the app's dark palette.
 export const headerStyle = {
     backgroundColor: 'var(--panel-2)',
     fontFamily: "'IBM Plex Mono', monospace",
@@ -21,27 +19,22 @@ export const cellStyle = {
     fontVariantNumeric: 'tabular-nums' as const,
 };
 
-/** The identifying first column: brighter and bolder than the stat columns. */
 export const nameCellStyle = { ...cellStyle, color: 'var(--paper)', fontWeight: 700 };
 
-/** Sign carries the meaning for +/-, so it gets the win/lose accents. */
 export const signedCellStyle = (value: number | null) => ({
     ...cellStyle,
     color: value === null ? 'var(--paper-faint)'
         : value > 0 ? 'var(--win)' : value < 0 ? 'var(--lose)' : 'var(--paper-faint)',
 });
 
-/** One decimal is the NBA convention for per-game averages; null means no data. */
 export const average = (value: number | null) => (value === null ? '—' : value.toFixed(1));
 
-/** Averages read better with an explicit + when positive. */
 export const signed = (value: number | null) =>
     value === null ? '—' : value > 0 ? `+${average(value)}` : average(value);
 
-/** Percentages are already 0-100 from the API. */
+// Already 0-100 from the API.
 export const percent = (value: number | null) => (value === null ? '—' : `${value.toFixed(1)}%`);
 
-/** Colour and spacing props shared by every DataTable on the page. */
 export const tableProps = {
     withTableBorder: true,
     striped: true,
@@ -58,11 +51,7 @@ export const tableProps = {
 } as const;
 
 
-/**
- * A column header showing its abbreviation, with the full name on hover.
- * The span is needed because Tooltip has to attach to an element, and it leaves
- * the header itself clickable for sorting.
- */
+// The span gives Tooltip an element to attach to, keeping the header itself sortable.
 export function header(label: string, description: string) {
     return (
         <Tooltip label={description} withArrow openDelay={200} position="top">
@@ -71,7 +60,7 @@ export function header(label: string, description: string) {
     );
 }
 
-/** Fixed width per stat column: the table scrolls sideways rather than squashing. */
+// Fixed, so the table scrolls sideways rather than squashing the columns.
 const STAT_WIDTH = 78;
 
 type StatSpec = { description: string; accessor: keyof BoxScoreAverages; title: string; kind?: 'plain' | 'percent' | 'signed' };
@@ -101,10 +90,6 @@ const STAT_SPECS: StatSpec[] = [
     { accessor: 'average_plus_minus', title: '+/-', kind: 'signed', description: 'Plus/minus: average scoring margin while on court' },
 ];
 
-/**
- * The box-score stat columns, identical for players and teams. Both tables build
- * from this list so a column added here shows up in both.
- */
 export function statColumns<T extends BoxScoreAverages>(): DataTableColumn<T>[] {
     return STAT_SPECS.map(({ accessor, title, description, kind = 'plain' }) => ({
         accessor,
@@ -118,7 +103,6 @@ export function statColumns<T extends BoxScoreAverages>(): DataTableColumn<T>[] 
             const value = record[accessor] as number | null;
             if (kind === 'percent') return percent(value);
             if (kind === 'signed') return signed(value);
-            // Games played is a whole number; the rest are averages.
             return accessor === 'games_played' ? String(value ?? '—') : average(value);
         },
     }));
@@ -150,7 +134,6 @@ const ADVANCED_SPECS: AdvancedSpec[] = [
     { accessor: 'pie', title: 'PIE', kind: 'percent', description: 'Player impact estimate: share of game events contributed' },
 ];
 
-/** The advanced stat columns, identical for players and teams. */
 export function advancedColumns<T extends AdvancedAverages>(): DataTableColumn<T>[] {
     return ADVANCED_SPECS.map(({ accessor, title, description, kind = 'plain' }) => ({
         accessor,
@@ -164,7 +147,6 @@ export function advancedColumns<T extends AdvancedAverages>(): DataTableColumn<T
             const value = record[accessor] as number | null;
             if (kind === 'percent') return percent(value);
             if (kind === 'signed') return signed(value);
-            // Counts are whole numbers; the rest are averages.
             return ['games_played', 'wins', 'losses'].includes(accessor as string)
                 ? String(value ?? '—')
                 : average(value);

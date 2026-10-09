@@ -25,8 +25,7 @@ class NBADataResponseSchema(Schema):
     records: Optional[List[Dict[str, Any]]] = None
 
 def _player_name_lookup() -> pd.DataFrame:
-    """One row per player. dim_players has a row per (player, season) but the callers
-    merge on player_id alone, which fans out every stat row."""
+    """One row per player; dim_players has one per (player, season), which fans out merges."""
     df = pd.DataFrame(list(
         DimPlayers.objects.values("player_id", "player_name", "season").order_by("season")
     ))
@@ -46,18 +45,14 @@ def _player_team_lookup() -> pd.DataFrame:
     if df.empty:
         return pd.DataFrame(columns=["player_id", "season", "team_id"])
 
-    # One row per roster stint, so the last one a player appears in is the team they
-    # ended the season on. Nulls are excluded above because Postgres sorts them last,
-    # which would otherwise hand the win to a row with no date.
+    # Last stint of the season wins; nulls are excluded above because Postgres sorts them last.
     latest = df.drop_duplicates(subset=["player_id", "season"], keep="last")
-    # dim_rosters.team_id is declared CharField over an integer column, so pin the dtype
-    # rather than let the merge key depend on which the driver hands back.
+    # dim_rosters.team_id is a CharField over an integer column, so pin the merge key's dtype.
     return latest.assign(team_id=latest["team_id"].astype(int))[["player_id", "season", "team_id"]]
 
 
 def _team_name_lookup() -> pd.DataFrame:
-    """One row per team. dim_teams has a row per (team, season) but the callers merge on
-    team_id alone, which fans out every stat row. Newest row wins, so renames show current."""
+    """One row per team, newest season winning so renames show current."""
     df = pd.DataFrame(list(
         DimTeams.objects.values("team_id", "team_name", "season").order_by("season")
     ))
@@ -73,7 +68,6 @@ async def get_average_player_stats(request, season_name: str, season_type: str, 
         def sync_get():
             logger.info("Fetching average player stats from the database...")
 
-            # Fetch player stats, player info, and team info from the database to df
             player_stats_df = pd.DataFrame(list(
                 FctPlayerStats.objects.filter(season=season_name, season_type=season_type).values(
                     "season_id", "player_id", "pts", "reb", "plus_minus", "ast", "dreb", "oreb", "team_id", "season", "season_type",
@@ -126,8 +120,7 @@ async def get_most_improved_players(request, season_type: str):
         def sync_get():
             logger.info("Fetching most improved players from the database...")
 
-            # season_name isn't used to filter here - the comparison needs both the
-            # current and previous season's data, so only season_type narrows the query.
+            # Unfiltered by season: the comparison needs the previous season's rows too.
             player_stats_df = pd.DataFrame(list(
                 FctPlayerStats.objects.filter(season_type=season_type).values("season_id", "player_id", "team_id", "pts", "season", "season_type")
             ))
@@ -165,16 +158,13 @@ async def get_most_improved_teams(request, season_type: str):
         logger.error(f"Error fetching most improved teams: {e}")
         return NBADataResponseSchema(success=False, error=str(e))
 
-# A last-10 window only means something once there are enough earlier games to compare
-# it against; worm-analytics sets the floor at 20 season games.
+# A last-10 window needs enough earlier games to compare against.
 MIN_FORM_GAMES = 20
-# Under this many qualifying players a season hasn't really started, so serve the
-# previous one and let the caller label it.
+# Below this, a season hasn't really started and the previous one is served instead.
 MIN_QUALIFIED_PLAYERS = 20
 HOT_AND_COLD_LIMIT_DEFAULT = 5
 HOT_AND_COLD_LIMIT_MAX = 10
-# The marts only change when the pipeline runs. There is no dbt post-hook to invalidate
-# this, so it expires on its own and refresh=true forces a reread after a build.
+# No dbt post-hook invalidates this, so it expires on its own; refresh=true forces a reread.
 HOT_AND_COLD_CACHE_TTL_SECONDS = 6 * 60 * 60
 
 
@@ -182,7 +172,7 @@ class HotColdResponseSchema(Schema):
     success: bool
     error: Optional[str] = None
     records: Optional[List[Dict[str, Any]]] = None
-    # The season actually served, which is not always the newest one on record.
+    # The season served, not always the newest on record.
     season: Optional[str] = None
     latest_season: Optional[str] = None
     season_is_fallback: bool = False
@@ -190,8 +180,7 @@ class HotColdResponseSchema(Schema):
 
 
 def _round(value, digits: int = 1):
-    """float() first: the win-percentage columns are SQL numeric, so they arrive as
-    Decimal and would serialise to JSON as a quoted string."""
+    """float() first: SQL numeric arrives as Decimal and would serialise as a string."""
     return None if value is None else round(float(value), digits)
 
 
@@ -217,8 +206,7 @@ def _resolve_form_season(season_type: str, requested: Optional[str]) -> tuple[Op
 
 
 def _extremes(queryset, order_field: str, limit: int, key: str) -> list:
-    """Top `limit` by descending then ascending `order_field`, without repeating an
-    entity when few enough qualify that the two ends would overlap."""
+    """Both ends of `order_field`, without repeating an entity when the ends overlap."""
     hot = list(queryset.order_by(f"-{order_field}")[:limit])
     cold = list(queryset.order_by(order_field)[:limit])
     seen = {row[key] for row in hot}
@@ -294,11 +282,7 @@ async def get_hot_and_cold(
     limit: int = HOT_AND_COLD_LIMIT_DEFAULT,
     refresh: bool = False,
 ):
-    """Players and teams whose last 10 games differ most from the rest of their season.
-
-    Serves the newest season that has enough games to measure; season_is_fallback says
-    whether that is the newest season on record.
-    """
+    """Players and teams whose last 10 games differ most from the rest of their season."""
     capped = max(1, min(limit, HOT_AND_COLD_LIMIT_MAX))
     cache_key = hot_and_cold_cache_key(season or "auto", season_type, capped)
 
@@ -315,8 +299,7 @@ async def get_hot_and_cold(
 
             resolved, latest = _resolve_form_season(season_type, season)
             if resolved is None:
-                # No season has enough games yet. An empty records list with the season
-                # context is what lets the UI explain itself instead of going blank.
+                # Empty records plus season context lets the UI explain itself.
                 return HotColdResponseSchema(
                     success=True, records=[], season=None, latest_season=latest,
                     season_is_fallback=False, min_games=MIN_FORM_GAMES,

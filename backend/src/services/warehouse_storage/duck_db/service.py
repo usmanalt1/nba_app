@@ -26,10 +26,9 @@ class DuckDBService:
         return None
 
     def _load_dataframes_to_duckdb(self, dfs: dict, db_path: str = "nba_dataset.duckdb") -> None:
-        # This method takes a dictionary of DataFrames and loads them into the DuckDB database. The keys of the dictionary are used as table names.
+        # dict keys become table names
         logger.info(f"Loading DataFrames into DuckDB database at {db_path}...")
         con = duckdb.connect(db_path)
-        # create schema if not exists
         con.execute("CREATE SCHEMA IF NOT EXISTS test")
         for table_name, df in dfs.items():
             con.execute(f"CREATE OR REPLACE TABLE test.{table_name} AS SELECT * FROM df")
@@ -39,11 +38,9 @@ class DuckDBService:
             row_count = con.execute(f"SELECT COUNT(*) FROM test.{table_name}").fetchone()[0]
             logger.info(f"Row count for table test.{table_name}: {row_count}")
 
-            # Show tables
             tables = con.execute("SHOW TABLES").fetchall()
             logger.info(f"Current tables in DuckDB database: {[table[0] for table in tables]}")
 
-            # Show schemas in db
             schemas = con.execute("SELECT DISTINCT table_schema FROM information_schema.tables").fetchall()
             logger.info(f"Current schemas in DuckDB database: {[schema[0] for schema in schemas]}")
 
@@ -52,7 +49,7 @@ class DuckDBService:
         return None
     
     def _get_latest_files_using_path(self) -> dict:
-        # If path is nba_data/run_id/season=season_id/table_name.parquet, we want to get the latest run_id and read all files for that run_id
+        # Paths are nba_data/<run_id>/season=<season_id>/<table>.parquet
         parent_path = Path(self.file_path_parent_name)
         if not parent_path.exists():
             logger.warning(f"Parent path {self.file_path_parent_name} does not exist. No data loaded into DuckDB.")

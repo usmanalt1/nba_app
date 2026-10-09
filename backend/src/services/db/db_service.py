@@ -38,7 +38,7 @@ class DBService(StorageBase):
         self.file_path_parent_name = os.getenv("FILE_PATH_PARENT_NAME")
 
     def _get_latest_files_using_path(self, run_id: str = None) -> dict:
-        # If path is nba_data/run_id/season=season_id/table_name.parquet, we want to get the latest run_id and read all files for that run_id
+        # Paths are nba_data/<run_id>/season=<season_id>/<table>.parquet
         parent_path = Path(self.file_path_parent_name)
         if not parent_path.exists():
             logger.warning(f"Parent path {self.file_path_parent_name} does not exist. No data loaded into DuckDB.")
@@ -84,13 +84,10 @@ class DBService(StorageBase):
             for table_name, model in self.table_model_map.items():
                 df: dict = dfs.get(table_name)
                 logger.info(f"Upserting data for table: {table_name}, Number of records: {len(df) if df is not None else 0}")
-                # not every run produces every table (e.g. player_awards is only present
-                # in runs that hit /collect/player_awards) - df is None when this table
-                # simply wasn't part of the latest run, not an error.
+                # None just means this table wasn't part of the run
                 if df is not None and not df.empty:
                     logger.info(f"Upserting data for table: {table_name}")
-                    # convert pandas NaN -> None so optional/sparse fields store as real SQL
-                    # NULL instead of the literal string "nan"
+                    # NaN -> None, or sparse fields store the literal string "nan"
                     df = df.where(pd.notnull(df), None)
                     records = df.to_dict(orient="records")
                     table_model = TableModelFactory.get_table_model(table_name)

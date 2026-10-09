@@ -18,9 +18,8 @@ from assets import (
     postgres_raw_tables,
 )
 
-# in_process: the assets are strictly sequential, so forking buys no parallelism and
-# each child re-imported Django/pandas/sklearn. Also avoids a SIGBUS crash seen in this
-# container under the multiprocess executor.
+# in_process: the assets are sequential, so forking only re-imports Django and sklearn
+# per child - and the multiprocess executor SIGBUSes in this container.
 nightly_pipeline = define_asset_job(
     "nightly_pipeline",
     selection=AssetSelection.assets(
@@ -44,8 +43,8 @@ bigquery_mirror = define_asset_job(
     description="Collect the live season and mirror it into BigQuery.",
 )
 
-# 09:00 London = 04:00 ET, after the last west-coast game is final. Timezone is explicit
-# because Dagster otherwise schedules in UTC and drifts against the games twice a year.
+# 09:00 London = 04:00 ET, after the last west-coast game. Explicit timezone, or this
+# drifts against the games twice a year.
 nightly_schedule = ScheduleDefinition(
     name="nightly_pipeline_schedule",
     job=nightly_pipeline,

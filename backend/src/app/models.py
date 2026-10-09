@@ -11,8 +11,7 @@ class SeasonRecord(models.Model):
 
 
 class TeamInfo(models.Model):
-    # NBA's own team id. Can't live in `id`: that's the surrogate pk and this table holds
-    # one row per (team, season), so the id must repeat. stg_nba_teams reads this.
+    # NBA's own team id; `id` is the surrogate pk and this table repeats it per season.
     team_id = models.IntegerField(null=True, blank=True, db_index=True)
     season_id = models.IntegerField()
     abbreviation = models.CharField(max_length=10)
@@ -193,8 +192,7 @@ class PlayerAwards(models.Model):
     first_name = models.TextField(null=True, blank=True)
     last_name = models.TextField(null=True, blank=True)
     team = models.TextField(null=True, blank=True)
-    # the DESCRIPTION field is what actually distinguishes award types (e.g. "All-NBA",
-    # "NBA All-Star", "NBA Most Valuable Player") - the API's own TYPE field is always "Award"
+    # DESCRIPTION, not TYPE, distinguishes award types - TYPE is always "Award".
     description = models.TextField()
     all_nba_team_number = models.TextField(null=True, blank=True)
     season = models.TextField(null=True, blank=True)
@@ -217,9 +215,8 @@ class PlayerAwards(models.Model):
 
 
 class GameSchedule(models.Model):
-    # full-season schedule pulled ahead of time (nba_api ScheduleLeagueV2) - covers games
-    # that haven't been played yet, unlike TeamStats/team_matchups which only have rows
-    # once a box score exists. game_status: 1=Scheduled, 2=Live, 3=Final (per nba_api).
+    # Pulled ahead of tip-off, so unlike TeamStats this has rows for unplayed games.
+    # game_status: 1=Scheduled, 2=Live, 3=Final.
     season_id = models.IntegerField()
     season = models.CharField(max_length=20, null=True, blank=True)
     game_id = models.CharField(max_length=20)
@@ -236,7 +233,7 @@ class GameSchedule(models.Model):
         ]
 
 
-# ── Mart models (dbt-managed, read-only) ─────────────────────────────────────
+# Mart models (dbt-managed, read-only)
 
 class DimPlayers(models.Model):
     player_id = models.IntegerField(primary_key=True)
@@ -324,8 +321,8 @@ class DimSeasons(models.Model):
 
 class FctPlayerStats(models.Model):
     season_id = models.CharField(max_length=20)
-    # Denormalised in dbt: dim_players only covers the latest season, so reading a
-    # name through the FK inner-joins away every earlier player.
+    # Denormalised in dbt: dim_players only covers the latest season, so the FK
+    # inner-joins away every earlier player.
     player_name = models.CharField(max_length=100, null=True, blank=True)
     player = models.ForeignKey(
         DimPlayers,
@@ -405,11 +402,8 @@ class MlModels(models.Model):
     class Meta:
         db_table = 'ml_models'
 
-# ── Advanced season stats: raw (Django-managed) ──────────────────────────────
-# One row per player/team per season per season_type, straight from
-# leaguedashplayerstats / leaguedashteamstats with MeasureType=Advanced. These
-# endpoints return a whole season per call, so a full backfill is ~36 calls.
-# The *_RANK and sp_work_* columns are dropped: they are derivable noise.
+# Advanced season stats: raw (Django-managed)
+# The *_RANK and sp_work_* columns are dropped: derivable from the rest.
 
 class AdvancedPlayerSeasonStats(models.Model):
     season_id = models.CharField(max_length=20)
@@ -497,7 +491,7 @@ class AdvancedTeamSeasonStats(models.Model):
         ]
 
 
-# ── Advanced season stats: marts (dbt-managed, read-only) ────────────────────
+# Advanced season stats: marts (dbt-managed, read-only)
 
 class FctAdvancedPlayerSeasonStats(models.Model):
     season = models.CharField(max_length=20)
@@ -565,8 +559,7 @@ class FctAdvancedTeamSeasonStats(models.Model):
         db_table = '"nba_marts"."fct_advanced_team_season_stats"'
 
 
-# One row per unplayed game per nightly run; the row that survives is the last call made
-# before tip-off. No actual_home_win column - it's joined from dim_games at read time.
+# One row per unplayed game per nightly run; the surviving row is the last before tip-off.
 
 class ModelPredictionHistory(models.Model):
     strategy = models.CharField(max_length=50)
@@ -595,16 +588,14 @@ class ModelPredictionHistory(models.Model):
 
 
 class MartPlayerGameForm(models.Model):
-    """Rolling player form per game. form_* is the last 10 games, base_* everything
-    earlier excluding those 10, delta_* the difference."""
+    """form_* is the last 10 games, base_* everything earlier, delta_* the difference."""
     season_id = models.CharField(max_length=20)
     season = models.CharField(max_length=20, null=True, blank=True)
     season_type = models.CharField(max_length=20, null=True, blank=True)
     player_id = models.IntegerField()
     player_name = models.CharField(max_length=100, null=True, blank=True)
     team_id = models.IntegerField()
-    # Not actually unique, matching FctPlayerStats: these marts have a composite grain
-    # and Django needs a single pk to read through the ORM.
+    # Composite grain, so not actually unique; Django just needs a single pk.
     game_id = models.CharField(max_length=20, primary_key=True)
     game_date = models.DateField(null=True, blank=True)
     game_number = models.IntegerField(null=True, blank=True)
@@ -628,8 +619,7 @@ class MartPlayerGameForm(models.Model):
 
 
 class MartTeamGameForm(models.Model):
-    """Rolling team form per game, same windows as MartPlayerGameForm. margin is the
-    team log's plus_minus; win percentages are 0-100."""
+    """Team equivalent of MartPlayerGameForm; win percentages are 0-100."""
     season_id = models.CharField(max_length=20)
     season = models.CharField(max_length=20, null=True, blank=True)
     season_type = models.CharField(max_length=20, null=True, blank=True)

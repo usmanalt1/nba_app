@@ -11,9 +11,9 @@ export interface ConfidenceBucket {
     floor: number;
     label: string;
     games: number;
-    /** Mean confidence the model claimed across the bucket, 0-1. */
+    /** Mean confidence claimed across the bucket, 0-1. */
     claimed: number;
-    /** Share of the bucket the model actually got right, 0-1. */
+    /** Share the model actually got right, 0-1. */
     realised: number;
 }
 
@@ -31,11 +31,11 @@ export interface ModelStats {
     homePickRate: number;
     homeWinRate: number;
     buckets: ConfidenceBucket[];
-    /** Oldest-to-newest run of results, for the form strip. */
+    /** Oldest to newest. */
     form: GradedPrediction[];
     currentStreak: { length: number; hit: boolean } | null;
     bestStreak: number;
-    /** Hit rate over the most recent N games, for the rolling-form readout. */
+    /** Hit rate over the most recent N games. */
     rollingAccuracy: (window: number) => number | null;
 }
 
@@ -50,11 +50,7 @@ function mean(values: number[]): number {
     return values.reduce((total, value) => total + value, 0) / values.length;
 }
 
-/**
- * A prediction only tells us something once the game has been played. The API
- * returns `actual_home_win` as null for scheduled games in live mode, so anything
- * without a real boolean is dropped rather than silently graded as a loss.
- */
+// Drop scheduled games: a null actual_home_win would otherwise grade as a loss.
 export function gradePredictions(predictions: Prediction[]): GradedPrediction[] {
     return predictions
         .filter((prediction) => typeof prediction.actual_home_win === 'boolean')

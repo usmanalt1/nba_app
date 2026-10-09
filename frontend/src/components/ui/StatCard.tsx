@@ -7,7 +7,6 @@ interface StatCardProps {
     note?: ReactNode;
     /** Tints the value. Use sparingly — one hero number per row at most. */
     tone?: 'default' | 'brand' | 'win' | 'lose';
-    /** Hero sizing for the single number a section leads with. */
     hero?: boolean;
 }
 

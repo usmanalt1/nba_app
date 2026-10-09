@@ -1,9 +1,7 @@
 from django.db import migrations, models
 
-# Move the NBA entity id out of `id`, which is Django's surrogate pk and cannot repeat
-# across the per-(entity, season) rows these tables hold. Rows written after the loader
-# started discarding the source id cannot be repaired here - re-load those from object
-# storage.
+# Move the NBA entity id out of `id`, the surrogate pk, which cannot repeat per season.
+# Rows written once the loader began discarding the source id need a re-load instead.
 NBA_TEAM_ID_MIN = 1610612700
 NBA_TEAM_ID_MAX = 1610612800
 

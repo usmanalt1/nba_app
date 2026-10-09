@@ -3,8 +3,7 @@
 {% set before_last_10 = by_player ~ ' rows between unbounded preceding and 10 preceding' %}
 
 with player_games as (
-    -- fct_player_stats carries no game_date, so anything ordered in time has to come
-    -- through dim_games. Inner join: a row with no game cannot be placed in a sequence.
+    -- fct_player_stats has no game_date; inner join, as an unplaceable row cannot be ordered.
     select
         p.season_id,
         p.season,
@@ -37,21 +36,18 @@ form as (
         reb,
         ast,
 
-        -- Partitioned on player alone, never player+team: a mid-season trade would
-        -- otherwise split one season into two short, separately-averaged runs.
+        -- Never partition on player+team: a trade would split the season in two.
         row_number() over ({{ by_player }}) as game_number,
         count(*) over (partition by season_id, player_id) as games_in_season,
 
         avg(pts * 1.0) over ({{ last_10 }}) as form_pts,
         avg(reb * 1.0) over ({{ last_10 }}) as form_reb,
         avg(ast * 1.0) over ({{ last_10 }}) as form_ast,
-        -- From window totals, not an average of per-game TS%, which would weight a
-        -- 1-for-1 night the same as a 12-for-20 night.
+        -- From window totals: averaging per-game TS% overweights a 1-for-1 night.
         100.0 * sum(pts) over ({{ last_10 }})
             / nullif(2 * (sum(fga) over ({{ last_10 }}) + 0.44 * sum(fta) over ({{ last_10 }})), 0) as form_ts_pct,
 
-        -- The baseline stops 10 rows short of this game so it never overlaps the form
-        -- window - "last 10 against the rest of the season", not against itself.
+        -- Stops 10 rows short, so the baseline never overlaps the form window.
         avg(pts * 1.0) over ({{ before_last_10 }}) as base_pts,
         100.0 * sum(pts) over ({{ before_last_10 }})
             / nullif(2 * (sum(fga) over ({{ before_last_10 }}) + 0.44 * sum(fta) over ({{ before_last_10 }})), 0) as base_ts_pct

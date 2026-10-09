@@ -12,8 +12,6 @@ STAT_COLS = ["fg_pct", "fg3_pct", "ft_pct", "reb", "oreb", "dreb",
 
 
 class BoxscoreTransformer(TransformerBase):
-    """Build team form features from box-score history and merge them by game."""
-
     def __init__(self, df_boxscore: pd.DataFrame, df_games: pd.DataFrame):
         self.df_boxscore = df_boxscore
         self.df_games = df_games
@@ -35,7 +33,6 @@ class BoxscoreTransformer(TransformerBase):
         return boxscore_df
 
     def _select_boxscore_columns(self) -> pd.DataFrame:
-        """Keep only the columns needed for rolling team-form features."""
         return self.df_boxscore[
             [
                 "season", "team_id", "game_id", "min", "fgm", "fga", "fg_pct", "fg3m", "fg3a",
@@ -45,7 +42,7 @@ class BoxscoreTransformer(TransformerBase):
         ]
 
     def _build_boxscore_df(self, df_games: pd.DataFrame, df_boxscore: pd.DataFrame) -> pd.DataFrame:
-        """Merge box-score rows onto schedule data and add rest/b2b indicators."""
+        """Merge box scores onto the schedule and add rest/b2b indicators."""
         merged = df_games.merge(df_boxscore, on=["season", "team_id", "game_id"], how="left")
         merged = merged.sort_values(["team_id", "season", "game_date"]).reset_index(drop=True)
         merged["days_rest"] = merged.groupby(["team_id", "season"])["game_date"].diff().dt.days
@@ -55,7 +52,7 @@ class BoxscoreTransformer(TransformerBase):
         return merged
 
     def _build_prior_season_baseline(self, df_boxscore: pd.DataFrame) -> pd.DataFrame:
-        """Compute each team's last-season average to use as a fallback when this season is thin."""
+        """Last-season average, the fallback while this season is thin."""
         prior_cols = [f"prior_{c}" for c in STAT_COLS] + ["prior_win_pct"]
 
         season_avg = (
@@ -74,7 +71,7 @@ class BoxscoreTransformer(TransformerBase):
         return season_avg[["team_id", "season"] + prior_cols]
 
     def _build_rolling_avg(self, df_boxscore: pd.DataFrame) -> pd.DataFrame:
-        """Build each team's season-to-date rolling form and blend it with the prior-season baseline."""
+        """Season-to-date form, blended with the prior-season baseline."""
         grp_keys = ["team_id", "season"]
         shifted = df_boxscore.groupby(grp_keys)[STAT_COLS + ["team_win"]].shift(1)
         games_so_far = df_boxscore.groupby(grp_keys).cumcount()
@@ -104,7 +101,7 @@ class BoxscoreTransformer(TransformerBase):
         return df_boxscore
 
     def _build_differential(self, df_boxscore: pd.DataFrame) -> pd.DataFrame:
-        """Convert the per-team features into home-vs-away differentials for modeling."""
+        """Per-team features as home-vs-away differentials."""
         feature_cols = ["days_rest", "b2b"] + [c for c in df_boxscore.columns if c.startswith("pre_")]
         home_feat = df_boxscore[df_boxscore.is_home == 1][["game_id", "season"] + feature_cols + ["team_win"]].copy()
         home_feat.columns = ["game_id", "season"] + [f"home_{c}" for c in feature_cols] + ["home_win"]

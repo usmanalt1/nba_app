@@ -76,8 +76,7 @@ class CollectRawNBAData(TransformHelper, Constants):
             df_season = self._get_season_record(season_id=season_id)
             df_teams = self._get_team_info()
             df_players = self._get_players_info()
-            # without preseason, those games sit in dim_games with no result forever -
-            # leaguegamelog returns nothing for them under "Regular Season"
+            # Without preseason, those games sit in dim_games with no result forever.
             log_season_types = [
                 SeasonType.default,
                 SeasonTypePlayoffs.playoffs,
@@ -115,10 +114,6 @@ class CollectRawNBAData(TransformHelper, Constants):
 
     def _get_advanced_season_stats(self, season_year: str, season_id: str, season_type: str) -> dict:
         """Season-level advanced stats for every player and team, in two API calls.
-
-        leaguedash{player,team}stats with MeasureType=Advanced return a whole
-        season per call - already aggregated per player/team - so a full nine-season
-        backfill is about 36 calls rather than one per game.
 
         season_type is the nba_api value ("Regular Season" or "Playoffs").
         """
@@ -190,9 +185,7 @@ class CollectRawNBAData(TransformHelper, Constants):
         return df_team_info
 
     def _get_team_roster(self, df_team_info: pd.DataFrame, season_year: str, season_id) -> pd.DataFrame:
-        """Get team roster for each team in the season. 
-        This is required to get the player ids for each team which is required to get the player stats and team stats for the season.
-        """
+        """Team rosters for the season, the source of the player ids the stat calls need."""
         logging.info("Collecting team rosters for each team in the season")
         team_ids = df_team_info["id"].values.tolist()
         all_teams = self.transfrom_data(
@@ -246,7 +239,6 @@ class CollectRawNBAData(TransformHelper, Constants):
 
     def _get_logs(self, season_year: str, pt_abbreviation: str, season_type: str = SeasonType.default) -> pd.DataFrame:
         logging.info(f"Collecting logs for season: {season_year} and type: {pt_abbreviation}")
-        # Retry loop to handle intermittent connection drops from the remote API
         max_retries = 5
         backoff_base = 2
         df_league_logs = None
@@ -266,12 +258,10 @@ class CollectRawNBAData(TransformHelper, Constants):
                     f"RemoteDisconnected on attempt {attempt}/{max_retries}: {e}. Retrying..."
                 )
             except Exception as e:
-                # Catch network-level and other transient errors and retry
                 logging.warning(
                     f"Error fetching league game logs on attempt {attempt}/{max_retries}: {e}. Retrying..."
                 )
 
-            # if not returned, sleep with exponential backoff
             if attempt < max_retries:
                 t.sleep(backoff_base ** attempt)
             else:
@@ -320,12 +310,7 @@ class CollectRawNBAData(TransformHelper, Constants):
         return all_games
     
     def _get_game_schedule(self, season_year: str = None, season_id: str = None) -> pd.DataFrame:
-        """Full-season schedule, including games that haven't been played yet.
-
-        Unlike team_stats/team_matchups (sourced from box scores, so a game only shows up
-        once it's been played), this hits the league schedule directly so future games
-        exist as rows before tip-off.
-        """
+        """Full-season schedule; unlike the box-score sources, future games exist as rows."""
         season_year = season_year or self.season_year
         season_id = season_id or self.season_id
 
@@ -349,8 +334,7 @@ class CollectRawNBAData(TransformHelper, Constants):
 
     def _get_player_awards(self, df_players: pd.DataFrame) -> pd.DataFrame:
         logging.info("Starting getting player awards...")
-        # df_players is the roster of players to fetch awards FOR (column "player_id"),
-        # not the raw award response itself (which separately has its own "person_id" column)
+        # df_players is who to fetch awards for, not the award response (which keys on person_id)
         player_ids = pd.unique(df_players["player_id"]).tolist()
 
         all_player_awards = pd.DataFrame()
@@ -367,9 +351,7 @@ class CollectRawNBAData(TransformHelper, Constants):
             t.sleep(1)
 
         logging.info("...Raw Player Awards Generated")
-        # NOTE: many columns here (month, week, conference, all_nba_team_number, subtype2/3)
-        # are legitimately empty depending on award type - a blanket dropna() would wipe out
-        # nearly every row. Only the fields every award row must have are required.
+        # Subset dropna: most other columns are legitimately empty for some award types.
         if not all_player_awards.empty:
             all_player_awards = all_player_awards.dropna(subset=["player_id", "season", "description"])
 

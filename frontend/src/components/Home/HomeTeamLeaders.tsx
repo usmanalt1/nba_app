@@ -36,8 +36,7 @@ export function HomeTeamLeaders({ season, seasonType = 'regular', minGames = 0 }
         team.season > latest ? team.season : latest
     ), "");
 
-    // Season type is the request's job now. The old `season_id.startsWith("42")` filter
-    // re-derived it here and silently dropped every playoff row.
+    // Season type is the request's job; re-deriving it here drops playoff rows.
     const seasonTeams = teams.filter((team) => team.season === latestSeason);
 
     const buildLeaderboardRows = (stat: StatKey): LeaderboardRow[] => {

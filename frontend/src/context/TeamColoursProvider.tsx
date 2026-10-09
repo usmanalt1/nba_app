@@ -14,7 +14,6 @@ export interface TeamColours {
     /** The colour to paint. In a matchup this is already swapped to `alt` on a clash. */
     colour: string;
     alt: string;
-    /** Text colour that stays readable on `colour`. */
     text: string;
     abbr: string;
     name: string;
@@ -31,10 +30,7 @@ interface Lookups {
     byName: Map<string, TeamColours>;
 }
 
-/**
- * Normalised names the source spells differently from dim_teams, to their abbreviation.
- * dim_games says "LA Clippers" where dim_teams says "Los Angeles Clippers".
- */
+// Names dim_games spells differently from dim_teams, e.g. "LA Clippers".
 const NAME_ALIASES: Record<string, string> = {
     laclippers: 'LAC',
 };
@@ -119,8 +115,7 @@ function pairTeams(
     const homeSide = home ?? unknownSide(homeKey, 'var(--home)');
     const awaySide = away ?? unknownSide(awayKey, 'var(--away)');
 
-    // The league is mostly red and blue, so two display colours land inside the clash
-    // distance constantly. Only the away side moves, so home always looks like itself.
+    // Only the away side moves, so home always looks like itself.
     if (away && home && rgbDistance(away.colour, home.colour) < CLASH_DISTANCE) {
         return { away: { ...away, colour: away.alt, text: chipText(away.alt) }, home: homeSide };
     }
@@ -148,10 +143,7 @@ export function TeamColoursProvider({ children }: { children: ReactNode }) {
     return <TeamColoursContext.Provider value={lookups}>{children}</TeamColoursContext.Provider>;
 }
 
-/**
- * Null until the colours land, and for any team the seed doesn't cover - callers show
- * their neutral state rather than waiting on this.
- */
+/** Null until the colours land, and for any team the seed doesn't cover. */
 export function useTeam(key: TeamKey): TeamColours | null {
     const lookups = useContext(TeamColoursContext);
     return useMemo(() => (lookups ? resolve(lookups, key) : null), [lookups, key]);

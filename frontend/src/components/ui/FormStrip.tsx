@@ -10,10 +10,7 @@ interface FormStripProps {
 const TRACK_HEIGHT = 48;
 const MISS_HEIGHT = 17;
 
-/**
- * A football-style form guide for the model. Hits are full-height, misses are
- * stubs, so the run reads correctly without relying on the red/green pair alone.
- */
+// Hits are full-height and misses stubs, so the run reads without relying on colour.
 export function FormStrip({ form }: FormStripProps) {
     const [hovered, setHovered] = useState<number | null>(null);
     const active = hovered === null ? null : form[hovered];
@@ -35,8 +32,7 @@ export function FormStrip({ form }: FormStripProps) {
                         key={prediction.game_id}
                         onMouseEnter={() => setHovered(index)}
                         onMouseLeave={() => setHovered(null)}
-                        // The hit target is the full-height column; the coloured tick inside
-                        // it can be 11px tall without becoming impossible to hover.
+                        // Full-height hit target, so an 11px tick stays hoverable.
                         style={{
                             flex: '1 1 0',
                             minWidth: 5,

@@ -45,8 +45,7 @@ export function SeasonStandings({ season, seasonType, stageLabel }: SeasonStandi
     }
 
     return (
-        // Height from the row count: the table is 16 or 30 rows depending on the stage,
-        // and a fixed height would leave a gap on the shorter one.
+        // Height from the row count: a fixed one gaps on the shorter stage.
         <div style={{ width: '100%', height: Math.min(records.length, 16) * ROW_HEIGHT + 56 }}>
             <DataTable<Row>
                 {...tableProps}

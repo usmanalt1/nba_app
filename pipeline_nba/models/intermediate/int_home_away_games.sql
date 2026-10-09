@@ -45,9 +45,7 @@ played AS (
     FROM home h
     INNER JOIN away a ON h.game_id = a.game_id and h.run_timestamp = a.run_timestamp
 ),
--- games on the schedule that don't have a box score yet - future/unplayed games.
--- Once a game is actually played it shows up in `played` above via team_logs, and this
--- CTE excludes it so the real result always wins over the pre-game schedule row.
+-- Scheduled games with no box score yet; excluded once played, so the real result wins.
 latest_season_id AS (
     SELECT MAX(season_id) AS season_id
     FROM {{ ref('stg_nba_game_schedule') }}

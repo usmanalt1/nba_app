@@ -1,16 +1,7 @@
 """Team-form features for playoff games.
 
-Differs from BoxscoreTransformer in what "prior" means: a playoff team already has a
-full, current-roster regular season on record this year, which is a much stronger prior
-than a thin or missing prior *postseason* (most teams don't make the playoffs every
-year, and a short series is a noisy sample even when they did). So the blend here is
-[games played so far this postseason] vs [this same season's regular-season average],
-not [this postseason] vs [last postseason].
-
-Also adds series-context features (round, game-in-series, series score) that fall
-straight out of the NBA's own game_id scheme, and a standalone prior-postseason-history
-feature kept separate from the main form blend rather than folded into it - it's sparse
-and often reflects a different roster, so it shouldn't dilute the same-season signal.
+Unlike BoxscoreTransformer, the prior is this same season's regular season rather than
+the last postseason, which is sparse and often a different roster.
 """
 
 import pandas as pd
@@ -25,8 +16,6 @@ STAT_COLS = ["fg_pct", "fg3_pct", "ft_pct", "reb", "oreb", "dreb",
 
 
 class PlayoffBoxscoreTransformer(TransformerBase):
-    """Build playoff team-form features and merge them by game."""
-
     def __init__(
         self,
         df_games: pd.DataFrame,
@@ -35,13 +24,8 @@ class PlayoffBoxscoreTransformer(TransformerBase):
         df_regular_boxscore: pd.DataFrame,
         df_all_playoff_games: pd.DataFrame,
     ):
-        """
-        df_games / df_boxscore: this season's playoff schedule and box scores.
-        df_regular_games / df_regular_boxscore: this SAME season's regular-season
-            schedule and box scores - the baseline.
-        df_all_playoff_games: every season's playoff schedule (unfiltered by season) -
-            used to build the prior-postseason-history feature.
-        """
+        """df_regular_* is the SAME season's regular season, the baseline;
+        df_all_playoff_games is every season's, for the pedigree feature."""
         self.df_games = df_games
         self.df_boxscore = df_boxscore
         self.df_regular_games = df_regular_games
@@ -70,7 +54,7 @@ class PlayoffBoxscoreTransformer(TransformerBase):
         return result
 
     def _build_boxscore_df(self, team_games: pd.DataFrame) -> pd.DataFrame:
-        """Merge box-score rows onto the playoff schedule and add a rest/b2b indicator."""
+        """Merge box scores onto the playoff schedule and add a rest/b2b indicator."""
         boxscore_cols = ["season", "team_id", "game_id"] + STAT_COLS
         merged = team_games.merge(self.df_boxscore[boxscore_cols], on=["season", "team_id", "game_id"], how="left")
         merged = merged.sort_values(["team_id", "season", "game_date"]).reset_index(drop=True)
@@ -81,10 +65,7 @@ class PlayoffBoxscoreTransformer(TransformerBase):
         return merged
 
     def _add_series_context(self, merged: pd.DataFrame) -> pd.DataFrame:
-        """round/game-in-series/series score come straight out of the NBA's own game_id
-        scheme (e.g. "0042500161": chars[5:8] encode "00" + round, char[8] the matchup
-        index within the round, char[9] the game number within that series) - no extra
-        data needed."""
+        """Series context, read off the game_id: "0042500161" is round 4, matchup 6, game 1."""
         merged["round"] = merged["game_id"].str[7].astype(int)
         merged["series_id"] = merged["game_id"].str[:9]
         merged["game_in_series"] = merged["game_id"].str[9].astype(int)
@@ -96,7 +77,7 @@ class PlayoffBoxscoreTransformer(TransformerBase):
         return merged
 
     def _build_regular_season_baseline(self, reg_team_games: pd.DataFrame) -> pd.DataFrame:
-        """This same season's regular-season average per team - the playoff baseline."""
+        """This same season's regular-season average per team."""
         boxscore_cols = ["season", "team_id", "game_id"] + STAT_COLS
         merged = reg_team_games.merge(self.df_regular_boxscore[boxscore_cols], on=["season", "team_id", "game_id"], how="left")
         baseline = (
@@ -107,7 +88,7 @@ class PlayoffBoxscoreTransformer(TransformerBase):
         return baseline[["team_id", "season"] + [f"prior_{c}" for c in STAT_COLS] + ["prior_win_pct"]]
 
     def _build_rolling_avg(self, merged: pd.DataFrame, reg_team_games: pd.DataFrame) -> pd.DataFrame:
-        """Build each team's postseason-to-date form and blend it with the regular-season baseline."""
+        """Postseason-to-date form, blended with the regular-season baseline."""
         grp_keys = ["team_id", "season"]
         shifted = merged.groupby(grp_keys)[STAT_COLS + ["team_win"]].shift(1)
         games_so_far = merged.groupby(grp_keys).cumcount()
@@ -132,9 +113,7 @@ class PlayoffBoxscoreTransformer(TransformerBase):
         return merged
 
     def _add_playoff_history(self, merged: pd.DataFrame, all_playoff_team_games: pd.DataFrame) -> pd.DataFrame:
-        """Each team's playoff win rate across all EARLIER postseasons - a secondary,
-        low-weight signal on playoff pedigree, kept as its own feature rather than
-        blended into the form differentials above (see _build_rolling_avg's docstring)."""
+        """Playoff win rate across EARLIER postseasons, kept out of the form blend."""
         season_record = (
             all_playoff_team_games.groupby(["team_id", "season"])["team_win"].mean()
             .reset_index().rename(columns={"team_win": "season_playoff_win_pct"})
@@ -155,7 +134,7 @@ class PlayoffBoxscoreTransformer(TransformerBase):
         )
 
     def _build_differential(self, merged: pd.DataFrame) -> pd.DataFrame:
-        """Convert the per-team features into home-vs-away differentials for modeling."""
+        """Per-team features as home-vs-away differentials."""
         feature_cols = (
             ["days_rest", "b2b", "series_wins_so_far"]
             + [c for c in merged.columns if c.startswith("pre_")]

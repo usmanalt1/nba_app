@@ -1,4 +1,3 @@
--- scd1 dim rosters - rewritten everytime
 SELECT 
     player_id,
     player_name,

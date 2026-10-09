@@ -29,8 +29,7 @@ export function HomeModelComparison() {
 
     if (runs.length === 0) return null;
 
-    // The winner of each metric gets the accent, so a reader can scan one column and
-    // see which run leads without comparing every number by eye.
+    // The winner of each metric gets the accent, so one column can be scanned.
     const leaders = Object.fromEntries(
         COLUMNS.map(({ key, higherIsBetter }) => [
             key,
