@@ -17,7 +17,7 @@ export function usePredictions(): PredictionsState {
             .then(data => {
                 if (!data.success) return;
                 setStrategy(data.strategy);
-                apiFetch(`/api/nba/model/get_ml_trained_models/${data.strategy}/${data.season}`)
+                apiFetch(`/api/nba/model/get_ml_trained_models/${data.strategy}/${data.season}/${data.season_type}`)
                     .then(r => r.json())
                     .then(result => {
                         if (result.success) setPredictions(result.predictions ?? []);

@@ -6,23 +6,21 @@ from ninja import Router, Schema
 
 from app.models import MlModels
 from config.logger import get_logger
-from services.ml_model.models.model_trainer import ModelTraner, MODE_BACKTEST, MODE_LIVE
-from services.ml_model.prediction_history import persist_predictions, read_graded
+from services.ml_model.models.model_trainer import ModelTraner, MODE_BACKTEST
+from services.ml_model.prediction_history import read_graded
 from services.redis.redis_client import RedisClient
-from services.redis.redis_key_constants import model_run_cache_key, LAST_RUN
+from services.redis.redis_key_constants import (
+    model_run_cache_key, user_run_cache_key, user_last_run_key, LAST_RUN,
+)
 from ninja_jwt.authentication import AsyncJWTAuth
 
 logger = get_logger(__name__)
 
 router = Router(auth=AsyncJWTAuth(), tags=["ml"])
 
-# cached TrainResults never expired before this - a fix to the model/feature pipeline, or
-# the underlying data simply changing (dim_games gaining/losing rows on a later
-# ingestion run), left stale results sitting under the same strategy+season key
-# indefinitely, with nothing forcing a refresh until someone happened to re-run that
-# exact strategy+season. 6h keeps results fresh across a game day without refitting on
-# every request.
-MODEL_CACHE_TTL_SECONDS = 6 * 60 * 60
+# A Wormhole run has no durable store behind it, so this is the whole lifetime of
+# one: long enough to still be there after lunch, short enough not to accumulate.
+MODEL_CACHE_TTL_SECONDS = 24 * 60 * 60
 
 
 class ModelOutput(Schema):
@@ -66,17 +64,18 @@ class ModelLastRunResponseSchema(Schema):
 async def train_model(request, strategy: str, season: str, season_type: str, mode: str = MODE_BACKTEST):
     try:
         redis_client = RedisClient()
+        user_id = request.user.id
         def sync_train():
             trainer = ModelTraner(strategy=strategy, season=season, season_type=season_type, mode=mode)
             result = trainer.train()
-            redis_client.set(model_run_cache_key(strategy, season), result, ex=MODEL_CACHE_TTL_SECONDS)
-            redis_client.set(LAST_RUN, {"strategy": strategy, "season": season, "season_type": season_type, "mode": mode})
-            # the cache expires; this is what survives to be graded later
-            if mode == MODE_LIVE:
-                persist_predictions(
-                    strategy=strategy, season=season, season_type=season_type,
-                    predictions=result.predictions,
-                )
+            redis_client.set(
+                user_run_cache_key(user_id, strategy, season, season_type, mode),
+                result, ex=MODEL_CACHE_TTL_SECONDS,
+            )
+            redis_client.set(
+                user_last_run_key(user_id),
+                {"strategy": strategy, "season": season, "season_type": season_type, "mode": mode},
+            )
             return result
 
         result = await asyncio.to_thread(sync_train)
@@ -92,10 +91,10 @@ async def train_model(request, strategy: str, season: str, season_type: str, mod
         warnings=result.warnings,
     )
 
-@router.get("/get_ml_trained_models/{strategy}/{season}", response=ModelRunResponseSchema)
-def get_latest_trained_models(request, strategy: str, season: str):
+@router.get("/get_ml_trained_models/{strategy}/{season}/{season_type}", response=ModelRunResponseSchema)
+def get_latest_trained_models(request, strategy: str, season: str, season_type: str):
     try:
-        result = RedisClient().get(model_run_cache_key(strategy, season))
+        result = RedisClient().get(model_run_cache_key(strategy, season, season_type))
     except Exception as e:
         logger.error(f"Error fetching latest trained models: {e}")
         return ModelRunResponseSchema(success=False, error=str(e))
@@ -118,6 +117,48 @@ def get_last_run(request):
         last_run = RedisClient().get(LAST_RUN)
     except Exception as e:
         logger.error(f"Error fetching last run: {e}")
+        return ModelLastRunResponseSchema(success=False, error=str(e))
+
+    if not last_run:
+        return ModelLastRunResponseSchema(success=False)
+
+    return ModelLastRunResponseSchema(
+        success=True,
+        strategy=last_run.get("strategy"),
+        season=last_run.get("season"),
+        season_type=last_run.get("season_type"),
+        mode=last_run.get("mode"),
+    )
+
+@router.get("/get_user_run/{strategy}/{season}/{season_type}", response=ModelRunResponseSchema)
+def get_user_run(request, strategy: str, season: str, season_type: str, mode: str = MODE_BACKTEST):
+    """The caller's own last run of these exact settings, if it has not expired."""
+    try:
+        result = RedisClient().get(
+            user_run_cache_key(request.user.id, strategy, season, season_type, mode)
+        )
+    except Exception as e:
+        logger.error(f"Error fetching user run: {e}")
+        return ModelRunResponseSchema(success=False, error=str(e))
+
+    if not result:
+        return ModelRunResponseSchema(success=False)
+
+    return ModelRunResponseSchema(
+        success=True,
+        metrics=result.metrics,
+        season_records=result.season_record.to_dict(orient="records"),
+        predictions=result.predictions.to_dict(orient="records"),
+        warnings=result.warnings,
+    )
+
+@router.get("/get_user_last_run", response=ModelLastRunResponseSchema)
+def get_user_last_run(request):
+    """The settings the caller last ran, to reopen Wormhole where they left it."""
+    try:
+        last_run = RedisClient().get(user_last_run_key(request.user.id))
+    except Exception as e:
+        logger.error(f"Error fetching user last run: {e}")
         return ModelLastRunResponseSchema(success=False, error=str(e))
 
     if not last_run:
@@ -213,18 +254,16 @@ async def get_all_runs(request):
 
         def sync_get():
             runs = []
-            # cache keys are "{strategy}_{season}_model" (see model_run_cache_key) - season
-            # strings like "2025-26" never contain an underscore, so splitting on the last
-            # underscore reliably separates it from a strategy name that might (e.g.
-            # "logistic_regression")
-            for key in redis_client.keys("*_model"):
-                strategy, _, season = key.removesuffix("_model").rpartition("_")
-                if not strategy:
+            for key in redis_client.keys("model:*"):
+                parts = key.split(":")
+                if len(parts) != 4:
                     continue
+                _, strategy, season, season_type = parts
                 result = redis_client.get(key)
+                # live runs predict unplayed games only, so they are never scored
                 if result is None or result.metrics is None:
                     continue
-                runs.append(ModelRunSummary(strategy=strategy, season=season, season_type=result.season_type, metrics=result.metrics))
+                runs.append(ModelRunSummary(strategy=strategy, season=season, season_type=season_type, metrics=result.metrics))
 
             runs.sort(key=lambda r: (r.season, r.strategy), reverse=True)
             return runs

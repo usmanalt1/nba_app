@@ -17,6 +17,7 @@ from seasons import current_season, previous_season
 from services.data_collection.build_data_service import BuildDataService
 from services.db.db_service import DBService
 from services.ml_model.models.model_trainer import ModelTraner, MODE_LIVE
+from services.ml_model.model_selection import best_strategy
 from services.ml_model.prediction_history import persist_predictions
 from services.redis.redis_client import RedisClient
 from services.redis.redis_key_constants import model_run_cache_key, LAST_RUN
@@ -25,7 +26,10 @@ from services.warehouse_storage.bigquery.service import BigQueryService
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DBT_PROJECT_DIR = REPO_ROOT / "pipeline_nba"
 
-MODEL_CACHE_TTL_SECONDS = 6 * 60 * 60
+# Longer than the nightly cadence, so a cached run lives until the next one replaces
+# it. Shorter than two nights, so a failed pipeline serves nothing rather than
+# yesterday's slate as today's.
+MODEL_CACHE_TTL_SECONDS = 26 * 60 * 60
 
 
 class NightlyConfig(Config):
@@ -33,7 +37,9 @@ class NightlyConfig(Config):
     # stuck on last season.
     season_year: str = None
     strategies: list = ["logistic_regression", "random_forest"]
-    season_types: list = ["preseason", "regular"]
+    # Ordered as the season runs: each type is skipped once it has no unplayed games
+    # left, so the home page moves preseason -> regular -> playoffs on its own.
+    season_types: list = ["preseason", "regular", "playoffs"]
     dbt_target: str = None
 
 
@@ -121,7 +127,7 @@ def _run_one(context: AssetExecutionContext, season: str, season_type: str, stra
         return {"error": str(exc)}
 
     RedisClient().set(
-        model_run_cache_key(strategy, season), result, ex=MODEL_CACHE_TTL_SECONDS,
+        model_run_cache_key(strategy, season, season_type), result, ex=MODEL_CACHE_TTL_SECONDS,
     )
     stored = persist_predictions(
         strategy=strategy, season=season, season_type=season_type,
@@ -136,19 +142,24 @@ def _run_one(context: AssetExecutionContext, season: str, season_type: str, stra
     return outcome
 
 
-def _pick_last_run(summary: dict, season: str) -> Optional[dict]:
-    """The run the homepage opens on: the first that actually stored predictions.
+def _pick_last_run(summary: dict, season: str, season_types: list, strategies: list) -> Optional[dict]:
+    """The run the homepage opens on: the best strategy in the season type now in play.
 
-    config.season_types is ordered preseason-first, so the homepage sits on the preseason
-    while it has games left and moves to the regular season on its own once it doesn't.
+    The season type is the first with predictions to store, which walks the season on its
+    own. Within it the strategy is whichever has called those games best so far, falling
+    back to config order before anything has been graded.
     """
-    for label, outcome in summary.items():
-        if outcome.get("written"):
-            strategy, season_type = label.split("/")
-            return {
-                "strategy": strategy, "season": season,
-                "season_type": season_type, "mode": MODE_LIVE,
-            }
+    for season_type in season_types:
+        stored = [s for s in strategies if summary.get(f"{s}/{season_type}", {}).get("written")]
+        if not stored:
+            continue
+
+        return {
+            "strategy": best_strategy(season, season_type, stored) or stored[0],
+            "season": season,
+            "season_type": season_type,
+            "mode": MODE_LIVE,
+        }
     return None
 
 
@@ -168,7 +179,9 @@ def live_predictions(context: AssetExecutionContext, config: NightlyConfig, dbt_
                 context, season=season, season_type=season_type, strategy=strategy,
             )
 
-    last_run = _pick_last_run(summary, season)
+    last_run = _pick_last_run(
+        summary, season, season_types=config.season_types, strategies=config.strategies,
+    )
     if last_run:
         RedisClient().set(LAST_RUN, last_run)
         context.log.info(f"LAST_RUN -> {last_run}")
@@ -213,7 +226,8 @@ def backtest_scorecard(context: AssetExecutionContext, config: BacktestConfig, d
         trainer = ModelTraner(strategy=strategy, season=season, season_type=config.season_type)
         result = trainer.train()
         redis_client.set(
-            model_run_cache_key(strategy, season), result, ex=MODEL_CACHE_TTL_SECONDS,
+            model_run_cache_key(strategy, season, config.season_type), result,
+            ex=MODEL_CACHE_TTL_SECONDS,
         )
         metrics[strategy] = result.metrics
         for warning in result.warnings or []:

@@ -7,7 +7,7 @@ import { PageHero } from '../ui/PageHero';
 import { Panel } from '../ui/Panel';
 import { SectionHeader } from '../ui/SectionHeader';
 import { StatCard } from '../ui/StatCard';
-import type { TrainResponse } from '../../types/predictions';
+import type { LastRun, TrainResponse } from '../../types/predictions';
 import { useSearchParams } from 'react-router-dom';
 import { handleSearchParams } from '../Helper/HandleSearchParams';
 import { apiFetch } from '../../lib/api';
@@ -20,6 +20,7 @@ export function Predictions() {
     const [buttonActive, setButtonActive] = useState(false);
     const [searchParams, setSearchParams] = useSearchParams();
     const [result, setResult] = useState<TrainResponse | null>(null);
+    const [published, setPublished] = useState<LastRun | null>(null);
 
     const selectedModel = searchParams.get('model');
     const selectedSeason = searchParams.get('season');
@@ -40,32 +41,75 @@ export function Predictions() {
     }, []);
 
     useEffect(() => {
-        if (!selectedModel || !selectedSeason || !selectedSeasonType) return;
-
-        apiFetch(`/api/nba/model/get_ml_trained_models/${selectedModel}/${selectedSeason}`)
+        apiFetch("/api/nba/model/get_last_run")
             .then(r => r.json())
-            .then(data => {
-                if (data.success) setResult(data);
-            });
-    }, [selectedModel, selectedSeason, selectedSeasonType]);
+            .then(data => setPublished(data.success ? data : null));
+    }, []);
 
+    /**
+     * Your own run of these settings, falling back to the published one.
+     *
+     * One effect owns `result`: the two reads have to be sequential, because a published
+     * run must not land on top of a user run that was already fetched.
+     */
+    useEffect(() => {
+        if (!selectedModel || !selectedSeason || !selectedSeasonType) return;
+        let cancelled = false;
+
+        async function load() {
+            const mine = await apiFetch(
+                `/api/nba/model/get_user_run/${selectedModel}/${selectedSeason}/${selectedSeasonType}?mode=${selectedMode}`,
+            ).then(r => r.json()).catch(() => ({ success: false }));
+            if (cancelled) return;
+            if (mine.success) {
+                setResult(mine);
+                return;
+            }
+
+            // The published run answers for its own settings only - showing it under any
+            // other selection would caption someone else's numbers with your picks.
+            const showsPublished = published
+                && published.strategy === selectedModel
+                && published.season === selectedSeason
+                && published.season_type === selectedSeasonType
+                && (published.mode ?? 'backtest') === selectedMode;
+            if (!showsPublished) {
+                setResult(null);
+                return;
+            }
+
+            const run = await apiFetch(
+                `/api/nba/model/get_ml_trained_models/${selectedModel}/${selectedSeason}/${selectedSeasonType}`,
+            ).then(r => r.json()).catch(() => ({ success: false }));
+            if (!cancelled) setResult(run.success ? run : null);
+        }
+
+        load();
+        return () => { cancelled = true; };
+    }, [selectedModel, selectedSeason, selectedSeasonType, selectedMode, published]);
+
+    /** Open on your last run, or on the published one until you have made one. */
     useEffect(() => {
         if (selectedModel || selectedSeason || selectedSeasonType) return;
 
-        apiFetch("/api/nba/model/get_last_run")
-            .then(r => r.json())
-            .then(data => {
-                if (data.success) {
-                    setSearchParams(prev => {
-                        prev.set('model', data.strategy);
-                        prev.set('season', data.season);
-                        prev.set('season_type', data.season_type);
-                        prev.set('mode', data.mode ?? 'backtest');
-                        prev.set('predictions_tab', 'standings');
-                        return prev;
-                    });
-                }
+        async function seed() {
+            const mine = await apiFetch("/api/nba/model/get_user_last_run").then(r => r.json());
+            const run = mine.success
+                ? mine
+                : await apiFetch("/api/nba/model/get_last_run").then(r => r.json());
+            if (!run.success) return;
+
+            setSearchParams(prev => {
+                prev.set('model', run.strategy);
+                prev.set('season', run.season);
+                prev.set('season_type', run.season_type);
+                prev.set('mode', run.mode ?? 'backtest');
+                prev.set('predictions_tab', 'standings');
+                return prev;
             });
+        }
+
+        seed();
     }, []);
 
     const modelOptions = models.map((p) => ({
