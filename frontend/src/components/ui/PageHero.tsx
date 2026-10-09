@@ -2,17 +2,15 @@ import type { ReactNode } from 'react';
 import { WormPortrait } from './WormMark';
 
 interface PageHeroProps {
-    /** Short kicker above the title: "NBA Prediction Lab", "Season Breakdown". */
+    /** Short kicker above the title, e.g. "NBA Prediction Lab". */
     eyebrow: string;
     title: string;
     blurb: string;
-    /** For pages whose content wants the vertical room - a full-height table. */
+    /** For pages whose content wants the vertical room. */
     compact?: boolean;
-    /** HeroStat entries laid out in a row under the blurb. */
     children?: ReactNode;
 }
 
-/** Label-over-value pair for a hero's meta row. */
 export function HeroStat({ label, value }: { label: string; value: string }) {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -24,7 +22,6 @@ export function HeroStat({ label, value }: { label: string; value: string }) {
     );
 }
 
-/** The tall opening header every top-level page leads with, portrait and all. */
 export function PageHero({ eyebrow, title, blurb, compact, children }: PageHeroProps) {
     return (
         <section

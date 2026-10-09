@@ -10,8 +10,7 @@ class PlayerStats:
 
     def transform(self) -> pd.DataFrame:
         build_player_games_df = self._build_player_games()
-        # Before ranking, not after: a short sample has to be out of the pool entirely or
-        # it still takes a rank off everyone below it.
+        # Before ranking, not after, or a short sample still takes a rank off everyone below.
         if self.min_games > 0:
             build_player_games_df = build_player_games_df[
                 build_player_games_df["games_played"] >= self.min_games
@@ -22,16 +21,13 @@ class PlayerStats:
             build_player_games_df = self._rank_players(build_player_games_df, stat_col=stat)
             rank_cols.append(f"rank_{stat}")
 
-        # keep a player if they're top 10 in at least one stat, rather than requiring
-        # top 10 in every stat (which the old sequential-filter approach effectively did)
+        # top 10 in any one stat, not in all of them
         top_10_mask = (build_player_games_df[rank_cols] <= 10).any(axis=1)
         return build_player_games_df.loc[top_10_mask].reset_index(drop=True)
 
 
     def _build_player_games(self) -> pd.DataFrame:
-        # Grouped by player, not player+team: a mid-season trade would otherwise split
-        # one season into a partial row per team, each averaged over its own games and
-        # each able to fall under a minimum-games rule the full season clears.
+        # Not grouped by team: a trade would split one season into partial rows.
         average_stats = self.player_stats_df.groupby(["season_id", "player_id", "season", "season_type"]).agg(
             average_points=pd.NamedAgg(column="pts", aggfunc="mean"),
             average_rebounds=pd.NamedAgg(column="reb", aggfunc="mean"),

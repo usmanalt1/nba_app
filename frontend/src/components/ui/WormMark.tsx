@@ -1,12 +1,8 @@
 import type { CSSProperties } from 'react';
 import wormSrc from '../../assets/worm.svg';
 
-/**
- * The logo is a potrace silhouette: opaque black where the portrait is shaded,
- * transparent where it is lit. Laid over a coloured plate the lit areas pick up
- * the plate colour while the black shading sinks into the page, which is why the
- * mark never needs a cut-out background.
- */
+// A potrace silhouette: transparent where the portrait is lit, so it picks up the
+// plate colour underneath and needs no cut-out background.
 interface WormMarkProps {
     size?: number;
     /** Plate colour showing through the lit side of the portrait. */
@@ -47,12 +43,10 @@ export function WormMark({ size = 40, tone = 'var(--worm)', style }: WormMarkPro
 }
 
 interface WormPortraitProps {
-    /** Width of the portrait plate; height follows the source aspect ratio. */
     height?: number;
     style?: CSSProperties;
 }
 
-/** Full-bleed hero treatment: the same portrait, faded into the page from the left. */
 export function WormPortrait({ height = 220, style }: WormPortraitProps) {
     const fade = 'linear-gradient(to right, transparent, #000 48%, #000 88%, transparent)';
 

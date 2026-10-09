@@ -46,12 +46,8 @@ export function Predictions() {
             .then(data => setPublished(data.success ? data : null));
     }, []);
 
-    /**
-     * Your own run of these settings, falling back to the published one.
-     *
-     * One effect owns `result`: the two reads have to be sequential, because a published
-     * run must not land on top of a user run that was already fetched.
-     */
+    // One effect owns `result`: the reads must stay sequential, or a published run can
+    // land on top of a user run already fetched.
     useEffect(() => {
         if (!selectedModel || !selectedSeason || !selectedSeasonType) return;
         let cancelled = false;
@@ -66,8 +62,7 @@ export function Predictions() {
                 return;
             }
 
-            // The published run answers for its own settings only - showing it under any
-            // other selection would caption someone else's numbers with your picks.
+            // Showing the published run under other settings would mislabel its numbers.
             const showsPublished = published
                 && published.strategy === selectedModel
                 && published.season === selectedSeason

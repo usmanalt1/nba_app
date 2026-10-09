@@ -1,4 +1,3 @@
--- scd1 dim players - rewritten everytime
 SELECT
     game_id,
     game_date,

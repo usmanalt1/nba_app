@@ -1,7 +1,6 @@
 {{ config(tags=['advanced']) }}
 
--- Teams have no usage_percentage: by definition a team uses 100% of its own
--- possessions, so the endpoint does not return it.
+-- No usage_percentage: a team uses 100% of its own possessions.
 select
     season,
     season_type,

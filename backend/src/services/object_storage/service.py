@@ -106,7 +106,6 @@ class LocalStorage(StorageBase):
 
         full_path = f"{file_path}/{file_name}.{self.file_format}"
         df["season"] = season
-        # attempt to write with fastparquet first, fall back to pyarrow
         try:
             df.to_parquet(full_path, index=False, engine="fastparquet")
         except Exception:

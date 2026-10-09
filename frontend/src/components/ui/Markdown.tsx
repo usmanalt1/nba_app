@@ -45,8 +45,7 @@ function parseBlocks(source: string): Block[] {
             continue;
         }
 
-        // A row only starts a table if the next line is the divider, so a stray line
-        // beginning with "|" stays prose.
+        // Needs the divider on the next line, or a stray "|" line would start a table.
         if (isTableRow(line) && isTableDivider(lines[i + 1] ?? '')) {
             const head = splitRow(line);
             i += 2;
@@ -104,8 +103,7 @@ function inline(text: string): ReactNode[] {
 }
 
 function Table({ head, rows }: { head: string[]; rows: string[][] }) {
-    // First column is the label, the rest are figures: left and sans, then right, mono
-    // and tabular. Any per-column alignment in the divider row is ignored.
+    // First column is the label, the rest figures; the divider's alignment is ignored.
     const cell = (index: number): CSSProperties => ({
         padding: '9px 12px',
         textAlign: index === 0 ? 'left' : 'right',
@@ -158,11 +156,7 @@ function Table({ head, rows }: { head: string[]; rows: string[][] }) {
     );
 }
 
-/**
- * The markdown the LLM actually emits: headings, bold, italics, code spans, bullet and
- * numbered lists, and pipe tables. Anything else falls through as text, so unexpected
- * syntax reads plainly instead of breaking the panel.
- */
+/** Only what the LLM emits; anything else falls through as plain text. */
 export function Markdown({ source }: { source: string }) {
     const blocks = parseBlocks(source ?? '');
 

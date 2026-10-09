@@ -1,12 +1,5 @@
-# Creates a read-only Postgres role for the LLM analytics feature (and, eventually,
-# an MCP server) to query through - kept separate from the "admin" role Django/dbt
-# use so that surface can only ever SELECT, never write.
-#
-# This only creates the role and lets it connect to the database. It intentionally
-# grants nothing on `public` or `nba_marts` - the role is meant to see only the
-# curated `nba_analytics` schema (dbt's semantic_views models), and those grants are
-# owned by dbt's `+grants` config in dbt_project.yml since that schema's views are
-# rebuilt on every dbt run.
+# Read-only role for the LLM to query through. Grants nothing here on purpose: access to
+# nba_analytics is owned by dbt's `+grants`, since those views are rebuilt every run.
 
 from django.db import migrations
 
@@ -20,8 +13,7 @@ def create_llm_readonly_role(apps, schema_editor):
     db_name = connection.settings_dict["NAME"]
 
     with connection.cursor() as cursor:
-        # CREATE ROLE has no IF NOT EXISTS, so guard it manually to keep the
-        # migration safe to re-run (e.g. after `migrate app zero` in dev).
+        # CREATE ROLE has no IF NOT EXISTS, so guard it to stay re-runnable.
         cursor.execute(
             """
             DO $$

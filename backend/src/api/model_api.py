@@ -18,8 +18,7 @@ logger = get_logger(__name__)
 
 router = Router(auth=AsyncJWTAuth(), tags=["ml"])
 
-# A Wormhole run has no durable store behind it, so this is the whole lifetime of
-# one: long enough to still be there after lunch, short enough not to accumulate.
+# Nothing durable backs a Wormhole run, so this cache is its whole lifetime.
 MODEL_CACHE_TTL_SECONDS = 24 * 60 * 60
 
 

@@ -1,4 +1,3 @@
-# api.py
 import pandas as pd
 from nba_api.stats.library.parameters import SeasonTypePlayoffs, SeasonType
 from ninja import Router
@@ -65,8 +64,7 @@ async def collect_all(request):
 # must stay registered BEFORE "/collect/{table_name}", which would otherwise match "latest"
 @router.get("/collect/latest", response=NBADataResponseSchema)
 async def collect_latest(request, season_year: str = None):
-    """Collect the in-progress season under one run_id. Returns the run_id to pass to
-    /load_to_postgres?run_id=..."""
+    """Collect the in-progress season under one run_id, which it returns."""
     try:
         def sync_collect():
             return BuildDataService().build_latest_data(season_year=season_year)
@@ -103,10 +101,7 @@ async def collect_player_awards_data(request):
 
     return NBADataResponseSchema(success=True)
 
-# NOTE: this must stay registered AFTER the more specific "/collect/player_awards" route above -
-# {table_name} matches any single path segment, so if this were registered first it would
-# intercept "/collect/player_awards" requests too (first-match-wins routing) and dispatch them
-# through the generic single-argument _get_{table_name}() call path instead.
+# must stay registered AFTER "/collect/player_awards", which {table_name} would otherwise swallow
 @router.get("/collect/{table_name}", response=NBADataResponseSchema)
 async def collect_data_by_table(request, table_name: str):
     try:
@@ -128,8 +123,7 @@ async def collect_data_by_table(request, table_name: str):
 @router.get("/collect/season/{season_year}", response=NBADataResponseSchema)
 async def collect_data_by_season(request, season_year: str):
         try:
-            #season_year format "2022-23"
-            #TODO validate season_year format
+            # TODO validate season_year format ("2022-23")
             split_year = season_year.split("-")
             season_id = f"{split_year[0][-2:]}0{split_year[1][-2:]}"
             object_storage_service = ObjectStorageService().get_storage()
@@ -153,9 +147,7 @@ async def collect_data_by_season(request, season_year: str):
 @router.get("/collect/season/{season_year}/{seasons}/team_roster={team_roster}", response=NBADataResponseSchema)
 async def collect_data_by_number_of_seasons(request, season_year: str, seasons: int, team_roster: bool):
         try:
-            #team_roster parameter
-            #season_year format "2022-23"
-            #TODO validate season_year format
+            # TODO validate season_year format ("2022-23")
             if team_roster:
                 logger.info("validate team_roster")
                 if not isinstance(team_roster, bool):
@@ -174,11 +166,9 @@ async def collect_data_by_number_of_seasons(request, season_year: str, seasons: 
                         object_storage_service.save(df=df, file_name=table_name, season=season_year)
                         logger.info(f"NBA data for table {table_name} saved to object storage successfully.")
                     
-                    #decrement season_year and season_id for next iteration
+                    # step back a season: 2022-23 -> 2021-22, season_id 22023 -> 12022
                     split_year = season_year.split("-")
-                    # season_year = 2022-23
                     season_year = f"{int(split_year[0]) - 1}-{str(int(split_year[1]) - 1)[-2:]}"
-                    # season_id = 22023
                     season_id = f"{str(int(season_id[:2]) - 1)}0{str(int(season_id[2:]) - 1)}"
 
             asyncio.create_task(asyncio.to_thread(sync_collect_and_upsert_for_date))
@@ -191,13 +181,7 @@ async def collect_data_by_number_of_seasons(request, season_year: str, seasons: 
 
 @router.get("/collect/advanced_season_stats/{seasons}", response=NBADataResponseSchema)
 async def collect_advanced_season_stats(request, seasons: str, season_types: str = None):
-    """Collect season-level advanced stats for a comma separated list of seasons.
-
-    e.g. /collect/advanced_season_stats/2024-25,2023-24 - two API calls per season
-    per season_type, so all nine seasons takes a couple of minutes. Pass
-    season_types=regular or season_types=playoffs to do just one.
-    Follow with /load_to_postgres, then `dbt build --select tag:advanced`.
-    """
+    """Collect season-level advanced stats for a comma separated list of seasons."""
     try:
         season_list = [s.strip() for s in seasons.split(",") if s.strip()]
         type_map = {"regular": SeasonType.default, "playoffs": SeasonTypePlayoffs.playoffs}
@@ -235,7 +219,7 @@ async def load_data_to_postgres(request, run_id: str = None):
 
 @router.get("/load_to_bigquery/{seasons}", response=NBADataResponseSchema)
 async def load_data_from_gcs_to_bigquery(request, seasons: str):
-    # seasons is a comma separated string of number of seasons to load, e.g. "1,2,3"
+    # comma separated, e.g. "1,2,3"
     seasons = [s.strip() for s in seasons.split(",")]
     try:
         bigquery_service = BigQueryService()
@@ -262,11 +246,7 @@ async def load_data_from_lfs_to_duckdb(request):
     return NBADataResponseSchema(success=True)
 
 
-# NOTE: this must stay registered BEFORE the generic "/collect/season/{table_name}/{season_year}"
-# below - {table_name} matches any single path segment, so if the generic route were registered
-# first it would intercept "/collect/season/game_schedule/{season_year}" requests too (first-match-wins
-# routing) and dispatch them through the generic table_name path instead (which calls the
-# nonexistent DBService.upsert_nba_data and blows up).
+# must stay registered BEFORE "/collect/season/{table_name}/{season_year}", which would otherwise swallow it
 @router.get("/collect/season/game_schedule/{season_year}", response=NBADataResponseSchema)
 async def collect_game_schedule_by_season(request, season_year: str):
     try:

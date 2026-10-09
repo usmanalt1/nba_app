@@ -24,8 +24,7 @@ export function useConversation() {
             .then(r => r.json())
             .then((data: { answers?: ConversationExchange[] }) => {
                 if (cancelled) return;
-                // An empty transcript comes back as success:false with a "no conversation
-                // found" message, so absent answers mean empty here, not failure.
+                // An empty transcript comes back as success:false, so absent means empty.
                 setState({ exchanges: [...(data.answers ?? [])].reverse(), error: null, loading: false });
             })
             .catch(() => {

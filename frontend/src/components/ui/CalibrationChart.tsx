@@ -20,11 +20,7 @@ function LegendKey({ swatch, label }: { swatch: ReactNode; label: string }) {
     );
 }
 
-/**
- * Reliability plot as bars: how often the model was right inside each confidence
- * band, against how confident it claimed to be. A bar short of its tick means the
- * model oversold that band.
- */
+/** Reliability plot: a bar short of its tick means the model oversold that band. */
 export function CalibrationChart({ buckets }: CalibrationChartProps) {
     const [hovered, setHovered] = useState<number | null>(null);
 
@@ -104,9 +100,8 @@ export function CalibrationChart({ buckets }: CalibrationChartProps) {
                                                 width: 2,
                                                 marginLeft: -1,
                                                 background: 'var(--paper)',
-                                                // A ring, not borders: the app is box-sizing:
-                                                // border-box, so 2px borders on a 2px-wide
-                                                // element leave the white fill zero width.
+                                                // A ring, not borders: border-box leaves a
+                                                // 2px-wide element no fill at all.
                                                 boxShadow: '0 0 0 2px var(--panel)',
                                             }}
                                         />

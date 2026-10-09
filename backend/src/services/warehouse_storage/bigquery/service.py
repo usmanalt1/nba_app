@@ -35,8 +35,7 @@ class BigQueryService:
             )
 
     def _get_latest_gcs_files(self, bucket_name: str = settings.PARENT_BUCKET) -> Tuple[List[str], str]:
-        # List all files in the bucket and find the latest run_id based on the folder structure
-        # assume files are stored in the format: gs://bucket/run_id/season=season_id/file_name.parquet
+        # Keys are gs://bucket/<run_id>/season=<season_id>/<table>.parquet
         blobs = list(self.gcs_storage_client.list_blobs(bucket_name))
         latest_run_id = max([blob.name.split("/")[0] for blob in blobs])
         latest_files = [blob.name.split("/")[2].split('.')[0] for blob in blobs if blob.name.startswith(latest_run_id)]

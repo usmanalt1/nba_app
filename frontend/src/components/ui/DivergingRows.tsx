@@ -9,7 +9,6 @@ export interface DivergingRow {
     teamKey?: TeamKey;
     /** Signed: above zero reads hot, below reads cold. */
     value: number;
-    /** Dim context at the end of the row. */
     note?: string;
     /** Replaces the caption while this row is hovered. */
     detail?: string;
@@ -17,7 +16,6 @@ export interface DivergingRow {
 
 interface DivergingRowsProps {
     rows: DivergingRow[];
-    /** Shown under the rows when nothing is hovered: how to read the bars. */
     caption: string;
     legend: { down: string; up: string };
     format?: (value: number) => string;
@@ -39,11 +37,7 @@ function LegendKey({ colour, label }: { colour: string; label: string }) {
     );
 }
 
-/**
- * Ranked signed values as bars growing out of a centre line - form against a baseline,
- * plus/minus, any measure with a meaningful zero. Scaled to the largest magnitude on
- * screen so the rows stay comparable with each other.
- */
+// Scaled to the largest magnitude on screen, so the rows stay comparable.
 export function DivergingRows({ rows, caption, legend, format = signed }: DivergingRowsProps) {
     const [hovered, setHovered] = useState<string | number | null>(null);
     const maxAbs = Math.max(...rows.map((row) => Math.abs(row.value)), 0);

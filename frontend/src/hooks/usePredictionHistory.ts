@@ -8,11 +8,11 @@ const SEASON_TYPES = ['preseason', 'regular'];
 interface PredictionHistoryState {
     strategy: string | null;
     season: string | null;
-    /** Season type of the soonest unplayed game - what it is about to predict. */
+    /** Season type of the soonest unplayed game. */
     upcomingSeasonType: string | null;
     /** Season type the graded record comes from, which is not always the same one. */
     gradedSeasonType: string | null;
-    /** Unplayed games across both season types, soonest first. */
+    /** Both season types, soonest first. */
     upcoming: Prediction[];
     /** One season type's graded rows. Preseason and regular are never combined. */
     graded: Prediction[];
@@ -43,12 +43,8 @@ type Selection = Pick<
 >;
 
 /**
- * Splits the season types into the upcoming slate and the graded record.
- *
- * The slate spans both types, because the next game may be a preseason one while the
- * regular season is already on the schedule. The record never does: it comes from
- * whichever type was graded most recently, so a preseason hit rate and a regular-season
- * one are never averaged together.
+ * Splits the season types into the upcoming slate, which spans both, and the graded
+ * record, which comes from one: the two hit rates are different samples.
  */
 export function selectHistory(sets: SeasonTypeRows[]): Selection {
     const upcoming = sets
@@ -69,13 +65,8 @@ export function selectHistory(sets: SeasonTypeRows[]): Selection {
 }
 
 /**
- * The season's prediction record. A live run only predicts unplayed games and the cached
- * run is replaced nightly, so the track record lives in model_prediction_history.
- *
- * Both season types are read, because they come and go at different times: through
- * October the only graded games are preseason ones, while the upcoming slate has already
- * moved on to the regular season. They are selected separately and never merged - a
- * preseason hit rate and a regular-season one are different samples.
+ * The season's prediction record, read from model_prediction_history: the cached run is
+ * replaced nightly. Both season types are read, as they come and go at different times.
  */
 export function usePredictionHistory(): PredictionHistoryState {
     const [state, setState] = useState<PredictionHistoryState>(EMPTY);

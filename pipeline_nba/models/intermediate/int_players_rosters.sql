@@ -1,4 +1,3 @@
--- int_player_team_history.sql
 select
     p.player_id,
     p.season_id,

@@ -4,16 +4,12 @@ import { Leaderboard, type LeaderboardRow } from '../ui/Leaderboard';
 import { useSeasonPlayerStats, useSeasonTeamStats } from '../../hooks/useSeasonStats';
 import type { SeasonPlayerStats } from '../../types/player';
 
-/**
- * A player has to have played a real share of the season to hold a rank. Without this
- * the plus/minus board is won by whoever had one good night off the bench - a single
- * 7-minute appearance outranked every starter in 2025-26.
- */
+// Without a floor, the plus/minus board is won by one good night off the bench.
 const QUALIFY_GAME_SHARE = 0.4;
 const QUALIFY_MINUTES = 20;
 
 const SHOWN = 10;
-/** Every board caps its body here and scrolls, so all five sit level in the row. */
+// Every board caps its body here and scrolls, so all five sit level.
 const BOARD_HEIGHT = 292;
 
 type StatKey = 'average_points' | 'average_assists' | 'average_rebounds' | 'average_plus_minus';
@@ -36,7 +32,7 @@ function qualified(players: SeasonPlayerStats[]): SeasonPlayerStats[] {
 
 interface HomeSeasonLeadersProps {
     index: string;
-    /** null while the caller resolves it, which holds the fetch */
+    /** null holds the fetch while the caller resolves it. */
     season?: string | null;
 }
 

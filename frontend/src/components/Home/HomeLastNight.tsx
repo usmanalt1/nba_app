@@ -9,7 +9,7 @@ interface HomeLastNightProps {
     strategy: string | null;
     stats: ModelStats;
     loading: boolean;
-    /** Which games the record is over. Through October that is the preseason. */
+    /** Which games the record is over; through October, the preseason. */
     seasonType?: string | null;
 }
 
@@ -17,16 +17,12 @@ function dayLabel(date: string): string {
     return new Date(date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
-/**
- * The model's report card for the last day it was graded on. Not literally yesterday:
- * there are days with no games, and a result lands only once the pipeline has collected
- * it, so the most recent graded date is the honest "last night".
- */
+// The last graded day, not literally yesterday: some days have no games, and a result
+// only lands once the pipeline has collected it.
 export function HomeLastNight({ index, strategy, stats, loading, seasonType }: HomeLastNightProps) {
     const night = useMemo(() => {
         if (stats.graded.length === 0) return null;
 
-        // graded is oldest-to-newest, so the last row carries the latest date.
         const latest = stats.graded.reduce(
             (newest, row) => (row.game_date > newest ? row.game_date : newest),
             stats.graded[0].game_date,

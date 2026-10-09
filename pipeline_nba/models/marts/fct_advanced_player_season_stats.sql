@@ -1,8 +1,6 @@
 {{ config(tags=['advanced']) }}
 
--- Renamed to the same vocabulary as fct_player_stats, and the 0-1 shares scaled to
--- 0-100 so both stat sets read the same way in the UI. ast_to and ast_ratio are
--- already per-100 values from the endpoint, so they pass through untouched.
+-- Shares scaled 0-100 to match fct_player_stats; ast_to and ast_ratio arrive per-100.
 select
     season,
     season_type,

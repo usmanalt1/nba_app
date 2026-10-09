@@ -22,9 +22,7 @@ class LLMQueryEngine:
         executed_queries: list[str] = []
         logger.info(f"LLMQueryEngine received question: {question}")
         for _ in range(self.llm_config.max_turns):
-            # Initial call is a tool_use request, which may include SQL queries to run
-            # Second call is a text response, which may include the final answer
-            # act -> observe -> act -> observe -> ... until the LLM produces a final answer or max_turns is reached
+            # act -> observe, until a text response arrives or max_turns is reached
             response = self.client.messages.create(
                 model=self.llm_config.model,
                 max_tokens=self.llm_config.max_tokens,
@@ -40,9 +38,7 @@ class LLMQueryEngine:
             if response.stop_reason != "tool_use":
                 return LLMQueryEngineResult(question=question, answer=self._extract_text(response), sql_queries=executed_queries)
 
-            # Appends initial user question and LLM response to messages
             messages.append({"role": "assistant", "content": response.content})
-            # Run any tools (e.g., SQL queries) that the LLM requested, and append the results to messages
             logger.info(f"Running tools: {response.content}")
             messages.append({"role": "user", "content": self._run_tools(response, executed_queries)})
         

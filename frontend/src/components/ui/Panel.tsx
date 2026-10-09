@@ -2,17 +2,15 @@ import type { CSSProperties, ReactNode } from 'react';
 
 interface PanelProps {
     title?: string;
-    /** Right-aligned content on the title row: counts, units, legends. */
     titleMeta?: ReactNode;
-    /** Draws a brand rule down the left edge to mark a panel as the section's lead. */
+    /** Brand rule down the left edge, marking the section's lead panel. */
     accent?: boolean;
     children: ReactNode;
     style?: CSSProperties;
 }
 
-// Plain div rather than Mantine's Box: Box's w/h/p shorthands are rem-based and this
-// app sets a non-default 18px root font-size for typography, which silently scales
-// those props by 1.125x and throws off layout math done in raw pixels elsewhere.
+// Plain div, not Mantine's Box: its rem-based shorthands scale by 1.125x against this
+// app's 18px root font-size, throwing off layout math done in pixels.
 export function Panel({ title, titleMeta, accent, children, style }: PanelProps) {
     return (
         <div

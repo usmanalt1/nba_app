@@ -25,13 +25,8 @@ class BuildDataService:
         return raw_tables
 
     def build_player_awards(self, players_table: pd.DataFrame) -> dict:
-        """Fetch player awards, skipping players already stored, and save the result
-        to object storage - same collect -> object storage -> /load_to_postgres flow
-        every other table in this pipeline uses.
-
-        Awards are static history - once a player has rows in player_awards there's
-        no need to hit the (slow, rate-limited) nba_api endpoint for them again.
-        """
+        """Fetch awards to object storage, skipping stored players: awards are static
+        history and the endpoint is rate-limited."""
         existing_player_ids = set(PlayerAwards.objects.values_list("player_id", flat=True).distinct())
         players_to_fetch = players_table[~players_table["player_id"].isin(existing_player_ids)]
 
@@ -48,8 +43,7 @@ class BuildDataService:
 
         saved = 0
         if not df_awards.empty:
-            # the raw nba_api response includes columns the model deliberately doesn't store
-            # (e.g. "type", which is always the literal string "Award") - keep only real fields
+            # the response carries columns the model deliberately doesn't store
             model_fields = {f.name for f in PlayerAwards._meta.get_fields() if f.concrete and f.name != "id"}
             df_awards = df_awards[[c for c in df_awards.columns if c in model_fields]]
             df_awards["run_timestamp"] = timezone.now()
@@ -63,8 +57,7 @@ class BuildDataService:
     def build_latest_data(self, run_id: str = None, season_year: str = None) -> dict:
         """Collect the current season into object storage under one run_id.
 
-        The nightly path, unlike the backfill endpoints: season comes from today (not
-        self.date, which defaults to 52 weeks ago), and the schedule is included so live
+        The nightly path: season comes from today, and the schedule is included so live
         mode has unplayed games to predict.
         """
         today = datetime.today()
@@ -73,7 +66,6 @@ class BuildDataService:
         split_year = season_year.split("-")
         season_id = f"{split_year[0][-2:]}0{split_year[1][-2:]}"
 
-        # resolved here: the storage backends name that attribute differently
         run_id = run_id or pd.Timestamp.now().strftime("%Y%m%d%H%M%S")
         storage = ObjectStorageService(generate_run_id=run_id).get_storage()
         run_timestamp = pd.Timestamp.now()
@@ -101,11 +93,8 @@ class BuildDataService:
         return {"run_id": run_id, "season_year": season_year, "saved": saved}
 
     def build_preseason_backfill(self, seasons: list, run_id: str = None) -> dict:
-        """Collect preseason box scores for past seasons.
-
-        Preseason-only: the full backfill would also rewrite teams_info and players_info,
-        which hold one row per (entity, season).
-        """
+        """Collect preseason box scores only; a full backfill would also rewrite the
+        per-(entity, season) tables."""
         run_id = run_id or pd.Timestamp.now().strftime("%Y%m%d%H%M%S")
         storage = ObjectStorageService(generate_run_id=run_id).get_storage()
         run_timestamp = pd.Timestamp.now()
@@ -131,20 +120,12 @@ class BuildDataService:
         return {"run_id": run_id, "seasons": seasons, "saved": saved}
 
     def build_advanced_season_stats(self, seasons: list, season_types: list = None, storage=None, run_timestamp=None) -> dict:
-        """Collect season-level advanced stats for the given seasons and save them
-        to object storage - the usual collect -> object storage -> /load_to_postgres
-        flow.
-
-        Two API calls per season per season_type, so all nine seasons for both
-        types is ~36 calls. Cheap enough that there is no skip-what-we-have step:
-        re-running simply refreshes the rows.
-        """
+        """Collect season-level advanced stats into object storage; re-running refreshes."""
         if season_types is None:
             season_types = [SeasonType.default, SeasonTypePlayoffs.playoffs]
 
         collector = CollectRawNBAData(date_to_run=self.date)
-        # `storage`/`run_timestamp` let a caller fold this into a larger run (see
-        # build_latest_data) so every table shares one run_id; omitted, it starts its own.
+        # Passed in, these fold this into a larger run so every table shares one run_id.
         object_storage_service = storage or ObjectStorageService().get_storage()
         run_timestamp = run_timestamp or timezone.now()
         model_for = {
@@ -157,10 +138,8 @@ class BuildDataService:
             split_year = season_year.split("-")
             season_id = f"{split_year[0][-2:]}0{split_year[1][-2:]}"
 
-            # Object storage keys on (run, season, table_name) and /load_to_postgres
-            # reads the table name off the filename, so regular and playoffs have to
-            # be combined into one frame per table - saving them separately would
-            # have the second overwrite the first.
+            # Storage keys on (run, season, table_name), so saving each season_type
+            # separately would have the second overwrite the first.
             combined = {table: [] for table in model_for}
             for season_type in season_types:
                 raw_tables = collector._get_advanced_season_stats(
@@ -174,7 +153,6 @@ class BuildDataService:
                 if not frames:
                     continue
                 df = pd.concat(frames, ignore_index=True)
-                # the endpoints return columns the models deliberately don't store
                 model = model_for[table_name]
                 model_fields = {f.name for f in model._meta.get_fields() if f.concrete and f.name != "id"}
                 df = df[[c for c in df.columns if c in model_fields]]

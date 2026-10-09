@@ -23,8 +23,7 @@ SEASON_TYPE_PLAYOFFS = "playoffs"
 SEASON_TYPE_REGULAR = "regular"
 SEASON_TYPE_PRESEASON = "preseason"
 
-# Season types predicted from a different type's games. Preseason has no history to
-# train on, so it is predicted off regular-season form.
+# Preseason has no history to train on, so it is predicted off regular-season form.
 TRAIN_SEASON_TYPE = {SEASON_TYPE_PRESEASON: SEASON_TYPE_REGULAR}
 
 
@@ -44,16 +43,10 @@ def _report(name, y_true, pred, proba) -> dict[str, float]:
 
 class ModelTraner(ModelBase):
     def __init__(self, strategy: str, season: str, season_type: str, mode: str = MODE_BACKTEST):
-        """
-        Trains `strategy` and produces predictions for `season`/`season_type`.
+        """Train `strategy` for `season`/`season_type`.
 
-        mode="backtest" (default) treats `season` as a completed season: the model trains
-        on every other season and is scored against all of `season`'s games.
-
-        mode="live" treats `season` as the season currently in progress: the model trains
-        on every other season plus whatever games in `season` already have a recorded
-        result (home_wl not null), then produces probabilities for the remaining, unplayed
-        games. There's no outcome to score those against yet, so metrics come back empty.
+        backtest scores against all of a completed `season`; live trains on its played
+        games and predicts the rest, so metrics come back empty.
         """
         if strategy not in STRATEGY_REGISTRY:
             raise ValueError(f"Unknown strategy: {strategy}")
@@ -103,8 +96,7 @@ class ModelTraner(ModelBase):
         self.df_player_stats = all_player_stats[all_player_stats["season_type"].isin(frame_types)].copy()
 
     def _select_predicted_games(self) -> set:
-        """Game ids this run predicts, pinned here because GamesTransformer drops
-        season_type - downstream, season alone no longer identifies them."""
+        """Game ids this run predicts, pinned before GamesTransformer drops season_type."""
         predicted = self.df_games[
             (self.df_games["season"] == self.season)
             & (self.df_games["season_type"] == self.season_type)
@@ -152,13 +144,8 @@ class ModelTraner(ModelBase):
         )
         boxscore_model_df = playoff_transformer.transform()
 
-        # star ratings are built off regular-season performance only - a handful of
-        # playoff games is too thin a sample to re-rank players against. Every playoff
-        # team already has a full regular season on record, so feeding that in (across
-        # all seasons, for PlayersTransformer's own cross-season baseline) plus this
-        # season's playoff schedule appended (so there's a row to attach a rating to for
-        # each playoff game) lets its existing season-to-date logic carry the
-        # regular-season rating straight into the postseason, unmodified.
+        # Star ratings come off regular-season play only - playoffs are too thin a sample.
+        # Appending the playoff schedule gives each playoff game a row to rate.
         regular_player_stats_all_seasons = all_player_stats[all_player_stats["season_type"] == SEASON_TYPE_REGULAR].copy()
         regular_games_all_seasons = all_games[all_games["season_type"] == SEASON_TYPE_REGULAR].copy()
         players_schedule = pd.concat([regular_games_all_seasons, self.df_games], ignore_index=True)
@@ -176,22 +163,14 @@ class ModelTraner(ModelBase):
         return set(self.df_games.loc[self.df_games["home_wl"].notna(), "game_id"])
 
     def _validate_season_completeness(self) -> list[str]:
-        """Sanity-check that `self.season` looks fully played before treating it as
-        finished. dim_games can be missing rows outright (an ingestion gap - see the
-        OKC 2025-26 case: 81 rows instead of 82, not a modeling artifact) or contain
-        rows for games that simply haven't been played yet (home_wl still null).
-        Neither is visible from the model's own features, so both are checked directly
-        against the raw schedule and surfaced as warnings rather than silently producing
-        a skewed season_record - or, in backtest mode, letting an unplayed game
-        masquerade as a home-team loss (GamesTransformer's wl == "W" check turns a null
-        result into False, i.e. a "loss", same as it would for a real one)."""
+        """Warn if `self.season` has missing or unplayed games before treating it as
+        finished; neither is visible from the model's own features."""
         warnings = []
         season_games = self.df_games[
             (self.df_games["season"] == self.season)
             & (self.df_games["season_type"] == self.season_type)
         ]
-        # a schedule slot with no real teams assigned yet (e.g. an in-season-tournament
-        # knockout round not yet resolved) isn't a data gap - exclude it from both checks
+        # team_id 0 is an unresolved schedule slot, not a data gap
         real_games = season_games[(season_games["home_team_id"] != 0) & (season_games["away_team_id"] != 0)]
 
         unplayed = real_games[real_games["home_wl"].isna()]
@@ -223,8 +202,7 @@ class ModelTraner(ModelBase):
         for t in self.config.transformers:
             model_df = t.transform()
 
-        # diff_ columns are home-vs-away differentials; round/game_in_series (playoffs
-        # only) are shared context, not team-relative, so they're picked up separately
+        # round/game_in_series are shared context, not home-vs-away differentials
         diff_cols = [c for c in model_df.columns if c.startswith("diff_")]
         context_cols = [c for c in ("round", "game_in_series") if c in model_df.columns]
         feature_cols = diff_cols + context_cols
@@ -234,8 +212,7 @@ class ModelTraner(ModelBase):
 
         is_played = model_df["game_id"].isin(self._played_game_ids())
 
-        # is_played guards both sides: GamesTransformer's `wl == "W"` turns a null result
-        # into False, so an unplayed game would train and score as a home defeat.
+        # Without is_played, GamesTransformer's `wl == "W"` scores an unplayed game as a loss.
         if self.mode == MODE_BACKTEST:
             train_df = model_df[~is_predicted & is_played].reset_index(drop=True)
             eval_df = model_df[is_predicted & is_played].reset_index(drop=True)
@@ -267,14 +244,13 @@ class ModelTraner(ModelBase):
             proba = model.predict_proba(X_eval_s)[:, 1]
             pred = (proba >= 0.5).astype(int)
         else:
-            # nothing left to predict (e.g. mode="live" against a fully-completed season)
+            # nothing left to predict, e.g. live mode on a completed season
             proba = np.array([])
             pred = np.array([], dtype=int)
 
         metrics = None
         if self.mode == MODE_BACKTEST:
-            # naive baseline: always predict the home team wins (home court advantage is
-            # real - any model needs to beat this, not just beat 50/50, to be worth anything)
+            # Baseline to beat: always pick the home team. Home advantage makes it > 50/50.
             naive_pred = np.ones(len(y_eval))
             naive_proba = np.full(len(y_eval), y_train.mean())
             _report("naive (home always)", y_eval, naive_pred, naive_proba)

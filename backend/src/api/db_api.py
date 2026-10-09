@@ -74,8 +74,7 @@ class SeasonTeamStats(BoxScoreAverages):
     losses: int
 
 class AdvancedAverages(Schema):
-    """Season-level advanced metrics. Shares are 0-100, matching the basic stats;
-    ratings, pace and the assist/turnover ratios are raw per-game values."""
+    """Season-level advanced metrics; shares are 0-100, the rest raw per-game values."""
     games_played: Optional[int] = None
     wins: Optional[int] = None
     losses: Optional[int] = None
@@ -189,11 +188,7 @@ async def season_player_stats(
     position: Optional[str] = None,
     season_type: Literal["regular", "playoffs", "preseason"] = "regular",
 ):
-    """Regular season or playoff averages for every player in a season.
-
-    Optionally narrowed by team or position. The two season types are separate
-    sets of games, never combined.
-    """
+    """Averages for every player in a season; the season types are never combined."""
     def sync_get():
         return Service(FctPlayerStats).get_season_player_stats(
             season_name=season_name,
@@ -225,7 +220,6 @@ async def season_advanced_player_stats(
     position: Optional[str] = None,
     season_type: Literal["regular", "playoffs", "preseason"] = "regular",
 ):
-    """Advanced season stats for every player in a season."""
     def sync_get():
         return Service(FctAdvancedPlayerSeasonStats).get_season_advanced_player_stats(
             season_name=season_name, team_id=team_id, position=position, season_type=season_type,
@@ -239,7 +233,6 @@ async def season_advanced_team_stats(
     team_id: Optional[int] = None,
     season_type: Literal["regular", "playoffs", "preseason"] = "regular",
 ):
-    """Advanced season stats for every team in a season."""
     def sync_get():
         return Service(FctAdvancedTeamSeasonStats).get_season_advanced_team_stats(
             season_name=season_name, team_id=team_id, season_type=season_type,
@@ -265,8 +258,7 @@ async def list_teams(request):
     return await asyncio.to_thread(sync_get)
 
 
-# Colours change when a team rebrands, about once a year, so this caches far longer than
-# anything else here. refresh=true is the way back after a reseed.
+# Colours only change when a team rebrands; refresh=true is the way back after a reseed.
 TEAM_COLOURS_CACHE_TTL_SECONDS = 7 * 24 * 60 * 60
 
 
@@ -307,8 +299,7 @@ async def get_player(request, player_id: int, season_type: Literal["regular", "p
 @router.get("/get_top_3_best_players_latest_season/{stat_type}", response=List[PlayerAggStats])
 async def get_top_3_best_players_latest_season(request, stat_type: str):
     def sync_get_top_3_best_players_latest_season():
-        # Seasons with recorded games only: dim_seasons also carries the upcoming
-        # season, which has no stats and would make this return nothing.
+        # Seasons with games only: dim_seasons also carries the upcoming, statless season.
         latest_season: DimSeasons = Service(DimSeasons).get_seasons_with_stats()[-1]
         season_name = latest_season.season_name
         players_stats = Service(FctPlayerStats).get_player_stats(season_id=season_name)

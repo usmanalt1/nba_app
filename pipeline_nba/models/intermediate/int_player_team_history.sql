@@ -1,4 +1,3 @@
--- int_player_team_history.sql
 WITH player_team_dates AS (
     SELECT
         player_id,

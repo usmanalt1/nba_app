@@ -31,8 +31,7 @@ async def ask(request, payload: AskRequest):
         def sync_ask():
             return LLMQueryEngine().ask(payload.question)
         user_id = request.user.id
-        # Wall clock, not loop.time(): that is monotonic (seconds since boot), so the
-        # stored value could not be turned back into a date for the transcript.
+        # Wall clock, not the monotonic loop.time(): the transcript needs a real date.
         time_requested = time.time()
         cache_client = RedisClient()
         answer = await asyncio.to_thread(sync_ask)
@@ -55,7 +54,6 @@ def get_conversations(request):
         if not matching_keys:
             return AskResponseSchema(success=False, error="No conversation found for the given session.")
 
-        # Retrieve questions and answers
         answers = []
         for key in matching_keys:
             question = key.split(":")[2]

@@ -1,6 +1,5 @@
-"""Season naming: a season is named for the year it tips off; months <= September still
-belong to the previous one. Matches TransformHelper.create_season_id_year.
-"""
+"""Season naming: a season is named for the year it tips off, so months <= September
+belong to the previous one."""
 
 from datetime import date
 

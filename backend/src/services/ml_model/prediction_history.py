@@ -1,7 +1,6 @@
 """Durable store for live predictions, graded against dim_games at read time.
 
-A live run only predicts unplayed games and the Redis cache holds one run, so without
-this there is nothing left to grade once a game is played.
+The Redis cache holds one run, so without this nothing survives to grade.
 """
 
 from logging import getLogger
@@ -31,11 +30,8 @@ def _played_game_ids(season: str, season_type: str) -> set:
 
 
 def persist_predictions(strategy: str, season: str, season_type: str, predictions: pd.DataFrame) -> dict:
-    """Upsert one row per predicted game.
-
-    Played games are skipped, not updated - the stored row was written before tip-off,
-    and overwriting it would turn a genuine call into hindsight.
-    """
+    """Upsert one row per predicted game, skipping played ones: the stored row was
+    written before tip-off and overwriting it would be hindsight."""
     if predictions is None or predictions.empty:
         logger.info(f"No predictions to persist for {strategy}/{season}/{season_type}")
         return {"received": 0, "written": 0, "skipped_played": 0}

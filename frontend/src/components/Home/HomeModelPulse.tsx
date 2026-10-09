@@ -9,7 +9,7 @@ interface HomeModelPulseProps {
     strategy: string | null;
     stats: ModelStats;
     index: string;
-    /** Which games this record is over - a preseason one must not read as a season one. */
+    /** Which games this record is over; a preseason one must not read as a season one. */
     seasonType?: string | null;
 }
 

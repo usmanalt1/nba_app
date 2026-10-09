@@ -26,19 +26,16 @@ from services.warehouse_storage.bigquery.service import BigQueryService
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DBT_PROJECT_DIR = REPO_ROOT / "pipeline_nba"
 
-# Longer than the nightly cadence, so a cached run lives until the next one replaces
-# it. Shorter than two nights, so a failed pipeline serves nothing rather than
-# yesterday's slate as today's.
+# Over one night so a run lives until the next replaces it, under two so a failed
+# pipeline serves nothing rather than yesterday's slate.
 MODEL_CACHE_TTL_SECONDS = 26 * 60 * 60
 
 
 class NightlyConfig(Config):
-    # season_year None means derive from today - pinning it is how a pipeline ends up
-    # stuck on last season.
+    # None derives from today; pinning it is how a pipeline sticks on last season.
     season_year: str = None
     strategies: list = ["logistic_regression", "random_forest"]
-    # Ordered as the season runs: each type is skipped once it has no unplayed games
-    # left, so the home page moves preseason -> regular -> playoffs on its own.
+    # Ordered as the season runs; each type is skipped once it has no unplayed games.
     season_types: list = ["preseason", "regular", "playoffs"]
     dbt_target: str = None
 
@@ -143,12 +140,8 @@ def _run_one(context: AssetExecutionContext, season: str, season_type: str, stra
 
 
 def _pick_last_run(summary: dict, season: str, season_types: list, strategies: list) -> Optional[dict]:
-    """The run the homepage opens on: the best strategy in the season type now in play.
-
-    The season type is the first with predictions to store, which walks the season on its
-    own. Within it the strategy is whichever has called those games best so far, falling
-    back to config order before anything has been graded.
-    """
+    """The run the homepage opens on: in the first season type with stored predictions,
+    whichever strategy has called those games best, else config order."""
     for season_type in season_types:
         stored = [s for s in strategies if summary.get(f"{s}/{season_type}", {}).get("written")]
         if not stored:
@@ -167,8 +160,8 @@ def _pick_last_run(summary: dict, season: str, season_types: list, strategies: l
 def live_predictions(context: AssetExecutionContext, config: NightlyConfig, dbt_marts: dict) -> dict:
     """Predict the upcoming slate for each strategy and season type.
 
-    Predictions go to model_prediction_history as well as Redis: the cache is replaced
-    tomorrow night, so without it there is nothing left to grade once games are played.
+    Stored durably as well as cached: Redis is replaced tomorrow night, leaving
+    nothing to grade once games are played.
     """
     season = _season(config)
     summary = {}
@@ -215,8 +208,7 @@ class BacktestConfig(Config):
 
 @asset(compute_kind="python")
 def backtest_scorecard(context: AssetExecutionContext, config: BacktestConfig, dbt_marts: dict) -> dict:
-    """Score each strategy against a finished season. Live mode cannot do this - its
-    predictions have no outcomes yet."""
+    """Score each strategy against a finished season, which live mode cannot do."""
     season = config.season_year or previous_season(current_season())
     redis_client = RedisClient()
     metrics = {}

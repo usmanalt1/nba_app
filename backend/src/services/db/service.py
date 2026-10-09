@@ -15,18 +15,13 @@ M = TypeVar("M", bound=Model)
 
 
 def _no_nan(value):
-    """Postgres stores NaN for a rate with no attempts, and JSON has no NaN literal -
-    serialised raw it becomes a bare NaN that browsers refuse to parse."""
+    """JSON has no NaN literal, and Postgres stores NaN for a rate with no attempts."""
     return None if isinstance(value, float) and math.isnan(value) else value
 
 
 def _shooting_pct(made: str, attempted: str):
-    """Season shooting percentage, computed from totals rather than per-game ratios.
-
-    Averaging each game's fg_pct would weight a 1-for-1 night the same as a
-    12-for-20 night. NullIf keeps a player with zero attempts from dividing by zero
-    (the result is NULL instead).
-    """
+    """Shooting percentage from season totals: averaging per-game ratios overweights
+    a 1-for-1 night."""
     return Round(
         ExpressionWrapper(
             Sum(made) * Value(100.0) / NullIf(Sum(attempted), Value(0.0)),
@@ -81,10 +76,7 @@ class Service:
         return list(self.model.objects.only("player_id", "player_name"))
     
     def get_seasons_with_stats(self, season_type: str = "regular") -> list:
-        """Seasons with recorded games of this type, newest last.
-
-        Defaults to regular: one preseason game shouldn't make a season current.
-        """
+        """Seasons with recorded games of this type, newest last."""
         played = set(
             FctPlayerStats.objects.filter(season_type=season_type)
             .values_list("season", flat=True)
@@ -159,15 +151,9 @@ class Service:
         position: Optional[str] = None,
         season_type: str = "regular",
     ) -> list:
-        """Per-game averages for every player in a season, one row per player.
-
-        season_type is 'regular' or 'playoffs'. fct_player_stats holds both, so
-        leaving it out averages playoff games into the regular-season numbers.
-        """
-        # Nothing here traverses the player FK. dim_players only covers the latest
-        # season, so any join through it is an INNER JOIN that silently drops every
-        # earlier player - 393 of 540 for 2017-18. The name is denormalised onto the
-        # fact by dbt, and position is looked up separately.
+        """Per-game averages for every player in a season, one row per player."""
+        # Never traverse the player FK: dim_players covers the latest season only, so the
+        # inner join drops every earlier player.
         qs = FctPlayerStats.objects.filter(
             season=str(season_name), season_type=season_type,
         )
@@ -184,9 +170,7 @@ class Service:
             qs.values("player_id", "season")
             .annotate(
                 games_played=Count("game_id", distinct=True),
-                # Max, not a group-by: the source spells some names two ways
-                # (Valanciunas/Valančiūnas, Portis/Portis Jr.) and grouping on the
-                # name would return that player twice.
+                # Max, not a group-by: the source spells some names two ways.
                 player_name=Max("player_name"),
                 **_box_score_averages(),
             )
@@ -231,19 +215,14 @@ class Service:
         position: Optional[str] = None,
         season_type: str = "regular",
     ) -> list:
-        """Advanced season stats per player - a straight read, no aggregation.
-
-        leaguedashplayerstats already returns one pre-aggregated row per player per
-        season, so unlike the basic stats there is nothing to average here.
-        """
+        """Advanced season stats per player; the source is already one row per season."""
         qs = FctAdvancedPlayerSeasonStats.objects.filter(
             season=str(season_name), season_type=season_type,
         )
         if team_id:
             qs = qs.filter(team_id=team_id)
         if position:
-            # Same id-first approach as the basic stats: dim_players covers only the
-            # latest season, so joining to it would drop earlier players.
+            # Ids first, as above: joining dim_players would drop earlier players.
             matching_ids = DimPlayers.objects.filter(
                 position__icontains=position,
             ).values_list("player_id", flat=True)
@@ -275,10 +254,7 @@ class Service:
         season_id: Optional[int] = None,
         season_type: str = "regular",
     ) -> list:
-        """Per-game averages grouped by season.
-
-        season_type is 'regular' or 'playoffs'; pass None for both combined.
-        """
+        """Per-game averages grouped by season; season_type None combines both."""
         qs = FctPlayerStats.objects.select_related("player")
         if season_type:
             qs = qs.filter(season_type=season_type)

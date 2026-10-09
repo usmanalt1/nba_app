@@ -1,6 +1,5 @@
 import { WormMark } from '../ui/WormMark';
 
-/** Navbar lockup: the portrait chip beside the wordmark. */
 export function Logo() {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>

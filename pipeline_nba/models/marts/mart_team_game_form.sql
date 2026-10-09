@@ -11,8 +11,7 @@ with team_games as (
         t.team_id,
         t.game_id,
         g.game_date,
-        -- On a team log plus_minus is the final margin; verified equal to
-        -- dim_games' home_pts - away_pts for every 2025-26 regular season game.
+        -- On a team log, plus_minus is the final margin.
         t.plus_minus as margin,
         case when t.wl = 'W' then 1 else 0 end as win
     from {{ ref('fct_team_stats') }} t

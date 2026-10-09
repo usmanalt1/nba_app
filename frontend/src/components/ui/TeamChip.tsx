@@ -1,8 +1,7 @@
 import { useTeam, type TeamColours, type TeamKey } from '../../context/TeamColoursProvider';
 
 interface TeamChipProps {
-    /** A team id, abbreviation or name - or a side from useTeamPair, which already
-        carries the matchup swap. */
+    /** An id, abbreviation or name, or a useTeamPair side with the swap applied. */
     team: TeamKey | TeamColours;
 }
 

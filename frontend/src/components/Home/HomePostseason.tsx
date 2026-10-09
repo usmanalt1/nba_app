@@ -14,10 +14,7 @@ interface HomePostseasonProps {
     index: string;
 }
 
-/**
- * The most recent completed postseason. Deliberately not tied to the live season: for
- * most of the year there is no playoff running, and last spring's is the story anyway.
- */
+// The last completed postseason, not the live season: most of the year has no playoff.
 export function HomePostseason({ index }: HomePostseasonProps) {
     const season = useStatsSeason('playoffs');
     const [players, setPlayers] = useState<RankedPlayerStats[]>([]);

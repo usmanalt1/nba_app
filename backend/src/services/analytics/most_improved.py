@@ -36,9 +36,8 @@ class MostImprovedPlayers:
         return merged.sort_values("points_improvement", ascending=False).head(10).reset_index(drop=True)
 
     def _build_season_stats(self) -> pd.DataFrame:
-        # One row per player per season, whatever shirts they wore: grouping by team as
-        # well split a traded player into partial rows that each missed MIN_GAMES, and
-        # made the current-to-previous merge below fan out instead of pairing 1:1.
+        # Not grouped by team: a trade would split one season into partial rows and
+        # fan out the merge below.
         stats = self.player_stats_df.groupby(["season_id", "player_id", "season"]).agg(
             average_points=pd.NamedAgg(column="pts", aggfunc="mean"),
             games_played=pd.NamedAgg(column="pts", aggfunc="count"),

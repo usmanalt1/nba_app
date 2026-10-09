@@ -1,8 +1,7 @@
 from django.db import migrations
 
-# players_info.id and teams_info.id hold NBA entity ids written by an older loader, but
-# the identity sequences were never advanced past them - so new inserts collide with
-# taken ids. Forward-only, safe to re-run.
+# An older loader wrote NBA entity ids into these pks without advancing the sequences,
+# so new inserts collide. Forward-only, safe to re-run.
 
 AFFECTED_TABLES = ["players_info", "teams_info"]
 

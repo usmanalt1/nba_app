@@ -11,7 +11,6 @@ import type { SeasonAdvancedPlayerStats, SeasonAdvancedTeamStats } from "../../t
 import { useViewDataFilters } from "./ViewDataFiltersContext";
 import { STAGE_TO_SEASON_TYPE } from "./stages";
 
-// Mirrors the Mantine "pills" tabs below: worm accent when active, dim paper when not.
 const stageButtonStyle: CSSProperties = {
     flex: 1,
     padding: '6px 14px',
@@ -32,7 +31,6 @@ const stageButtonActiveStyle: CSSProperties = {
     color: 'var(--paper)',
 };
 
-// Each filter group is its own pill container; the row's gap separates them.
 const toggleGroupStyle: CSSProperties = {
     display: 'flex',
     gap: '4px',
@@ -65,8 +63,7 @@ export function ViewDataPage() {
     const [advTeamRows, setAdvTeamRows] = useState<SeasonAdvancedTeamStats[]>([]);
     const [loading, setLoading] = useState(false);
 
-    // Season options track the stage: a season that has preseason games may have no
-    // regular-season ones yet, and vice versa.
+    // Season options track the stage: the two don't always cover the same seasons.
     useEffect(() => {
         const seasonType = STAGE_TO_SEASON_TYPE[selectedStage];
         apiFetch(`/api/nba/db/list_all_seasons?has_stats=true&season_type=${seasonType}`)
@@ -75,8 +72,7 @@ export function ViewDataPage() {
                 setSeasons(data);
                 const names = data.map(s => String(s.season_name));
                 const latest = [...names].sort((a, b) => a.localeCompare(b)).at(-1);
-                // Keep the user's season when the new stage still has it; otherwise fall
-                // back to the newest, so switching stage never leaves an empty table.
+                // Fall back to the newest, so switching stage never empties the table.
                 setSelectedSeason(current =>
                     current && names.includes(current) ? current : latest ?? null
                 );
@@ -103,7 +99,6 @@ export function ViewDataPage() {
         });
         if (selectedTeam !== null) params.set("team_id", selectedTeam);
 
-        // Four endpoints share these filters; only the active view is fetched.
         const teams = viewMode === "Teams";
         const advanced = statSet === "Advanced";
         const endpoint = advanced
@@ -133,15 +128,12 @@ export function ViewDataPage() {
         label: t.team_name,
     }));
 
-    // The roster feed gives coarse positions - G, F, C and hyphenated combos
-    // like G-F - so these are the only values that can actually match.
+    // The roster feed only ever gives G, F, C and hyphenated combos of them.
     const positionOptions = ["G", "F", "C"];
 
-    // Derived, not state: with no position picked and an empty box, every row
-    // passes through, which is why the full season shows by default.
     const query = playerQuery.trim().toLowerCase();
     const visibleRows = rows.filter(row => {
-        // Split on the hyphen so a "G-F" player is listed under both G and F.
+        // Split on the hyphen so a "G-F" player lists under both G and F.
         const positions = (row.position ?? "").toUpperCase().split("-");
         const matchesPosition = selectedPosition === null || positions.includes(selectedPosition);
         const matchesQuery = query === ""
@@ -153,7 +145,6 @@ export function ViewDataPage() {
         ? teamRows
         : teamRows.filter(row => row.team_name.toLowerCase().includes(query));
 
-    // One name filter for every shape: players carry player_name, teams team_name.
     const byName = <T extends { player_name?: string | null; team_name?: string | null }>(list: T[]) =>
         query === ""
             ? list
@@ -249,7 +240,7 @@ export function ViewDataPage() {
                             <button
                                 key={position}
                                 style={{ ...stageButtonStyle, ...(selectedPosition === position ? stageButtonActiveStyle : null) }}
-                                // Clicking the active position clears it, since there is no "All" pill.
+                                // Clicking the active pill clears it; there is no "All".
                                 onClick={() => setSelectedPosition(current => current === position ? null : position)}
                             >
                                 {position}

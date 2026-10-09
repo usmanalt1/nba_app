@@ -5,7 +5,7 @@ export interface LeaderboardRow {
     label: string;
     sublabel?: string;
     value: string | number;
-    /** Drives the magnitude track behind the row. Falls back to a plain list when absent. */
+    /** Drives the magnitude track; absent renders a plain list. */
     magnitude?: number;
 }
 
@@ -14,10 +14,9 @@ interface LeaderboardProps {
     titleMeta?: string;
     unit?: string;
     rows: LeaderboardRow[];
-    /** Marks this board as the section's lead. */
     accent?: boolean;
     empty?: string;
-    /** Caps the body in px and scrolls inside it, so boards sharing a row stay level. */
+    /** Caps the body and scrolls, so boards sharing a row stay level. */
     maxHeight?: number;
 }
 
@@ -29,8 +28,7 @@ export function Leaderboard({ title, titleMeta, unit = '', rows, accent, empty =
     ) : (
         rows.map((row, index) => {
                     const isLeader = index === 0;
-                    // Zero-based: a floor would exaggerate gaps between players who are
-                    // in reality a tenth of a rebound apart.
+                    // Zero-based, or a tenth of a rebound reads as a big gap.
                     const fill = peak > 0 && row.magnitude !== undefined
                         ? (row.magnitude / peak) * 100
                         : null;
@@ -128,8 +126,8 @@ export function Leaderboard({ title, titleMeta, unit = '', rows, accent, empty =
     return (
         <Panel title={title} titleMeta={titleMeta} accent={accent} style={{ width: '100%' }}>
             {maxHeight === undefined ? body : (
-                // The negative margin plus matching padding keeps the rows' -18px
-                // magnitude track inside the scrollport, which would otherwise clip it.
+                // Negative margin plus matching padding, or the scrollport clips the
+                // rows' -18px magnitude track.
                 <div className="scroll-y" style={{ maxHeight, marginLeft: -18, paddingLeft: 18 }}>
                     {body}
                 </div>
