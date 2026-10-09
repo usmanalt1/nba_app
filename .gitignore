@@ -16,8 +16,8 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+/lib/
+/lib64/
 parts/
 sdist/
 var/
@@ -79,6 +79,8 @@ static/
 /dbt_modules/
 /dbt_packages/
 profiles.yml
+!pipeline_nba/ci/profiles.yml
+.user.yml
 
 # Environment variables
 .env
@@ -90,6 +92,14 @@ myenv/*
 Thumbs.db
 *.json
 *.parquet
+
+# `*.json` above is there to keep service-account keyfiles out, but it also caught
+# the frontend build config, so a clean clone had no package.json to build from.
+!frontend/package.json
+!frontend/package-lock.json
+!frontend/tsconfig.json
+!frontend/tsconfig.app.json
+!frontend/tsconfig.node.json
 
 # Ignore migrations if you want to exclude them (uncomment if needed)
 # backend/src/app/migrations/

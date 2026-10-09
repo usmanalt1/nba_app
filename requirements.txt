@@ -40,3 +40,5 @@ sqlglot
 django-ninja-jwt 
 django-cors-headers 
 python-decouple
+uvicorn
+dj-database-url

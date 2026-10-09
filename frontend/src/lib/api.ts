@@ -1,3 +1,11 @@
+// Empty in dev, where vite proxies /api to the backend. Set in production, where
+// the site and the API are on different origins.
+const API_BASE = import.meta.env.VITE_API_URL ?? '';
+
+function withBase(input: RequestInfo | URL) {
+  return typeof input === 'string' && input.startsWith('/') ? `${API_BASE}${input}` : input;
+}
+
 export function isAccessTokenExpired(token: string) {
   try {
     const payload = token.split('.')[1];
@@ -22,7 +30,7 @@ function redirectToAuth() {
 }
 
 async function sendRequest(input: RequestInfo | URL, init: RequestInit, accessToken: string | null) {
-  return fetch(input, {
+  return fetch(withBase(input), {
     ...init,
     credentials: 'include',
     headers: {

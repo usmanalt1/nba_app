@@ -27,10 +27,15 @@ class Settings(BaseSettings):
     LLM_DB_USER: str = "llm_readonly"
     LLM_DB_PASSWORD: str = "llm_readonly"
     ANTHROPIC_API_KEY: Optional[str] = None
-    CONN_STR: str
-    AZURE_KEY: str
-    CONTAINER_NAME: str
+    # Only read by AzureBlobStorage. Required here would fail any deploy not on STORAGE=az.
+    CONN_STR: Optional[str] = None
+    AZURE_KEY: Optional[str] = None
+    CONTAINER_NAME: Optional[str] = None
     DJANGO_SECRET_KEY: str
     JWT_SIGNING_KEY: str
+    # Unset locally, so app.settings keeps using the compose Postgres.
+    DATABASE_URL: Optional[str] = None
+    ALLOWED_HOSTS: str = "*"
+    CORS_EXTRA_ORIGINS: str = ""
 
 settings = Settings()

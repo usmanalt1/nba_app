@@ -90,7 +90,8 @@ def dbt_marts(context: AssetExecutionContext, config: NightlyConfig, postgres_ra
     command = [
         "dbt", "build",
         "--project-dir", str(DBT_PROJECT_DIR),
-        "--profiles-dir", str(DBT_PROJECT_DIR),
+        # Explicit, so it has to honour DBT_PROFILES_DIR itself rather than let dbt read it.
+        "--profiles-dir", os.getenv("DBT_PROFILES_DIR", str(DBT_PROJECT_DIR)),
         "--target", target,
     ]
     context.log.info(f"Running: {' '.join(command)}")

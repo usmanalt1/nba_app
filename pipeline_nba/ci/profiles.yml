@@ -1,0 +1,15 @@
+# The target CI and Cloud Run use. The personal profiles.yml stays untracked, so this
+# is a separate directory reached with DBT_PROFILES_DIR rather than a target added there.
+nba_project:
+  target: neon
+  outputs:
+    neon:
+      type: postgres
+      host: "{{ env_var('PGHOST') }}"
+      user: "{{ env_var('PGUSER') }}"
+      password: "{{ env_var('PGPASSWORD') }}"
+      port: 5432
+      dbname: "{{ env_var('PGDATABASE') }}"
+      schema: nba
+      threads: 4
+      sslmode: require

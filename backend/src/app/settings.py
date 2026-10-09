@@ -7,18 +7,19 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 settings = Settings()
 
-# SECURITY WARNING: override in production.
-SECRET_KEY = "django-insecure-))**bk!vov1m3g@xo+v!)%rov1-g35((nfa0s7llo_yw9@)md4"
+SECRET_KEY = settings.DJANGO_SECRET_KEY
 
-# SECURITY WARNING: must be False in production.
-DEBUG = True
+DEBUG = settings.DEBUG
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = [host.strip() for host in settings.ALLOWED_HOSTS.split(",") if host.strip()]
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
-]
+] + [origin.strip() for origin in settings.CORS_EXTRA_ORIGINS.split(",") if origin.strip()]
+
+# apiFetch sends credentials, so the browser requires the exact origin echoed back.
+CORS_ALLOW_CREDENTIALS = True
 
 
 INSTALLED_APPS = [
@@ -66,16 +67,26 @@ TEMPLATES = [
 WSGI_APPLICATION = "app.wsgi.application"
 
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": "backend_db",
-        "USER": "admin",
-        "PASSWORD": "admin",
-        "HOST": "nba_app-postgres-host-1",
-        "PORT": "5432",
+if settings.DATABASE_URL:
+    # Imported here so the compose path below needs no extra dependency installed.
+    import dj_database_url
+
+    DATABASES = {
+        "default": dj_database_url.parse(
+            settings.DATABASE_URL, conn_max_age=600, ssl_require=True,
+        )
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": "backend_db",
+            "USER": "admin",
+            "PASSWORD": "admin",
+            "HOST": "nba_app-postgres-host-1",
+            "PORT": "5432",
+        }
+    }
 
 LOGGING = {
     "version": 1,

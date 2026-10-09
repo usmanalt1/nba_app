@@ -1,0 +1,15 @@
+.git
+.venv
+node_modules
+frontend
+nba-ua-dev-bucket/
+dagster_home/
+*.duckdb
+*.parquet
+*.ipynb
+*.p8
+*.log
+.env
+__pycache__/
+pipeline_nba/target/
+pipeline_nba/logs/
