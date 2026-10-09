@@ -1,0 +1,16 @@
+// Declared rather than left to wrangler's framework detection, which otherwise
+// regenerates this on every build. `name` must stay "worm" to keep deploying to
+// the existing Worker. not_found_handling is what serves deep links, in place of
+// the _redirects file classic Pages would use.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "worm",
+  "compatibility_date": "2026-10-06",
+  "observability": {
+    "enabled": true
+  },
+  "assets": {
+    "directory": "./dist/",
+    "not_found_handling": "single-page-application"
+  }
+}
