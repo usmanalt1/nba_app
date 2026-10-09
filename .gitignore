@@ -85,6 +85,8 @@ profiles.yml
 # Environment variables
 .env
 .env.*
+# Build-time config, not secrets: the API URL ships in the bundle regardless.
+!frontend/.env.production
 *.duckdb
 myenv/*
 
