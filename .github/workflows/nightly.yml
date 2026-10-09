@@ -15,6 +15,9 @@ jobs:
       DBT_TARGET: neon
       DBT_PROFILES_DIR: ${{ github.workspace }}/pipeline_nba/ci
       STORAGE: local
+      # LocalStorage writes under PARENT_BUCKET, DBService reads FILE_PATH_PARENT_NAME.
+      # They must agree or the load finds no parquet.
+      PARENT_BUCKET: nba-ua-dev-bucket
       FILE_PATH_PARENT_NAME: nba-ua-dev-bucket
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       REDIS_URL: ${{ secrets.REDIS_URL }}
