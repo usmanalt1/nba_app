@@ -30,13 +30,13 @@ async def ask(request, payload: AskRequest):
     try:
         def sync_ask():
             return LLMQueryEngine().ask(payload.question)
-        session = 1
+        user_id = request.user.id
         # Wall clock, not loop.time(): that is monotonic (seconds since boot), so the
         # stored value could not be turned back into a date for the transcript.
         time_requested = time.time()
         cache_client = RedisClient()
         answer = await asyncio.to_thread(sync_ask)
-        cache_key = f"llm_query:{session}:{payload.question}:{time_requested}"
+        cache_key = f"llm_query:{user_id}:{payload.question}:{time_requested}"
         cache_client.set(cache_key, answer.answer)
 
         return AskResponseSchema(success=True, answer=answer.answer)
@@ -48,8 +48,8 @@ async def ask(request, payload: AskRequest):
 def get_conversations(request):
     try:
         cache_client = RedisClient()
-        session = 1
-        pattern = f"llm_query:{session}:*"
+        user_id = request.user.id
+        pattern = f"llm_query:{user_id}:*"
         matching_keys = cache_client.keys(pattern)
 
         if not matching_keys:
