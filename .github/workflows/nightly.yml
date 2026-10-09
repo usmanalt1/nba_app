@@ -21,6 +21,8 @@ jobs:
       FILE_PATH_PARENT_NAME: nba-ua-dev-bucket
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       REDIS_URL: ${{ secrets.REDIS_URL }}
+      # Without this, stats.nba.com blackholes the runner and latest_nba_data times out.
+      NBA_PROXY: ${{ secrets.NBA_PROXY }}
       DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
       JWT_SIGNING_KEY: ${{ secrets.JWT_SIGNING_KEY }}
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
