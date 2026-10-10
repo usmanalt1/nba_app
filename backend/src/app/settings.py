@@ -72,8 +72,10 @@ if settings.DATABASE_URL:
     import dj_database_url
 
     DATABASES = {
+        # Neon drops idle connections, so a persistent one is dead on reuse; its
+        # pooler makes opening a fresh connection per request cheap.
         "default": dj_database_url.parse(
-            settings.DATABASE_URL, conn_max_age=600, ssl_require=True,
+            settings.DATABASE_URL, conn_max_age=0, ssl_require=True,
         )
     }
 else:

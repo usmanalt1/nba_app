@@ -1,6 +1,6 @@
 from ninja import Router, Schema
 from typing import List, Optional
-import asyncio
+from services.db.async_db import db_thread
 import logging
 import time
 
@@ -34,7 +34,7 @@ async def ask(request, payload: AskRequest):
         # Wall clock, not the monotonic loop.time(): the transcript needs a real date.
         time_requested = time.time()
         cache_client = RedisClient()
-        answer = await asyncio.to_thread(sync_ask)
+        answer = await db_thread(sync_ask)
         cache_key = f"llm_query:{user_id}:{payload.question}:{time_requested}"
         cache_client.set(cache_key, answer.answer)
 
