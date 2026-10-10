@@ -71,8 +71,8 @@ def postgres_raw_tables(context: AssetExecutionContext, latest_nba_data: dict) -
 
     if not loaded:
         raise RuntimeError(
-            f"Run {run_id} loaded no rows into Postgres. DBService reads parquet off the "
-            "local filesystem only, so STORAGE must be 'local'."
+            f"Run {run_id} loaded no rows into Postgres. Check STORAGE matches where "
+            "latest_nba_data wrote: 'local' reads FILE_PATH_PARENT_NAME, 'gcs' reads PARENT_BUCKET."
         )
 
     context.add_output_metadata({

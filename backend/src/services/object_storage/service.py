@@ -64,7 +64,44 @@ class GCSStorage(StorageBase):
             except FileNotFoundError:
                 logger.warning(f"No data for season={season}, table={table}")
         return pd.concat(dfs, ignore_index=True) if dfs else pd.DataFrame()
-    
+
+    def read_run(self, run_id: str = None) -> dict:
+        """Every table written under a run, keyed by table name, seasons concatenated."""
+        # The collecting asset wrote this run in-process, so a stale listing would miss it.
+        self.fs.invalidate_cache()
+
+        run_id = run_id or self._latest_run_id()
+        if run_id is None:
+            logger.warning(f"No run_id prefixes found in gs://{self.bucket}")
+            return {}
+
+        seasons, tables = self._list_run(run_id)
+        if not tables:
+            raise FileNotFoundError(f"Run {run_id} has no {self.file_format} files in gs://{self.bucket}")
+        logger.info(f"Reading run {run_id} from gs://{self.bucket}: {len(tables)} tables, seasons {seasons}")
+
+        run = {}
+        for table in tables:
+            df = self.read(latest_run_id=run_id, seasons=seasons, table=table)
+            if not df.empty:
+                run[table] = df
+        return run
+
+    def _latest_run_id(self) -> str:
+        run_ids = [path.rstrip("/").rsplit("/", 1)[-1] for path in self.fs.ls(self.bucket)]
+        run_ids = [run_id for run_id in run_ids if run_id]
+        return max(run_ids) if run_ids else None
+
+    def _list_run(self, run_id: str) -> tuple:
+        """The (seasons, tables) present under one run."""
+        paths = self.fs.glob(f"{self.bucket}/{run_id}/season=*/*.{self.file_format}")
+        seasons, tables = set(), set()
+        for path in paths:
+            season_dir, file_name = path.rsplit("/", 2)[-2:]
+            seasons.add(season_dir.split("=", 1)[1])
+            tables.add(file_name.rsplit(".", 1)[0])
+        return sorted(seasons), sorted(tables)
+
 
 class AzureBlobStorage(StorageBase):
     def __init__(self, file_format: str, run_id: str):

@@ -5,6 +5,7 @@ from sqlalchemy import create_engine
 import os
 from services.db.models_upsert import TableModelFactory
 from services.interface import StorageBase
+from services.object_storage.service import ObjectStorageService
 import pandas as pd
 from config.settings import settings
 
@@ -36,6 +37,11 @@ class DBService(StorageBase):
         self.postgres_host = os.getenv("DB_HOST")
         self.engine = create_engine(f"postgresql://{self.user}:{self.password}@{self.postgres_host}:5432/{self.db_name}")
         self.file_path_parent_name = os.getenv("FILE_PATH_PARENT_NAME")
+
+    def _get_latest_files(self, run_id: str = None) -> dict:
+        if settings.STORAGE == "gcs":
+            return ObjectStorageService().get_storage().read_run(run_id=run_id)
+        return self._get_latest_files_using_path(run_id=run_id)
 
     def _get_latest_files_using_path(self, run_id: str = None) -> dict:
         # Paths are nba_data/<run_id>/season=<season_id>/<table>.parquet
@@ -78,7 +84,7 @@ class DBService(StorageBase):
     
     def save(self, run_id: str = None) -> dict:
         logger.info("Starting upsert of NBA data into the database")
-        dfs = self._get_latest_files_using_path(run_id=run_id)
+        dfs = self._get_latest_files(run_id=run_id)
         loaded = {}
         try:
             for table_name, model in self.table_model_map.items():
