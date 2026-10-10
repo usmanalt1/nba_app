@@ -8,7 +8,7 @@ from app.models import (
     DimPlayers, FctPlayerStats, FctTeamStats, FctAdvancedPlayerSeasonStats,
     FctAdvancedTeamSeasonStats, DimSeasons, DimTeams, DimGames,
 )
-import asyncio
+from services.db.async_db import db_thread
 from datetime import date, datetime
 from ninja_jwt.authentication import AsyncJWTAuth
 from services.redis.redis_client import RedisClient
@@ -178,7 +178,7 @@ async def list_players_filtered(request, season_name: Optional[str] = None, team
     """Players for a season and/or team; both omitted returns every player."""
     def sync_get():
         return Service(DimPlayers).get_all_players(season_name=season_name, team_id=team_id)
-    return await asyncio.to_thread(sync_get)
+    return await db_thread(sync_get)
 
 @router.get("/season_player_stats", response=List[SeasonPlayerStats])
 async def season_player_stats(
@@ -196,7 +196,7 @@ async def season_player_stats(
             position=position,
             season_type=season_type,
         )
-    return await asyncio.to_thread(sync_get)
+    return await db_thread(sync_get)
 
 @router.get("/season_team_stats", response=List[SeasonTeamStats])
 async def season_team_stats(
@@ -210,7 +210,7 @@ async def season_team_stats(
         return Service(FctTeamStats).get_season_team_stats(
             season_name=season_name, team_id=team_id, season_type=season_type,
         )
-    return await asyncio.to_thread(sync_get)
+    return await db_thread(sync_get)
 
 @router.get("/season_advanced_player_stats", response=List[SeasonAdvancedPlayerStats])
 async def season_advanced_player_stats(
@@ -224,7 +224,7 @@ async def season_advanced_player_stats(
         return Service(FctAdvancedPlayerSeasonStats).get_season_advanced_player_stats(
             season_name=season_name, team_id=team_id, position=position, season_type=season_type,
         )
-    return await asyncio.to_thread(sync_get)
+    return await db_thread(sync_get)
 
 @router.get("/season_advanced_team_stats", response=List[SeasonAdvancedTeamStats])
 async def season_advanced_team_stats(
@@ -237,7 +237,7 @@ async def season_advanced_team_stats(
         return Service(FctAdvancedTeamSeasonStats).get_season_advanced_team_stats(
             season_name=season_name, team_id=team_id, season_type=season_type,
         )
-    return await asyncio.to_thread(sync_get)
+    return await db_thread(sync_get)
 
 @router.get("/list_all_seasons", response=List[SeasonOption])
 async def list_seasons(
@@ -249,13 +249,13 @@ async def list_seasons(
     def sync_get():
         service = Service(DimSeasons)
         return service.get_seasons_with_stats(season_type=season_type) if has_stats else service.get_all_seasons()
-    return await asyncio.to_thread(sync_get)
+    return await db_thread(sync_get)
 
 @router.get("/list_all_teams", response=List[TeamOption])
 async def list_teams(request):
     def sync_get():
         return Service(DimTeams).get_all_teams()
-    return await asyncio.to_thread(sync_get)
+    return await db_thread(sync_get)
 
 
 # Colours only change when a team rebrands; refresh=true is the way back after a reseed.
@@ -283,7 +283,7 @@ async def team_colours(request, refresh: bool = False):
             logger.exception("team_colours cache write failed")
         return rows
 
-    return await asyncio.to_thread(sync_get)
+    return await db_thread(sync_get)
 
 
 @router.get("/get_player/{player_id}", response= List[PlayerAggStats])
@@ -294,7 +294,7 @@ async def get_player(request, player_id: int, season_type: Literal["regular", "p
             player_id=player_id, season_type=season_type,
         )
 
-    return await asyncio.to_thread(sync_get_player, player_id)
+    return await db_thread(sync_get_player, player_id)
 
 @router.get("/get_top_3_best_players_latest_season/{stat_type}", response=List[PlayerAggStats])
 async def get_top_3_best_players_latest_season(request, stat_type: str):
@@ -307,14 +307,14 @@ async def get_top_3_best_players_latest_season(request, stat_type: str):
         sorted_stats = sorted(filtered_stats, key=lambda x: x[f'average_{stat_type}'], reverse=True)
         return sorted_stats[:3]
 
-    return await asyncio.to_thread(sync_get_top_3_best_players_latest_season)
+    return await db_thread(sync_get_top_3_best_players_latest_season)
 
 @router.get("/get_latest_games/season={season_name}/season_type={season_type}", response=List[LatestGames])
 async def latest_games(request, season_name: str, season_type: str):
     def sync_latest_games():
         return Service(DimGames).get_latest_games(season=season_name, season_type=season_type)
 
-    return await asyncio.to_thread(sync_latest_games)
+    return await db_thread(sync_latest_games)
 
 
 @router.get("/game/{game_id}/box_score", response=Optional[GameBoxScore])
@@ -339,4 +339,4 @@ async def game_box_score(request, game_id: str):
             lines=result["lines"],
         )
 
-    return await asyncio.to_thread(sync_get)
+    return await db_thread(sync_get)

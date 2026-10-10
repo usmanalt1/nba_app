@@ -1,4 +1,4 @@
-import asyncio
+from services.db.async_db import db_thread
 from datetime import date, datetime
 from typing import Dict, List, Optional
 
@@ -77,7 +77,7 @@ async def train_model(request, strategy: str, season: str, season_type: str, mod
             )
             return result
 
-        result = await asyncio.to_thread(sync_train)
+        result = await db_thread(sync_train)
     except Exception as e:
         logger.error(f"Error training model: {e}")
         return ModelRunResponseSchema(success=False, error=str(e))
@@ -201,7 +201,7 @@ async def prediction_history(request, strategy: str, season: str, season_type: s
                 graded_only=graded_only,
             )
 
-        records = await asyncio.to_thread(sync_get)
+        records = await db_thread(sync_get)
     except Exception as e:
         logger.error(f"Error fetching prediction history: {e}")
         return PredictionHistoryResponseSchema(success=False, error=str(e))
@@ -225,7 +225,7 @@ async def get_ml_models(request):
         def sync_get_models():
             return list(MlModels.objects.values("model_name"))
 
-        models = await asyncio.to_thread(sync_get_models)
+        models = await db_thread(sync_get_models)
     except Exception as e:
         logger.error(f"Error fetching ml models: {e}")
         return MlModelsResponseSchema(success=False, error=str(e))
@@ -267,7 +267,7 @@ async def get_all_runs(request):
             runs.sort(key=lambda r: (r.season, r.strategy), reverse=True)
             return runs
 
-        runs = await asyncio.to_thread(sync_get)
+        runs = await db_thread(sync_get)
     except Exception as e:
         logger.error(f"Error fetching all runs: {e}")
         return ModelRunsResponseSchema(success=False, error=str(e))

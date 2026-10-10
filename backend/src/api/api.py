@@ -9,6 +9,7 @@ from services.db.db_service import DBService
 from typing import Optional, Dict, Any, List
 from asgiref.sync import sync_to_async
 import asyncio
+from services.db.async_db import db_thread
 from services.object_storage.service import ObjectStorageService
 from services.warehouse_storage.duck_db.service import DuckDBService
 from services.warehouse_storage.bigquery.service import BigQueryService
@@ -53,7 +54,7 @@ async def collect_all(request):
             db_operations.upsert_nba_data(raw_tables)
             logger.info("NBA data upserted to the database successfully.")
 
-        await asyncio.to_thread(sync_collect_and_upsert)
+        await db_thread(sync_collect_and_upsert)
             
     except Exception as e:
         logger.error(f"Error during data collection and upsert: {e}")
@@ -69,7 +70,7 @@ async def collect_latest(request, season_year: str = None):
         def sync_collect():
             return BuildDataService().build_latest_data(season_year=season_year)
 
-        result = await asyncio.to_thread(sync_collect)
+        result = await db_thread(sync_collect)
         logger.info(f"Latest data collection finished: {result}")
     except Exception as e:
         logger.error(f"Error collecting latest data: {e}")
@@ -94,7 +95,7 @@ async def collect_player_awards_data(request):
             except Exception as e:
                 logger.error(f"Error loading player awards: {e}")
 
-        await asyncio.to_thread(sync_build_player_awards)
+        await db_thread(sync_build_player_awards)
     except Exception as e:
         logger.error(f"Error during player awards collection: {e}")
         return NBADataResponseSchema(success=False, error=str(e))
@@ -137,7 +138,7 @@ async def collect_data_by_season(request, season_year: str):
                     object_storage_service.save(df=df, file_name=table_name, season=season_year)
                     logger.info(f"NBA data for table {table_name} saved to object storage successfully.")
 
-            await asyncio.to_thread(sync_collect_and_upsert_for_date)
+            await db_thread(sync_collect_and_upsert_for_date)
         except Exception as e:
             logger.error(f"Error during data collection and upsert: {e}")
             return NBADataResponseSchema(success=False, error=str(e))
@@ -171,7 +172,7 @@ async def collect_data_by_number_of_seasons(request, season_year: str, seasons: 
                     season_year = f"{int(split_year[0]) - 1}-{str(int(split_year[1]) - 1)[-2:]}"
                     season_id = f"{str(int(season_id[:2]) - 1)}0{str(int(season_id[2:]) - 1)}"
 
-            asyncio.create_task(asyncio.to_thread(sync_collect_and_upsert_for_date))
+            asyncio.create_task(db_thread(sync_collect_and_upsert_for_date))
         except Exception as e:
             logger.error(f"Error during data collection and upsert: {e}")
             return NBADataResponseSchema(success=False, error=str(e))
@@ -194,7 +195,7 @@ async def collect_advanced_season_stats(request, seasons: str, season_types: str
                 seasons=season_list, season_types=type_list,
             )
 
-        result = await asyncio.to_thread(sync_collect)
+        result = await db_thread(sync_collect)
         logger.info(f"Advanced season stats collection finished: {result}")
     except Exception as e:
         logger.error(f"Error collecting advanced season stats: {e}")
@@ -210,7 +211,7 @@ async def load_data_to_postgres(request, run_id: str = None):
             db_operations = DBService()
             return db_operations.save(run_id=run_id)
 
-        loaded = await asyncio.to_thread(sync_load_data)
+        loaded = await db_thread(sync_load_data)
     except Exception as e:
         logger.error(f"Error loading data from object storage to Postgres: {e}")
         return NBADataResponseSchema(success=False, error=str(e))
@@ -226,7 +227,7 @@ async def load_data_from_gcs_to_bigquery(request, seasons: str):
         def sync_load_data():
             bigquery_service.load_latest_data_from_gcs_to_bigquery(seasons=seasons)
         
-        await asyncio.to_thread(sync_load_data)
+        await db_thread(sync_load_data)
     except Exception as e:
         logger.error(f"Error loading data from GCS to BigQuery: {e}")
         return NBADataResponseSchema(success=False, error=str(e))
@@ -239,7 +240,7 @@ async def load_data_from_lfs_to_duckdb(request):
         def sync_load_data():
             duckdb_service = DuckDBService()
         
-        await asyncio.to_thread(sync_load_data)
+        await db_thread(sync_load_data)
     except Exception as e:
         logger.error(f"Error loading data from local file system to DuckDB: {e}")
         return NBADataResponseSchema(success=False, error=str(e))
@@ -264,13 +265,13 @@ async def collect_game_schedule_by_season(request, season_year: str):
 
                 logger.info(f"NBA data for table {table_name} saved to object storage successfully.")
                 
-        await asyncio.to_thread(sync_collect)
+        await db_thread(sync_collect)
 
         def sync_load_data():
             db_operations = DBService()
             db_operations.save()
         
-        await asyncio.to_thread(sync_load_data)
+        await db_thread(sync_load_data)
         
     except Exception as e:
         logger.error(f"Error during data collection and upsert for game schedule: {e}")

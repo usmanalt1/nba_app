@@ -1,7 +1,7 @@
 from ninja import Router
 from typing import Optional, List, Dict, Any
 from ninja import Schema
-import asyncio
+from services.db.async_db import db_thread
 import logging
 import pandas as pd
 logger = logging.getLogger(__name__)
@@ -83,7 +83,7 @@ async def get_average_player_stats(request, season_name: str, season_type: str, 
             average_players_stats_dict = average_player_stats_df.to_dict(orient="records")
             return NBADataResponseSchema(success=True, records=average_players_stats_dict)
 
-        return await asyncio.to_thread(sync_get)
+        return await db_thread(sync_get)
     except Exception as e:
         logger.error(f"Error fetching average player stats: {e}")
         return NBADataResponseSchema(success=False, error=str(e))
@@ -107,7 +107,7 @@ async def get_average_team_stats(request, season_name: str, season_type: str, mi
             average_team_stats_dict = average_team_stats_df.to_dict(orient="records")
             return NBADataResponseSchema(success=True, records=average_team_stats_dict)
 
-        return await asyncio.to_thread(sync_get)
+        return await db_thread(sync_get)
     except Exception as e:
         logger.error(f"Error fetching average team stats: {e}")
         return NBADataResponseSchema(success=False, error=str(e))
@@ -132,7 +132,7 @@ async def get_most_improved_players(request, season_type: str):
             most_improved_df = most_improved_df.where(pd.notnull(most_improved_df), None)
             return NBADataResponseSchema(success=True, records=most_improved_df.to_dict(orient="records"))
 
-        return await asyncio.to_thread(sync_get)
+        return await db_thread(sync_get)
     except Exception as e:
         logger.error(f"Error fetching most improved players: {e}")
         return NBADataResponseSchema(success=False, error=str(e))
@@ -153,7 +153,7 @@ async def get_most_improved_teams(request, season_type: str):
             most_improved_df = most_improved_df.where(pd.notnull(most_improved_df), None)
             return NBADataResponseSchema(success=True, records=most_improved_df.to_dict(orient="records"))
 
-        return await asyncio.to_thread(sync_get)
+        return await db_thread(sync_get)
     except Exception as e:
         logger.error(f"Error fetching most improved teams: {e}")
         return NBADataResponseSchema(success=False, error=str(e))
@@ -320,7 +320,7 @@ async def get_hot_and_cold(
                 logger.exception("hot_and_cold cache write failed")
             return HotColdResponseSchema(**payload)
 
-        return await asyncio.to_thread(sync_get)
+        return await db_thread(sync_get)
     except Exception as e:
         logger.error(f"Error fetching hot and cold: {e}")
         return HotColdResponseSchema(success=False, error=str(e))
