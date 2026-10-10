@@ -40,6 +40,10 @@ jobs:
       # gcsfs and the GCS/BigQuery clients take a keyfile path, not the JSON itself,
       # so the secret has to land on disk before any asset touches storage.
       - run: |
+          if [ -z "$GCP_SERVICE_ACCOUNT_KEY" ]; then
+            echo "::error::secrets.GCP_SERVICE_ACCOUNT_KEY is empty. Add the service account JSON under Settings > Secrets and variables > Actions, on the Secrets tab at repository level."
+            exit 1
+          fi
           printf '%s' "$GCP_SERVICE_ACCOUNT_KEY" > "$GCS_SERVICE_ACCOUNT_JSON"
           python3 -c "import json,os; json.load(open(os.environ['GCS_SERVICE_ACCOUNT_JSON']))"
         env:
