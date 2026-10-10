@@ -1,0 +1,29 @@
+.shell {
+  display: flex;
+  height: 100vh;
+  /* dvh so a mobile browser's collapsing URL bar doesn't push the shell
+     taller than the visible viewport. */
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.main {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  padding: 20px;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+/* Mirrors the navbar's collapse breakpoint in NavbarNested.module.css: the
+   sidebar becomes a top bar, so the shell stacks instead of sitting side by side. */
+@media (max-width: 768px) {
+  .shell {
+    flex-direction: column;
+  }
+
+  .main {
+    padding: 14px 14px 28px;
+  }
+}
