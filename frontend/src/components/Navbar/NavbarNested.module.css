@@ -27,3 +27,46 @@
   padding: var(--mantine-spacing-md);
   border-top: 1px solid var(--line);
 }
+
+/* Burger bar that replaces the sidebar on narrow screens. It sits outside the
+   scrolling content, so it stays put while a page scrolls. */
+.topbar {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  background-color: var(--court);
+  border-bottom: 1px solid var(--line);
+}
+
+.drawerContent {
+  background-color: var(--court);
+  display: flex;
+  flex-direction: column;
+}
+
+.drawerHeader {
+  background-color: var(--court);
+  border-bottom: 1px solid var(--line);
+  padding: 10px 14px;
+}
+
+.drawerBody {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: var(--mantine-spacing-md);
+  padding-bottom: 0;
+}
+
+@media (max-width: 768px) {
+  .navbar {
+    display: none;
+  }
+
+  .topbar {
+    display: flex;
+  }
+}

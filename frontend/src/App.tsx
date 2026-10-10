@@ -13,6 +13,7 @@ import { AuthPage } from './components/Auth/AuthPage';
 import { clearSession, isAccessTokenExpired } from './lib/api';
 import { ViewDataFiltersProvider } from './components/ViewData/ViewDataFiltersContext';
 import { TeamColoursProvider } from './context/TeamColoursProvider';
+import classes from './App.module.css';
 
 
 function AppContent() {
@@ -51,11 +52,9 @@ function AppContent() {
   return (
     /* Inside the authenticated branch: team_colours needs a token. */
     <TeamColoursProvider>
-      <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+      <div className={classes.shell}>
         <Navbar />
-        <div style={{ flex: 1, padding: '20px', minWidth: 0, height: '100vh', overflowY: 'auto', boxSizing: 'border-box' }}>
-          {routes}
-        </div>
+        <main className={classes.main}>{routes}</main>
       </div>
     </TeamColoursProvider>
   );
